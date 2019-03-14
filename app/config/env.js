@@ -1,7 +1,7 @@
 const env = {
-  database: 'greattug_dreamsecurity',
-  username: 'greattug_jitendr',
-  password: 'honda1234##',
+  database: 'greattug_dreamsecurity_prod',
+  username: ' greattug_dreamsP',
+  password: 'Secure1234##',
   host: 'greatwits.com.md-in-73.bigrockservers.com',
   dialect: 'mysql',
   pool: {
