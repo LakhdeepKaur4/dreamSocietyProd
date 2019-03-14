@@ -389,7 +389,11 @@ module.exports = function(app) {
 
 	app.put('/api/societyMemberEvent/:id', [authJwt.verifyToken], societyMemberEvent.update);
 
-	app.post('/api/owner',[authJwt.verifyToken],owner.create1);
+	
+
+    app.post('/api/owner',[authJwt.verifyToken],owner.create1);
+
+	app.post('/api/owner/ownerMember/:id',[authJwt.verifyToken],owner.addMember);
 
 	app.get('/api/owner',[authJwt.verifyToken],owner.get1);
 
@@ -405,12 +409,14 @@ module.exports = function(app) {
 
 	app.put('/api/ownerMember/delete/deleteSelected',[authJwt.verifyToken],owner.deleteSelectedMembers);
 
+	app.put('/api/owner/ownerMember/update/:id',[authJwt.verifyToken],owner.updateMember);
+
 	app.put('/api/owner/delete/:id',[authJwt.verifyToken],owner.delete);
 	
 	//app.put('/api/ownerMember/deleteSelected',[authJwt.verifyToken],owner.delete);
 
-	app.put('/api/ownerMember/delete/:id',[authJwt.verifyToken],owner.deleteMember)
-	
+	app.put('/api/ownerMember/delete/:id',[authJwt.verifyToken],owner.deleteMember);
+
 	app.post('/api/tenant',[authJwt.verifyToken],tenant.createEncrypted);
 
 	app.get('/api/tenant',[authJwt.verifyToken],tenant.getDecrypted);
@@ -418,6 +424,8 @@ module.exports = function(app) {
 	app.put('/api/tenant/delete/deleteSelected',[authJwt.verifyToken],tenant.deleteSelected);
 
 	app.put('/api/tenant/delete/:id',[authJwt.verifyToken],tenant.delete);
+
+	app.put('/api/tenant/:id', [authJwt.verifyToken], tenant.updateEncrypted);
 
 	app.post('/api/societyMemberEventBooking', [authJwt.verifyToken], societyMemberEventBooking.create);
 
