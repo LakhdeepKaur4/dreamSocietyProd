@@ -383,9 +383,9 @@ exports.getDecrypted = async (req, res, next) => {
         const tenantsArr = [];
 
         Tenant.findAll({
-            // where: {
-            //     isActive: true
-            // },
+            where: {
+                isActive: true
+            },
             order: [['createdAt', 'DESC']],
             include: [
                 { model: Society },
