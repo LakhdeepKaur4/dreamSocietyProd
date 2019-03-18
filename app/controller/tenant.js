@@ -201,6 +201,7 @@ referenceConstraintReturn = (checkConstraint, object, property, entry) => {
 exports.createEncrypted = (req, res, next) => {
     try {
         console.log('Creating Tenant');
+        console.log("body==>",req.body)
 
         let tenant = req.body;
         let members = req.body.member;

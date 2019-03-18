@@ -985,8 +985,7 @@ exports.create1 = async (req, res, next) => {
     let memberId = [];
     ownerBody.userId = 1;
     let customVendorName = req.body.ownerName;
-    let userName =
-      customVendorName + "O" + req.body.towerId + req.body.flatDetailId;
+    let userName = customVendorName + "O" + req.body.towerId + req.body.flatDetailId;
     // console.log("userName==>", userName);
      userName = userName.replace(/ /g,'').toLowerCase();
      console.log("my name is",userName);

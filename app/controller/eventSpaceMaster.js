@@ -3,6 +3,7 @@ const config = require('../config/config.js');
 const httpStatus = require('http-status');
 
 const EventSpace = db.eventSpace;
+const SocietMemberEventBooking = db.societyMemberEventBooking;
 const Size = db.size;
 const Op = db.Sequelize.Op;
 
@@ -150,6 +151,7 @@ exports.delete = async (req, res, next) => {
             });
         }
     } catch (error) {
+        console.log(error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

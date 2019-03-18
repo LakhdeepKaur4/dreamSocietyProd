@@ -363,28 +363,26 @@ exports.create1 = async (req, res, next) => {
 exports.get1 = async (req, res, next) => {
     let newvendors = [];
     try {
-        const vendors = await VendorService.findAll({
+        const vendors = await Vendor.findAll({
             where: { isActive: true },
             order: [['createdAt', 'DESC']],
             include: [
-            { model: Vendor },
-            {model:Rate},
-            {model:Service}]
+            { model: VendorService ,include:[{model:Rate},{model:Service}]}]
         });
         if (vendors) {
             vendors.map(vendor => {
-                vendor.vendor_master.userName = decrypt(key,vendor.vendor_master.userName);
-                vendor.vendor_master.vendorName = decrypt(key,vendor.vendor_master.vendorName)
-                vendor.vendor_master.picture = decrypt(key,vendor.vendor_master.picture)
-                vendor.vendor_master.documentOne = decrypt(key,vendor.vendor_master.documentOne)
-                vendor.vendor_master.documentTwo = decrypt(key,vendor.vendor_master.documentTwo)
-                // vendor.vendor_master.documentOne = (vendor.vendor_master.documentOne).replace('\\','/');
-                // vendor.vendor_master.documentTwo = (vendor.vendor_master.documentTwo).replace('\\','/');
-                // vendor.vendor_master.documentOne = (vendor.vendor_master.documentOne).replace('\\','/');
-                // vendor.vendor_master.documentTwo = (vendor.vendor_master.documentTwo).replace('\\','/');
-                vendor.vendor_master.permanentAddress = decrypt(key,vendor.vendor_master.permanentAddress)
-                vendor.vendor_master.currentAddress = decrypt(key,vendor.vendor_master.currentAddress)
-                vendor.vendor_master.contact = decrypt(key,vendor.vendor_master.contact);
+                vendor.userName = decrypt(key,vendor.userName);
+                vendor.vendorName = decrypt(key,vendor.vendorName)
+                vendor.picture = decrypt(key,vendor.picture)
+                vendor.documentOne = decrypt(key,vendor.documentOne)
+                vendor.documentTwo = decrypt(key,vendor.documentTwo)
+                // vendor.documentOne = (vendor.documentOne).replace('\\','/');
+                // vendor.documentTwo = (vendor.documentTwo).replace('\\','/');
+                // vendor.documentOne = (vendor.documentOne).replace('\\','/');
+                // vendor.documentTwo = (vendor.documentTwo).replace('\\','/');
+                vendor.permanentAddress = decrypt(key,vendor.permanentAddress)
+                vendor.currentAddress = decrypt(key,vendor.currentAddress)
+                vendor.contact = decrypt(key,vendor.contact);
                 newvendors.push(vendor);
 
             })
