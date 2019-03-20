@@ -41,17 +41,17 @@ exports.signup = async (req, res) => {
 	const user = await User.findOne({
 		where: {
 			[Op.and]: [{
-					userName: req.body.userName
-				},
-				{
-					contact: req.body.contact
-				},
-				{
-					email: req.body.email
-				},
-				{
-					isActive: true
-				}
+				userName: req.body.userName
+			},
+			{
+				contact: req.body.contact
+			},
+			{
+				email: req.body.email
+			},
+			{
+				isActive: true
+			}
 			]
 		}
 	})
@@ -116,20 +116,20 @@ exports.update = (req, res) => {
 	const id = req.params.id;
 	const updates = req.body;
 	User.find({
-			where: {
-				userId: id
-			}
-		})
+		where: {
+			userId: id
+		}
+	})
 		.then(user => {
 			Role.findAll({
-					where: {
-						roleName: req.body.roleName
-					}
-				}).then(roles => {
-					user.setRoles(roles).then(() => {
-						return user.updateAttributes(updates)
-					});
-				})
+				where: {
+					roleName: req.body.roleName
+				}
+			}).then(roles => {
+				user.setRoles(roles).then(() => {
+					return user.updateAttributes(updates)
+				});
+			})
 				.then(updatedUser => {
 					res.status(httpStatus.OK).json({
 						message: "User updated successfully!",
@@ -147,25 +147,25 @@ exports.signin = async (req, res) => {
 		},
 		attributes: ['societyId', 'societyName'],
 		include: [{
-				model: City,
-				attributes: ['cityId', 'cityName']
-			},
-			{
-				model: Country,
-				attributes: ['countryId', 'countryName']
-			},
-			{
-				model: State,
-				attributes: ['stateId', 'stateName']
-			},
-			{
-				model: User,
-				attributes: ['userId', 'userName']
-			},
-			{
-				model: Location,
-				attributes: ['locationId', 'locationName']
-			},
+			model: City,
+			attributes: ['cityId', 'cityName']
+		},
+		{
+			model: Country,
+			attributes: ['countryId', 'countryName']
+		},
+		{
+			model: State,
+			attributes: ['stateId', 'stateName']
+		},
+		{
+			model: User,
+			attributes: ['userId', 'userName']
+		},
+		{
+			model: Location,
+			attributes: ['locationId', 'locationName']
+		},
 		]
 	});
 
@@ -186,11 +186,11 @@ exports.signin = async (req, res) => {
 	User.findOne({
 		where: {
 			[Op.and]: [{
-					userName: req.body.userName
-				},
-				{
-					isActive: true
-				}
+				userName: req.body.userName
+			},
+			{
+				isActive: true
+			}
 			]
 
 		},
@@ -224,8 +224,8 @@ exports.signin = async (req, res) => {
 		var token = jwt.sign({
 			id: user.userId
 		}, config.secret, {
-			expiresIn: 86400 // expires in 24 hours
-		});
+				expiresIn: 86400 // expires in 24 hours
+			});
 
 		res.status(httpStatus.OK).send({
 			status: 200,
@@ -247,21 +247,21 @@ exports.signin = async (req, res) => {
 exports.get = (req, res) => {
 	try {
 		User.findAll({
-				where: {
-					isActive: true
-				},
-				order: [
-					['createdAt', 'DESC']
-				],
-				include: [{
-						model: Role,
-						attributes: ['id', 'roleName'],
-					},
-					{
-						model: Tower
-					}
-				]
-			})
+			where: {
+				isActive: true
+			},
+			order: [
+				['createdAt', 'DESC']
+			],
+			include: [{
+				model: Role,
+				attributes: ['id', 'roleName'],
+			},
+			{
+				model: Tower
+			}
+			]
+		})
 			.then(user => {
 				//   let decipher = crypto.createCipher(config.algorithm,user.QRCode);
 				//    let encryptedUser = decipher.update(user,'hex','utf8') + decipher.final('utf8');
@@ -523,10 +523,10 @@ exports.delete = (req, res) => {
 	}
 	const updates = req.body;
 	User.find({
-			where: {
-				userId: id
-			}
-		})
+		where: {
+			userId: id
+		}
+	})
 		.then(user => {
 			return user.updateAttributes(updates)
 			// res.json({message:"User deleted successfully!",user:user});
@@ -582,30 +582,30 @@ exports.search = async (req, res, next) => {
 				where: {
 					isActive: true,
 					[Op.or]: [{
-							firstName: {
-								[Op.like]: '%' + req.query.firstName + '%'
-							}
-						},
-						{
-							lastName: {
-								[Op.like]: '%' + req.query.lastName + '%'
-							}
-						},
-						{
-							userName: {
-								[Op.like]: '%' + req.query.userName + '%'
-							}
-						},
-						{
-							contact: {
-								[Op.like]: '%' + req.query.contact + '%'
-							}
-						},
-						{
-							email: {
-								[Op.like]: '%' + req.query.email + '%'
-							}
-						},
+						firstName: {
+							[Op.like]: '%' + req.query.firstName + '%'
+						}
+					},
+					{
+						lastName: {
+							[Op.like]: '%' + req.query.lastName + '%'
+						}
+					},
+					{
+						userName: {
+							[Op.like]: '%' + req.query.userName + '%'
+						}
+					},
+					{
+						contact: {
+							[Op.like]: '%' + req.query.contact + '%'
+						}
+					},
+					{
+						email: {
+							[Op.like]: '%' + req.query.email + '%'
+						}
+					},
 					]
 				}
 			})
@@ -1208,10 +1208,10 @@ exports.updateEncrypted = async (req, res, next) => {
 		});
 
 		User.find({
-				where: {
-					userId: id
-				}
-			})
+			where: {
+				userId: id
+			}
+		})
 			.then(user => {
 				user.setRoles(roles);
 				return user.updateAttributes(updates);
@@ -1259,25 +1259,25 @@ exports.signinDecrypted = async (req, res, next) => {
 		},
 		attributes: ['societyId', 'societyName'],
 		include: [{
-				model: City,
-				attributes: ['cityId', 'cityName']
-			},
-			{
-				model: Country,
-				attributes: ['countryId', 'countryName']
-			},
-			{
-				model: State,
-				attributes: ['stateId', 'stateName']
-			},
-			{
-				model: User,
-				attributes: ['userId', 'userName']
-			},
-			{
-				model: Location,
-				attributes: ['locationId', 'locationName']
-			},
+			model: City,
+			attributes: ['cityId', 'cityName']
+		},
+		{
+			model: Country,
+			attributes: ['countryId', 'countryName']
+		},
+		{
+			model: State,
+			attributes: ['stateId', 'stateName']
+		},
+		{
+			model: User,
+			attributes: ['userId', 'userName']
+		},
+		{
+			model: Location,
+			attributes: ['locationId', 'locationName']
+		},
 		]
 	});
 
@@ -1298,11 +1298,11 @@ exports.signinDecrypted = async (req, res, next) => {
 	User.findOne({
 		where: {
 			[Op.and]: [{
-					userName: encrypt(req.body.userName)
-				},
-				{
-					isActive: true
-				}
+				userName: encrypt(req.body.userName)
+			},
+			{
+				isActive: true
+			}
 			]
 
 		},
@@ -1355,8 +1355,8 @@ exports.signinDecrypted = async (req, res, next) => {
 		var token = jwt.sign({
 			id: user.userId
 		}, config.secret, {
-			expiresIn: 86400 // expires in 24 hours
-		});
+				expiresIn: 86400 // expires in 24 hours
+			});
 
 		res.status(httpStatus.OK).send({
 			status: 200,
@@ -1379,21 +1379,21 @@ exports.getUserDecrypted = (req, res, next) => {
 	try {
 		const usersArr = [];
 		User.findAll({
-				where: {
-					isActive: true
-				},
-				order: [
-					['createdAt', 'DESC']
-				],
-				include: [{
-						model: Role,
-						attributes: ['id', 'roleName'],
-					},
-					{
-						model: Tower
-					}
-				]
-			})
+			where: {
+				isActive: true
+			},
+			order: [
+				['createdAt', 'DESC']
+			],
+			include: [{
+				model: Role,
+				attributes: ['id', 'roleName'],
+			},
+			{
+				model: Tower
+			}
+			]
+		})
 			.then(users => {
 				users.map(item => {
 					if ((item['firstName'] !== null) && (item['lastName'] !== null) && (item['contact'] !== null) && (item['floor'] !== null)) {
@@ -1434,21 +1434,21 @@ exports.getPersonDecrypted = (req, res, next) => {
 	try {
 		const usersArr = [];
 		User.findAll({
-				where: {
-					isActive: true
-				},
-				order: [
-					['createdAt', 'DESC']
-				],
-				include: [{
-						model: Role,
-						attributes: ['id', 'roleName'],
-					},
-					{
-						model: Tower
-					}
-				]
-			})
+			where: {
+				isActive: true
+			},
+			order: [
+				['createdAt', 'DESC']
+			],
+			include: [{
+				model: Role,
+				attributes: ['id', 'roleName'],
+			},
+			{
+				model: Tower
+			}
+			]
+		})
 			.then(users => {
 				users.map(item => {
 					if ((item['firstName'] !== null) && (item['lastName'] !== null) && (item['contact'] !== null) && (item['floor'] !== null)) {
@@ -1483,4 +1483,61 @@ exports.getPersonDecrypted = (req, res, next) => {
 			"message": error
 		})
 	}
+}
+
+exports.forgottenPassword = (req, res, next) => {
+	const userName = req.params.userName;
+	console.log('User ===>', userName);
+
+	User.find({
+		where: {
+			userName: encrypt(userName),
+			isActive: true
+		}
+	})
+		.then(user => {
+			if (user !== null) {
+				res.status(httpStatus.OK).json({
+					message: 'Email with reset link is sent to registered email id'
+				});
+			} else {
+				res.status(httpStatus.NOT_FOUND).json({
+					errMessage: 'User does not exist'
+				});
+			}
+		})
+}
+
+exports.changePassword = (req, res, next) => {
+	const body = req.body;
+	console.log('Body ===>', body);
+
+	User.findOne({
+		where: {
+			userId: body.userId
+		}
+	})
+		.then(user => {
+			if (bcrypt.compareSync(body.oldPassword, user.password) === true) {
+				let password = bcrypt.hashSync(body.newPassword, 8);
+				const updatedPassword = {
+					password: password
+				}
+				user.updateAttributes(updatedPassword);
+
+				res.status(httpStatus.CREATED).json({
+					message: 'Password Changed Successfully. Please Login Again'
+				});
+			} else {
+				res.status(httpStatus.UNAUTHORIZED).json({
+					message: 'Old password not matching. Please try forgot password.'
+				});
+			}
+		})
+		.catch(err => {
+			console.log("error--->", err)
+			res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+				"message": err
+			})
+		})
 }

@@ -4,6 +4,7 @@ const httpStatus = require('http-status')
 const FlatDetail = db.flatDetail;
 const Flat = db.flat;
 const Tower = db.tower;
+const Floor = db.floor;
 const Op = db.Sequelize.Op;
 
 exports.create = async (req, res, next) => {
@@ -15,6 +16,7 @@ exports.create = async (req, res, next) => {
                 [Op.and]: [
                     { flatNo: body.flatNo },
                     { towerId: body.towerId },
+                    { towerId: body.floorId },
                     { isActive: true }
                 ]
             }
@@ -56,7 +58,12 @@ exports.get = async (req, res, next) => {
             }, {
                 model: Tower,
                 attributes: ['towerId', 'towerName'],
-            }]
+            },
+            {
+                model: Floor,
+                attributes: ['floorId', 'floorName'],
+            }
+        ]
         });
         if (flatDetail) {
             return res.status(httpStatus.CREATED).json({
@@ -87,6 +94,7 @@ exports.update = async (req, res, next) => {
                     { flatNo: req.body.flatNo },
                     { flatId: req.body.flatId },
                     { towerId: req.body.towerId },
+                    { floorId: body.floorId },
                     { isActive: true }
                 ]
             }

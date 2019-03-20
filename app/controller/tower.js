@@ -3,41 +3,111 @@ const config = require('../config/config.js');
 const httpStatus = require('http-status');
 
 const Tower = db.tower;
+const Floor = db.floor;
+const TowerFloor = db.towerFloor;
 const Op = db.Sequelize.Op;
 
 exports.create = async (req, res) => {
     console.log("creating tower");
-    const towers = await Tower.findAll({
-        where: {
-            isActive: true
-        }
-    })
+    let body = req.body;
+    body.userId = req.userId;
+    try {
+        const towers = await Tower.findAll({
+            where: {
+                isActive: true
+            }
+        })
 
-    let error = towers.some(tower => {
-        return tower.towerName.toLowerCase().replace(/ /g, '') == req.body.towerName.toLowerCase().replace(/ /g, '');
-    });
-    console.log(error);
-    if (error) {
-        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Tower Name already Exists" })
+        let error = towers.some(tower => {
+            return tower.towerName.toLowerCase().replace(/ /g, '') == req.body.towerName.toLowerCase().replace(/ /g, '');
+        });
+        console.log(error);
+        if (error) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Tower Name already Exists" })
+        }
+        const tower = await Tower.create(body);
+        const towerId = tower.towerId;
+
+        const result = body.floors.forEach(function (element) { element.towerId = towerId });
+
+        const updatedTowerFloor = await TowerFloor.bulkCreate(body.floors, { returning: true }, {
+            fields: ["floorId", "towerId"],
+        },
+        );
+
+        // const updatedTower = await TowerFloor.update(bodyToUpdate, { where: { floorId: { [Op.in]: req.body.floorIds } } });
+
+        if (updatedTowerFloor) {
+            return res.status(httpStatus.CREATED).json({
+                message: "Tower Created successfully"
+            })
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message })
     }
-    Tower.create({
-        towerName: req.body.towerName,
-        userId: req.userId
-    }).then(tower => {
-        res.json({ message: "Tower added successfully!", tower: tower });
-    }).catch(err => {
-        res.status(500).send("Fail! Error -> " + err);
-    })
+
 }
 
 exports.get = (req, res) => {
     Tower.findAll({
         where: { isActive: true },
+        // include:[{model:'Floor',as:'Floors'}],
         order: [['createdAt', 'DESC']],
     })
         .then(tower => {
             res.json(tower);
         });
+}
+
+exports.getTowerAndFloor = async (req, res) => {
+    try {
+        const tower = await Tower.findAll({
+            where: { isActive: true },
+            include: [{
+                model: Floor,
+                as: 'Floors',
+                attributes: ['floorId', 'floorName'],
+                through: {
+                    attributes: ['floorId', 'floorName'],
+                }
+            }
+            ]
+            , order: [['createdAt', 'DESC']]
+        });
+        if (tower) {
+            res.status(httpStatus.OK).json({ message: 'Tower Floor Page', tower })
+        }
+    } catch (error) {
+        console.log(error)
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message })
+    }
+}
+
+
+exports.getFloorByTowerId = async (req, res) => {
+    try {
+        const towerId = req.params.id;
+        const tower = await Tower.findOne({
+            where: { isActive: true, towerId: towerId },
+            include: [{
+                model: Floor,
+                as: 'Floors',
+                attributes: ['floorId', 'floorName'],
+                through: {
+                    attributes: ['floorId', 'floorName'],
+                }
+            }
+            ]
+            , order: [['createdAt', 'DESC']]
+        });
+        if (tower) {
+            res.status(httpStatus.OK).json({ message: 'Tower Floor Page', tower })
+        }
+    } catch (error) {
+        console.log(error)
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message })
+    }
 }
 
 exports.getById = (req, res) => {
@@ -59,6 +129,9 @@ exports.getById = (req, res) => {
 exports.update = async (req, res) => {
     console.log("-----update---------");
     const id = req.params.id;
+    const towerId = req.params.id;
+
+    let towerIds = [];
     const updates = req.body;
     if (!id) {
         res.json("Please enter id");
@@ -76,12 +149,28 @@ exports.update = async (req, res) => {
         const updatedTower = await Tower.find({ where: { towerId: id } }).then(tower => {
             return tower.updateAttributes(updates)
         })
-        if (updatedTower) {
-            return res.status(httpStatus.OK).json({
-                message: "Tower Updated Page",
-                updatedTower: updatedTower
+        if (req.body.floors) {
+            const towerFloor = await TowerFloor.findAll({ where: { isActive: true, towerId: towerId } });
+            const towerFloorId = towerFloor.map(towerFloor => {
+                towerIds.push(towerFloor.towerFloorId)
             });
+
+            await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds } } });
+
+            const result = req.body.floors.forEach(function (element) {
+                element.towerId = towerId
+                console.log(element.towerId)
+            });
+            const updatedTowerFloor = await TowerFloor.bulkCreate(req.body.floors, { returning: true }, {
+                fields: ["floorId", "towerId"],
+            },
+            );
         }
+        // if (updatedTowerFloor) {
+        return res.status(httpStatus.OK).json({
+            message: "Tower Updated Succussfully"
+        });
+        // }
     } else {
         const towers = await Tower.findAll({
             where: {
@@ -94,22 +183,63 @@ exports.update = async (req, res) => {
         if (error) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Tower Name already Exists" })
         }
-   
-        Tower.find({
-            where: { towerId: id }
+        const updatedTower = await Tower.find({ where: { towerId: id } }).then(tower => {
+            return tower.updateAttributes(updates)
         })
-            .then(tower => {
-                return tower.updateAttributes(updates)
-            })
-            .then(updatedTower => {
-                res.json({ message: "Tower updated successfully!", updatedTower: updatedTower });
+        if (req.body.floors) {
+            const towerFloor = await TowerFloor.findAll({ where: { isActive: true, towerId: towerId } });
+            const towerFloorId = towerFloor.map(towerFloor => {
+                towerIds.push(towerFloor.towerFloorId)
             });
+
+            await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds } } });
+
+            const result = req.body.floors.forEach(function (element) {
+                element.towerId = towerId
+                console.log(element.towerId)
+            });
+            const updatedTowerFloor = await TowerFloor.bulkCreate(req.body.floors, { returning: true }, {
+                fields: ["floorId", "towerId"],
+            },
+            );
+        }
+        return res.status(httpStatus.OK).json({
+            message: "Tower Updated Succussfully"
+        });
+    }
+}
+
+exports.updateTowerAndFloor = async (req, res) => {
+    try {
+        const towerId = req.params.id;
+
+        let towerIds = [];
+        const towerFloor = await TowerFloor.findAll({ where: { isActive: true, towerId: towerId } });
+        const towerFloorId = towerFloor.map(towerFloor => {
+            towerIds.push(towerFloor.towerFloorId)
+        });
+        // console.log(towerIds);
+        const deleteTowerFloor = await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds } } });
+
+        const result = req.body.floors.forEach(function (element) {
+            element.towerId = towerId
+            console.log(element.towerId)
+        });
+        const updatedTowerFloor = await TowerFloor.bulkCreate(req.body.floors, { returning: true }, {
+            fields: ["floorId", "towerId"],
+        },
+        );
+
+        res.json({ message: 'Updated Successfully' });
+    } catch (error) {
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message });
     }
 }
 
 exports.delete = async (req, res, next) => {
     try {
         const id = req.params.id;
+        let towerIds = [];
 
         if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
@@ -121,10 +251,16 @@ exports.delete = async (req, res, next) => {
         const updatedTower = await Tower.find({ where: { towerId: id } }).then(tower => {
             return tower.updateAttributes(update)
         })
-        if (updatedTower) {
+      
+        const towerFloor = await TowerFloor.findAll({ where: { isActive: true, towerId: id } });
+        const towerFloorId = towerFloor.map(towerFloor => {
+            towerIds.push(towerFloor.towerFloorId)
+        });
+        // console.log(towerIds);
+        const deleteTowerFloor = await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds } } });
+        if (deleteTowerFloor) {
             return res.status(httpStatus.OK).json({
-                message: "Tower deleted successfully",
-                tower: updatedTower
+                message: "Tower and Floor deleted successfully"
             });
         }
     } catch (error) {
@@ -135,15 +271,23 @@ exports.delete = async (req, res, next) => {
 exports.deleteSelected = async (req, res, next) => {
     try {
         const deleteSelected = req.body.ids;
+        let towerIds = [];
         console.log("delete selected==>", deleteSelected);
         const update = { isActive: false };
         if (!deleteSelected) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
-        const updatedTower = await Tower.update(update, { where: { towerId: { [Op.in]: deleteSelected } } })
-        if (updatedTower) {
+        const updatedTower = await Tower.update(update, { where: { towerId: { [Op.in]: deleteSelected } } });
+
+        const towerFloor = await TowerFloor.findAll({ where: { isActive: true, towerId: id } });
+        const towerFloorId = towerFloor.map(towerFloor => {
+            towerIds.push(towerFloor.towerFloorId)
+        });
+        // console.log(towerIds);
+        const deleteTowerFloor = await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds } } });
+        if (deleteTowerFloor) {
             return res.status(httpStatus.OK).json({
-                message: "Towers deleted successfully",
+                message: "Tower and Floors deleted successfully",
             });
         }
     } catch (error) {

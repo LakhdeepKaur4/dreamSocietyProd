@@ -9,9 +9,6 @@ module.exports = (sequelize, Sequelize) => {
 			type: Sequelize.STRING,
 			// unique:'compositeIndex'
 		},
-		floor: {
-			type: Sequelize.STRING
-		},
 		isActive: {
 			type: Sequelize.BOOLEAN,
 			defaultValue: true

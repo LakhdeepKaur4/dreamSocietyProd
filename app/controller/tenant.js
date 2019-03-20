@@ -15,6 +15,7 @@ const Owner = db.owner;
 const FlatDetail = db.flatDetail;
 const Tower = db.tower;
 const Society = db.society;
+const Relation = db.relation;
 
 function saveToDisc(name, fileExt, base64String, callback) {
     console.log("HERE ", name, fileExt);
@@ -201,7 +202,6 @@ referenceConstraintReturn = (checkConstraint, object, property, entry) => {
 exports.createEncrypted = (req, res, next) => {
     try {
         console.log('Creating Tenant');
-        console.log("body==>",req.body)
 
         let tenant = req.body;
         let members = req.body.member;
@@ -564,8 +564,8 @@ exports.updateEncrypted = async (req, res, next) => {
                 }
             })
         if ((update.picture !== '') && (update.picture !== null) && (update.picture !== undefined)) {
-            tenantImage = await Tenant.find({where: {tenantId: id}, attributes: ['picture']});
-            fs.unlink((decrypt(tenantImage.picture)).replace('../../',''), err => {
+            tenantImage = await Tenant.find({ where: { tenantId: id }, attributes: ['picture'] });
+            fs.unlink((decrypt(tenantImage.picture)).replace('../../', ''), err => {
                 if (err) {
                     console.log("File Missing ===>", err);
                 }
@@ -634,4 +634,162 @@ exports.updateEncrypted = async (req, res, next) => {
     } else {
         return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
     }
+}
+
+exports.getTenantMembers = async (req, res, next) => {
+    const tenantId = req.params.id;
+    console.log('Tenant-ID ===>', tenantId);
+
+    // const tenant = Tenant.findOne({
+    //     where: {
+    //         tenantId: tenantId
+    //     }
+    // });
+
+    if (!tenantId) {
+        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
+    }
+
+    const tenantMembers = await TenantMembersDetail.findAll({
+        where: {
+            tenantId: tenantId,
+            isActive: true
+        },
+        include: {
+            model: Relation,
+            attributes: ['relationName']
+        }
+    });
+    // console.log(tenantMembers)
+
+    tenantMembers.map(item => {
+        item.memberName = decrypt(item.memberName);
+        item.gender = decrypt(item.gender);
+    })
+
+    return res.status(httpStatus.OK).json({
+        message: "Tenant Members Details",
+        members: tenantMembers
+    });
+}
+
+exports.deleteTenantMember = async (req, res, next) => {
+    try {
+        const id = req.params.id;
+        console.log('Tenant Member-ID ===>', id);
+
+        if (!id) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
+        }
+
+        const update = req.body;
+        console.log('Tenant Member Body ===>', update);
+
+        if (!update) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
+        }
+
+        const member = await TenantMembersDetail.find({ where: { memberId: id } });
+
+        const updatedMember = await member.updateAttributes(update);
+
+        updatedMember.memberName = decrypt(updatedMember.memberName);
+        updatedMember.gender = decrypt(updatedMember.gender);
+
+        if (updatedMember) {
+            return res.status(httpStatus.OK).json({
+                message: "Member deleted successfully",
+                member: updatedMember
+            });
+        }
+    } catch (error) {
+        console.log("error ===>", error);
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
+
+exports.addTenantMembers = (req, res, next) => {
+    const member = req.body;
+    member.userId = req.userId;
+
+    member.memberName = encrypt(member.memberName);
+    member.gender = encrypt(member.gender);
+
+    TenantMembersDetail.create(member)
+        .then(member => {
+            member.memberName = decrypt(member.memberName);
+            member.gender = decrypt(member.gender);
+            return res.status(httpStatus.CREATED).json({
+                message: 'Member created successfully',
+                member
+            });
+        })
+        .catch(err => {
+            console.log('Error ===>', err);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
+}
+
+exports.editTenantMembers = async (req, res, next) => {
+    const id = req.params.id;
+
+    if (!id) {
+        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json('Id is missing');
+    }
+
+    const update = req.body;
+
+    if (!update) {
+        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json('Please try again');
+    }
+
+    member = await TenantMembersDetail.findOne({ where: { memberId: id } });
+
+    memberNameCheck = constraintCheck('memberName', update);
+    genderCheck = constraintCheck('gender', update);
+
+    update.memberName = constraintReturn(memberNameCheck, update, 'memberName', member);
+    update.gender = constraintReturn(genderCheck, update, 'gender', member);
+
+    TenantMembersDetail.update(update, {
+        where: {
+            memberId: id
+        }
+    })
+        .then(member => {
+            return res.status(httpStatus.CREATED).json({
+                message: 'Member updated successfully',
+            })
+        })
+        .catch(err => {
+            console.log('Error ===>', err);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
+}
+
+exports.deleteSelectedTenantMembers = (req, res, next) => {
+    const ids = req.body.ids;
+
+    if (!ids) {
+        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json('Ids are missing');
+    }
+
+    const deleteUpdate = { isActive: false };
+
+    TenantMembersDetail.update(deleteUpdate, {
+        where: {
+            memberId: {
+                [Op.or]: ids
+            }
+        }
+    })
+        .then(members => {
+            return res.status(httpStatus.OK).json({
+                message: 'Members deleted successfully'
+            });
+        })
+        .catch(err => {
+            console.log('Error ===>', err);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
 }

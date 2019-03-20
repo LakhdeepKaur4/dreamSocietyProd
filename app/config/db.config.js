@@ -59,6 +59,8 @@ db.tenant = require('../model/tenant.model')(sequelize,Sequelize);
 db.tenantMembersDetail  = require('../model/tenantMemberDetails.model')(sequelize,Sequelize);
 db.societyMemberEventBooking = require('../model/societyMemberEventBooking.model')(sequelize, Sequelize);
 db.eventSpace = require('../model/eventSpaceMaster.model')(sequelize,Sequelize);
+db.floor = require('../model/floor.model')(sequelize,Sequelize);
+db.towerFloor = require('../model/towerFloor.model')(sequelize,Sequelize);
  
 db.role.belongsToMany(db.user, { through: 'user_roles', foreignKey: 'roleId', otherKey: 'userId'});
 db.user.belongsToMany(db.role, { through: 'user_roles', foreignKey: 'userId', otherKey: 'roleId'});
@@ -88,6 +90,7 @@ db.assets.belongsTo(db.user,{foreignKey:'userId'});
 db.assetsType.belongsTo(db.user,{foreignKey:'userId'});
 db.assetsType.belongsTo(db.assets,{foreignKey:'assetId'});
 db.flatDetail.belongsTo(db.tower,{foreignKey:'towerId'});
+db.flatDetail.belongsTo(db.floor,{foreignKey:'floorId'});
 db.flatDetail.belongsTo(db.flat,{foreignKey:'flatId'});
 db.flatDetail.belongsTo(db.user,{foreignKey:'userId'});
 db.user.belongsTo(db.tower,{foreignKey:'towerId'});
@@ -150,5 +153,11 @@ db.societyMemberEventBooking.belongsTo(db.societyMemberEvent, { foreignKey: 'soc
 db.societyMemberEventBooking.belongsTo(db.eventSpace, { foreignKey: 'eventSpaceId' });
 db.eventSpace.belongsTo(db.user,{foreignKey:'userId'});
 db.eventSpace.belongsTo(db.size,{foreignKey:'sizeId'});
+db.floor.belongsTo(db.user,{foreignKey:'userId'});
+// db.tower.hasMany(db.floor, {foreignKey: 'floorId',constraints: false, allowNull:true, defaultValue:null});
+// db.floor.belongsTo(db.tower,{foreignKey:'towerId'});
+db.tower.belongsTo(db.user, {foreignKey: 'userId',constraints: false, allowNull:true, defaultValue:null});
+db.tower.belongsToMany(db.floor, { as:'Floors',through: 'tower_floor_master', foreignKey: 'towerId',otherKey:'floorId'});
+db.floor.belongsToMany(db.tower, { as:'Towers',through: 'tower_floor_master', foreignKey: 'floorId',otherKey:'towerId'});
 
 module.exports = db;
