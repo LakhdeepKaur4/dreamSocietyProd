@@ -815,10 +815,14 @@ const httpStatus = require("http-status");
 var passwordGenerator = require("generate-password");
 const key = config.secret;
 const fs = require("fs");
+const http = require('http');
 const crypto = require("crypto");
 const Op = db.Sequelize.Op;
 const path = require("path");
 const shortId = require("short-id");
+const nodeMailer = require('nodemailer');
+const smtpTransport = require('nodemailer-smtp-transport');
+const jwt = require('jsonwebtoken');
 
 const Owner = db.owner;
 
@@ -828,6 +832,24 @@ const Tower = db.tower;
 const Society = db.society;
 const User = db.user;
 const Relation = db.relation;
+const Otp = db.otp;
+
+
+setInterval(async function(){
+  let ndate = new Date();
+  let otps = await Otp.findAll();
+  if(otps){
+    otps.map( async otp => {
+      let timeStr = otp.createdAt.toString();
+      let diff =  Math.abs(ndate - new Date(timeStr.replace(/-/g,'/')));
+      if(Math.abs(Math.floor((diff / (1000 * 60)) % 60)>=3)){
+        await Owner.destroy({where:{[Op.and]:[{ownerId:otp.ownerId},{isActive:false}]}});
+        await otp.destroy();
+        console.log("otp destroyed");
+      }
+    })
+  }
+},1000);
 
 
 function encrypt(key, data) {
@@ -964,6 +986,60 @@ exports.create = async (req, res, next) => {
   }
 };
 
+let testSms = (contact) => {
+  const apikey = 'mJUH4QVvP+E-coDtRnQr7wvdVc8ClAWDcKjPew8Gxl';
+  const number = contact;
+  const OTP = Math.floor(100000 + Math.random() * 900000);
+  const message = 'OTP-' +  OTP;
+
+  http.get(`http://api.textlocal.in/send/?apiKey=${apikey}&numbers=${number}&message=${message}`,function(err,data){
+      console.log('messageSend');
+      
+  });
+  return OTP;
+};
+
+let sendMail = (email,ownerId) => {
+  const token = jwt.sign({
+    data: 'foobar'
+  }, 'secret', { expiresIn: '1h' });
+  ownerId = encrypt(key,ownerId.toString());
+  let transporter = nodeMailer.createTransport(smtpTransport({
+    service: 'gmail',
+    auth: {
+        user: 'avitanwar1234@gmail.com',
+        pass: '8459143023'
+    },
+    
+}));
+
+    // let transporter = nodeMailer.createTransport({
+    //     host: 'smtp.gmail.com',
+    //     port: 465,
+    //     secure: true,
+    //     auth: {
+    //         user: 'fundurohit.rk@gmail.com',
+    //         pass: '23rohit1610'
+    //     }
+    // });
+    let mailOptions = {
+        from: ' "avi" <avitanwar1234@gmail.com>', // sender address
+        to: email, // list of receivers
+        subject: 'test', // Subject line
+        text: 'this is to test api. click on the link below to verify', // plain text body
+        html: `<b>NodeJS Email Tutorial</b> <a href="http://192.168.1.16:3000/login/accountVerification?ownerId=${ownerId}&token=${token}">click here</a>` // html body
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+            return console.log(error);
+        }
+        console.log('Message %s sent: %s', info.messageId, info.response);
+        console.log('mail send');
+    });
+};
+
+
 exports.create1 = async (req, res, next) => {
   try {
     console.log("creating owner");
@@ -1088,9 +1164,16 @@ exports.create1 = async (req, res, next) => {
       // const ownerMember = await OwnerMembersDetail.create(memberBody);
       //    }
     }
+
+    const otp = testSms(req.body.contact);
+    let dbotp = await Otp.create({
+      otpvalue:otp,
+      ownerId:ownerId
+    }) 
+    const message = sendMail(req.body.email,ownerId);
+    let xyz = await Owner.update({OTP:otp},{where: { ownerId: ownerId }} )
     return res.status(httpStatus.CREATED).json({
-      message: "Owner successfully created",
-      owner
+      message: "Owner successfully created. please activate your account.Sms has been sent to you. Check the details"
     });
   } catch (error) {
     console.log("error==>", error);

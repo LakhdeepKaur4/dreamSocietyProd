@@ -40,6 +40,7 @@ module.exports = function(app) {
 	const societyMemberEventBooking = require('../controller/societyMemberEventBooking');
 	const eventSpaceController = require('../controller/eventSpaceMaster');
 	const floor = require('../controller/floor');
+	const otpChecker = require('../controller/otpchecker');
 
 	
 	app.get('/', userController.start);
@@ -475,5 +476,7 @@ module.exports = function(app) {
 	app.put('/api/floor/delete/deleteSelected', [authJwt.verifyToken], floor.deleteSelected);
 
 	app.put('/api/floor/delete/:id',  [authJwt.verifyToken], floor.delete);
+
+	app.post('/api/ownerActivation', otpChecker.checkOtp);
 
 }

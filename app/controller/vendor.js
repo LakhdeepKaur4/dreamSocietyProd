@@ -367,7 +367,7 @@ exports.get1 = async (req, res, next) => {
             where: { isActive: true },
             order: [['createdAt', 'DESC']],
             include: [
-            { model: VendorService ,include:[{model:Rate},{model:Service}]}]
+            { model: VendorService , where: { isActive: true },include:[{model:Rate},{model:Service}]}]
         });
         if (vendors) {
             vendors.map(vendor => {

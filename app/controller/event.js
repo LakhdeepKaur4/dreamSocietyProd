@@ -1,11 +1,21 @@
 const db = require('../config/db.config.js');
 const config = require('../config/config.js');
-const httpStatus = require('http-status')
+const httpStatus = require('http-status');
+var crypto = require('crypto');
 
 const Event = db.event;
 const User = db.user;
 const Role = db.role;
 const Op = db.Sequelize.Op;
+
+decrypt = (text) => {
+	let key = config.secret;
+	let algorithm = 'aes-128-cbc';
+	let decipher = crypto.createDecipher(algorithm, key);
+	let decryptedText = decipher.update(text, 'hex', 'utf8');
+	decryptedText += decipher.final('utf8');
+	return decryptedText;
+}
 
 exports.create = async (req, res, next) => {
     try {
@@ -37,6 +47,7 @@ exports.create = async (req, res, next) => {
 
 exports.get = async (req, res, next) => {
     try {
+        let events= [];
         const event = await Event.findAll({
             where: { isActive: true },
             order: [['createdAt', 'DESC']],
@@ -46,10 +57,15 @@ exports.get = async (req, res, next) => {
                 attributes: ['userId', 'userName'],
             }]
         });
+        event.map(e=>{
+            e.organiser.userName = decrypt(e.organiser.userName);
+            events.push(e)
+
+        })
         if (event) {
             return res.status(httpStatus.CREATED).json({
                 message: "Event Content Page",
-                event: event
+                event: events
             });
         }
     } catch (error) {
@@ -143,6 +159,7 @@ exports.delete = async (req, res, next) => {
 
 exports.getEventOrganiser = async (req, res, next) => {
     try {
+        let events=[];
         const user = await User.findAll({
             attributes: ['userId', 'userName'],
              include: [{
@@ -153,13 +170,18 @@ exports.getEventOrganiser = async (req, res, next) => {
             ]
         });
         // console.log("user==>",user)
+        user.map(e=>{
+            e.userName = decrypt(e.userName);
+            events.push(e)
+
+        })
         return res.status(httpStatus.OK).json({
             message: "Event Organiser Detail",
-            event: user
+            event: events
         });
 
     } catch (error) {
-        console.log("error===>", error)
+        console.log("error===>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

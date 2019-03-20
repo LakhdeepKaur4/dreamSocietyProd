@@ -2,6 +2,7 @@ const db = require('../config/db.config.js');
 const config = require('../config/config.js');
 const httpStatus = require('http-status');
 
+
 const Tower = db.tower;
 const Floor = db.floor;
 const TowerFloor = db.towerFloor;
