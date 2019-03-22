@@ -32,9 +32,6 @@ module.exports = (sequelize, Sequelize) => {
 		parking: {
 			type: Sequelize.STRING
 		},
-		floor: {
-			type: Sequelize.STRING
-		},
 		QRCode:{
 			type:Sequelize.STRING,
 			defaultValue: "QRCODE"

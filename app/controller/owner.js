@@ -1000,6 +1000,7 @@ let testSms = (contact) => {
 };
 
 let sendMail = (email,ownerId) => {
+  console.log(email);
   const token = jwt.sign({
     data: 'foobar'
   }, 'secret', { expiresIn: '1h' });

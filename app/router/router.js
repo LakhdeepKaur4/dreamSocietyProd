@@ -245,6 +245,8 @@ module.exports = function(app) {
 
 	app.put('/api/vendor/delete/:id', [authJwt.verifyToken], vendorController.delete);
 
+	app.put('/api/vendorService/:id', [authJwt.verifyToken], vendorController.updateVendorService);
+
 	app.put('/api/vendorService/delete/deleteSelected', [authJwt.verifyToken], vendorController.deleteSelectedVendorServices);
 
 	app.put('/api/vendorService/delete/:id', [authJwt.verifyToken], vendorController.deleteVendorService);

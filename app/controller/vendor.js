@@ -621,3 +621,40 @@ exports.deleteSelectedVendorServices = async (req, res, next) => {
 }
 
 
+exports.updateVendorService = async (req,res,next) => {
+    try{
+        let updAttr = {};
+        let attrArr = ['serviceId','rateId','rate'];
+        console.log("updating vendor");
+        console.log(":::::req.body==>",req.body)
+        const id = req.params.id;
+        console.log(":::::id",id)
+        if (!id) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
+        }
+        const update = req.body;
+        
+        if (!update) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
+        }
+        const updatedVendorService = await VendorService.find({ where: { vendorServiceId: id } }).then(vendorService => {
+           
+           attrArr.forEach(attr => {
+               if(attr in req.body && req.body[attr]!==undefined && req.body[attr]!==null){
+                   updAttr[attr] = req.body[attr];
+               }
+           })
+           return vendorService.updateAttributes(updAttr);
+        });
+        return res.status(httpStatus.OK).json({
+            message: "VendorService Updated Page",
+            vendor: updatedVendorService
+        });
+    }catch(error){
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
+
+
+
+

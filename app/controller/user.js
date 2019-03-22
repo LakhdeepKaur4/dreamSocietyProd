@@ -83,7 +83,7 @@ exports.signup = async (req, res) => {
 		// // flatDetailId: req.body.flatDetailId,
 		familyMember: req.body.familyMember,
 		parking: req.body.parking,
-		floor: req.body.floor
+		// floor: req.body.floor
 	}).then(user => {
 		Role.findAll({
 			where: {
@@ -832,7 +832,7 @@ exports.signupEncrypted = async (req, res, next) => {
 			userBody.password = password;
 		}
 
-		if ((userBody['firstName'] !== undefined) && (userBody['lastName'] !== undefined) && (userBody['contact'] !== undefined) && (userBody['floor'] !== undefined)) {
+		if ((userBody['firstName'] !== undefined) && (userBody['lastName'] !== undefined) && (userBody['contact'] !== undefined) ) {
 			create = {
 				firstName: encrypt(userBody.firstName),
 				lastName: encrypt(userBody.lastName),
@@ -844,7 +844,7 @@ exports.signupEncrypted = async (req, res, next) => {
 				// // flatDetailId: req.body.flatDetailId,
 				familyMember: encrypt(userBody.familyMember),
 				parking: encrypt(userBody.parking),
-				floor: encrypt(userBody.floor)
+				// floor: encrypt(userBody.floor)
 			}
 		} else {
 			create = {
@@ -1173,7 +1173,7 @@ exports.updateEncrypted = async (req, res, next) => {
 		// // flatDetailIdCheck = constraintCheck('flatDetailId', update);
 		familyMemberCheck = constraintCheck('familyMember', update);
 		parkingCheck = constraintCheck('parking', update);
-		floorCheck = constraintCheck('floor', update);
+		// floorCheck = constraintCheck('floor', update);
 
 		firstName = constraintReturn(firstNameCheck, update, 'firstName', user);
 		lastName = constraintReturn(lastNameCheck, update, 'lastName', user);
@@ -1182,7 +1182,7 @@ exports.updateEncrypted = async (req, res, next) => {
 		contact = constraintReturn(contactCheck, update, 'contact', user);
 		familyMember = constraintReturn(familyMemberCheck, update, 'familyMember', user);
 		parking = constraintReturn(parkingCheck, update, 'parking', user);
-		floor = constraintReturn(floorCheck, update, 'floor', user);
+		// floor = constraintReturn(floorCheck, update, 'floor', user);
 		towerId = referenceConstraintReturn(towerIdCheck, update, 'towerId', user);
 		// // // flatDetailId = referenceConstraintReturn(flatDetailIdCheck, update, 'flatDetailId', user);
 		password = passwordConstraintReturn(passwordCheck, update, 'password', user);
@@ -1198,7 +1198,7 @@ exports.updateEncrypted = async (req, res, next) => {
 			// // flatDetailId: flatDetailId,
 			familyMember: familyMember,
 			parking: parking,
-			floor: floor
+			// floor: floor
 		}
 
 		const roles = await Role.find({
@@ -1225,7 +1225,7 @@ exports.updateEncrypted = async (req, res, next) => {
 					user.contact = decrypt(user.contact);
 					user.familyMember = decrypt(user.familyMember);
 					user.parking = decrypt(user.parking);
-					user.floor = decrypt(user.floor);
+					// user.floor = decrypt(user.floor);
 				} else {
 					// user.firstName = decrypt(user.firstName);
 					// user.lastName = decrypt(user.lastName);
@@ -1328,7 +1328,7 @@ exports.signinDecrypted = async (req, res, next) => {
 			user.contact = decrypt(user.contact);
 			user.familyMember = decrypt(user.familyMember);
 			user.parking = decrypt(user.parking);
-			user.floor = decrypt(user.floor);
+			// user.floor = decrypt(user.floor);
 		} else {
 			// user.firstName = decrypt(user.firstName);
 			// user.lastName = decrypt(user.lastName);
@@ -1404,7 +1404,7 @@ exports.getUserDecrypted = (req, res, next) => {
 						item.contact = decrypt(item.contact);
 						item.familyMember = decrypt(item.familyMember);
 						item.parking = decrypt(item.parking);
-						item.floor = decrypt(item.floor);
+						// item.floor = decrypt(item.floor);
 						usersArr.push(item);
 					} else {
 						// item.firstName = decrypt(item.firstName);
@@ -1459,7 +1459,7 @@ exports.getPersonDecrypted = (req, res, next) => {
 						item.contact = decrypt(item.contact);
 						item.familyMember = decrypt(item.familyMember);
 						item.parking = decrypt(item.parking);
-						item.floor = decrypt(item.floor);
+						// item.floor = decrypt(item.floor);
 					} else {
 						// item.firstName = decrypt(item.firstName);
 						// item.lastName = decrypt(item.lastName);
