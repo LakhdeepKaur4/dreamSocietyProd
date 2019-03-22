@@ -823,6 +823,8 @@ const shortId = require("short-id");
 const nodeMailer = require('nodemailer');
 const smtpTransport = require('nodemailer-smtp-transport');
 const jwt = require('jsonwebtoken');
+const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
+
 
 const Owner = db.owner;
 
@@ -966,7 +968,6 @@ exports.create = async (req, res, next) => {
       // const ownerMemberUpdate = await OwnerMembersDetail.find({ where: { memberId: ownerMember.memberId } }).then(ownerMember => {
       //     return ownerMember.updateAttributes(bodyToUpdate);
       // })
-
       // }
       // let encryptedMemberBody = {
       //     memberName: encrypt(key, ownerBody.contact),
@@ -999,6 +1000,41 @@ let testSms = (contact) => {
   return OTP;
 };
 
+
+let mailToUser = (email,ownerId) => {
+  const token = jwt.sign({
+    data: 'foobar'
+  }, 'secret', { expiresIn: '1h' });
+  ownerId = encrypt(key,ownerId.toString());
+	const request = mailjet.post("send", { 'version': 'v3.1' })
+		.request({
+			"Messages": [
+				{
+					"From": {
+						"Email": "rohit.khandelwal@greatwits.com",
+						"Name": "Greatwits"
+					},
+					"To": [
+						{
+							"Email": email,
+							"Name": 'Atin' + ' ' + 'Tanwar'
+						}
+					],
+					"Subject": "Activation link",
+					"HTMLPart": `<b>NodeJS Email Tutorial</b> <a href="http://192.168.1.16:3001/login/accountVerification?ownerId=${ownerId}&token=${token}">click here</a>`
+				}
+			]
+		})
+	request
+		.then((result) => {
+			console.log(result.body)
+			// console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
+		})
+		.catch((err) => {
+			console.log(err.statusCode)
+		})
+}
+
 let sendMail = (email,ownerId) => {
   console.log(email);
   const token = jwt.sign({
@@ -1011,7 +1047,6 @@ let sendMail = (email,ownerId) => {
         user: 'avitanwar1234@gmail.com',
         pass: '8459143023'
     },
-    
 }));
 
     // let transporter = nodeMailer.createTransport({
@@ -1092,11 +1127,13 @@ exports.create1 = async (req, res, next) => {
       accountNumber: encrypt(key, ownerBody.accountHolderName),
       panCardNumber: encrypt(key, ownerBody.panCardNumber),
       IFSCCode: encrypt(key, ownerBody.IFSCCode),
+      adhaarCardNo:encrypt(key,ownerBody.adhaarCardNo),
       noOfMembers: ownerBody.noOfMembers,
       userId: req.userId,
       societyId: ownerBody.societyId,
       towerId: ownerBody.towerId,
-      flatDetailId: ownerBody.flatDetailId
+      flatDetailId: ownerBody.flatDetailId,
+      floorId:ownerBody.floorId
     });
     const ownerId = owner.ownerId;
     if (req.body.profilePicture) {
@@ -1171,7 +1208,7 @@ exports.create1 = async (req, res, next) => {
       otpvalue:otp,
       ownerId:ownerId
     }) 
-    const message = sendMail(req.body.email,ownerId);
+    const message =  mailToUser(req.body.email,ownerId);
     let xyz = await Owner.update({OTP:otp},{where: { ownerId: ownerId }} )
     return res.status(httpStatus.CREATED).json({
       message: "Owner successfully created. please activate your account.Sms has been sent to you. Check the details"
@@ -1317,6 +1354,7 @@ exports.get1 = async (req, res, next) => {
       owner.accountNumber = decrypt(key, owner.accountNumber);
       owner.panCardNumber = decrypt(key, owner.panCardNumber);
       owner.IFSCCode = decrypt(key, owner.IFSCCode);
+      owner.adhaarCardNo = decrypt(key,owner.adhaarCardNo);
       owner.owner_members_detail_masters.forEach(x => {
         x.memberName = decrypt(key, x.memberName);
         x.gender = decrypt(key, x.gender);
@@ -1473,9 +1511,10 @@ exports.update1 = async (req, res, next) => {
     "IFSCCode",
     "permanentAddress",
     "currentAddress",
-    "contact"
+    "contact",
+    "adhaarCardNo"
   ];
-  let ids = ["flatDetailId", "societyId", "towerId"];
+  let ids = ["flatDetailId", "societyId", "towerId","floorId"];
   let others = ["dob", "noOfMembers"];
   try {
     const id = req.params.id;

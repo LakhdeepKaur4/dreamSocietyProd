@@ -395,11 +395,11 @@ exports.updateEncrypt = async (req, res, next) => {
                 fs.unlink(profileImage, err => {
                     if (err) {
                         console.log("File Missing ===>", err);
-                        profileImage = encrypt(req.files.profilePicture[0].path);
+                        profileImage = encrypt(req.files.picture[0].path);
                     }
                     console.log('success');
                 })
-                profileImage = encrypt(req.files.profilePicture[0].path);
+                profileImage = encrypt(req.files.picture[0].path);
             }
             else {
                 profileImage = employee.picture;

@@ -6,6 +6,7 @@ const httpStatus = require('http-status');
 const Tower = db.tower;
 const Floor = db.floor;
 const TowerFloor = db.towerFloor;
+const FlatDetail = db.flatDetail;
 const Op = db.Sequelize.Op;
 
 exports.create = async (req, res) => {
@@ -89,6 +90,12 @@ exports.getTowerAndFloor = async (req, res) => {
 exports.getFloorByTowerId = async (req, res) => {
     try {
         const towerId = req.params.id;
+        const floorIds = [];
+        const floors = await TowerFloor.findAll({where :{isActive:true,towerId:towerId}});
+        console.log(floors.map(floor=>{
+            floorIds.push(floor.floorId);
+        }))
+        console.log(floorIds);
         const tower = await Tower.findOne({
             where: { isActive: true, towerId: towerId },
             include: [{
@@ -102,8 +109,10 @@ exports.getFloorByTowerId = async (req, res) => {
             ]
             , order: [['createdAt', 'DESC']]
         });
-        if (tower) {
-            res.status(httpStatus.OK).json({ message: 'Tower Floor Page', tower })
+
+        const flatDetail = await FlatDetail.findAll({ where: { towerId:towerId,floorId: { [Op.in]: floorIds } } })
+        if (tower && flatDetail) {
+            res.status(httpStatus.OK).json({ message: 'Tower Floor Page', tower:tower,flatDetail:flatDetail})
         }
     } catch (error) {
         console.log(error)

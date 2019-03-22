@@ -10,13 +10,14 @@ const Op = db.Sequelize.Op;
 exports.create = async (req, res, next) => {
     try {
         let body = req.body;
+        console.log("body==>",body)
         body.userId = req.userId;
         const flat = await FlatDetail.findOne({
             where: {
                 [Op.and]: [
                     { flatNo: body.flatNo },
                     { towerId: body.towerId },
-                    { towerId: body.floorId },
+                    { floorId: body.floorId },
                     { isActive: true }
                 ]
             }
@@ -84,22 +85,24 @@ exports.update = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
         }
         const update = req.body;
-        console.log("update==>", update)
-        if (!update) {
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
-        }
+        console.log("update==>", update);
+        // if (!update) {
+        //     return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
+        // }
         const flatNo = await FlatDetail.findOne({
             where: {
                 [Op.and]: [
                     { flatNo: req.body.flatNo },
-                    { flatId: req.body.flatId },
+                    // { flatId: req.body.flatId },
                     { towerId: req.body.towerId },
-                    { floorId: body.floorId },
+                    { floorId: req.body.floorId },
                     { isActive: true }
                 ]
             }
         })
+        console.log(flatNo);
         if (flatNo) {
+            console.log("in here");
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
                 message: "Flat number already exists",
             });
@@ -114,7 +117,8 @@ exports.update = async (req, res, next) => {
             });
         }
     } catch (error) {
-        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+        console.log(error)
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json({message:error.message});
     }
 }
 

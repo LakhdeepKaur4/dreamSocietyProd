@@ -64,6 +64,10 @@ module.exports = (sequelize, Sequelize) => {
                   type: Sequelize.STRING,
                   allowNull: false
             },
+            adhaarCardNo:{
+                  type: Sequelize.STRING,
+                  allowNull: false
+            },
             noOfMembers: {
                   type: Sequelize.INTEGER,
                   allowNull: false
