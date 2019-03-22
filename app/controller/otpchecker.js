@@ -104,12 +104,14 @@ function sendMail(owner) {
 
 
 exports.checkOtp = async (req, res, next) => {
-    console.log("req====>", req.body.otp);
-    console.log("req====>", req.body);
+    // console.log("req====>", req.body.otp);
+    // console.log("req====>", req.body);
     console.log(req.query);
-    console.log("ownerIdencrypted===>", req.query.ownerId);
+    let decoded = jwt.verify(req.query.token,'secret');
+    console.log(decoded);
+    // console.log("ownerIdencrypted===>", req.query.ownerId);
     let ownerId = decrypt(key, req.query.ownerId);
-    console.log(ownerId);
+    // console.log(ownerId);
     let owner = await Owner.findOne({ where: { ownerId: ownerId, isActive: false } });
     if (owner === undefined || owner === null) {
         return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "owner does not exist or have already been activated" });

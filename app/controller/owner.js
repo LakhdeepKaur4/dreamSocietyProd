@@ -1003,7 +1003,6 @@ let testSms = (contact) => {
 
 let mailToUser = (email,ownerId) => {
   const token = jwt.sign({
-    data: 'foobar'
   }, 'secret', { expiresIn: '1h' });
   ownerId = encrypt(key,ownerId.toString());
 	const request = mailjet.post("send", { 'version': 'v3.1' })
