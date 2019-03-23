@@ -253,7 +253,7 @@ exports.create1 = async (req, res, next) => {
     let ownerBody = req.body;
     let memberBody = req.body;
     let memberId = [];
-    ownerBody.userId = 1;
+    ownerBody.userId = req.userId;
     let customVendorName = req.body.ownerName;
     let userName = customVendorName + "O" + req.body.towerId + req.body.flatDetailId;
     // console.log("userName==>", userName);
