@@ -282,7 +282,7 @@ exports.create1 = async (req, res, next) => {
       permanentAddress: encrypt(key, ownerBody.permanentAddress),
       bankName: encrypt(key, ownerBody.bankName),
       accountHolderName: encrypt(key, ownerBody.accountHolderName),
-      accountNumber: encrypt(key, ownerBody.accountHolderName),
+      accountNumber: encrypt(key, ownerBody.accountNumber),
       panCardNumber: encrypt(key, ownerBody.panCardNumber),
       IFSCCode: encrypt(key, ownerBody.IFSCCode),
       adhaarCardNo:encrypt(key,ownerBody.adhaarCardNo),
