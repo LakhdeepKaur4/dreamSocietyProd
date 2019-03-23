@@ -807,8 +807,12 @@ passwordConstraintReturn = (checkConstraint, object, property, entry) => {
 	}
 }
 
-mailToUser = (email, firstName, lastName, id, token) => {
-	const encryptedId = encrypt(id.toString());
+function iLoveIndia() {
+	console.log("India is great");
+}
+
+mailToUser = (email, firstName, lastName, ids, token) => {
+	const encryptedId = encrypt(ids.toString());
 	const encryptedToken = encrypt(token);
 	const request = mailjet.post("send", { 'version': 'v3.1' })
 		.request({
@@ -832,12 +836,43 @@ mailToUser = (email, firstName, lastName, id, token) => {
 	request
 		.then((result) => {
 			console.log(result.body)
-			console.log(`http://mydreamsociety.com/token?userId=${encryptedId}token=${encryptedToken}`);
+			console.log(`http://mydreamsociety.com/api/token?userId=${encryptedId}token=${encryptedToken}`);
 		})
 		.catch((err) => {
 			console.log(err.statusCode)
 		})
 }
+// mailToUser = (email, firstName, lastName, id, token) => {
+// 	const encryptedId = encrypt(id.toString());
+// 	const encryptedToken = encrypt(token);
+// 	const request = mailjet.post("send", { 'version': 'v3.1' })
+// 		.request({
+// 			"Messages": [
+// 				{
+// 					"From": {
+// 						"Email": "rohit.khandelwal@greatwits.com",
+// 						"Name": "Greatwits"
+// 					},
+// 					"To": [
+// 						{
+// 							"Email": decrypt(email),
+// 							"Name": decrypt(firstName) + ' ' + decrypt(lastName)
+// 						}
+// 					],
+// 					"Subject": "Password reset link",
+// 					"HTMLPart": `<h3>Hi ${decrypt(firstName)},</h3><br />Please click on the below link to reset your password.<br /><a href=\`http://mydreamsociety.com/token?userId=${encryptedId}&&token=${encryptedToken}\`>Click Here</a>`
+// 				}
+// 			]
+// 		})
+// 	request
+// 		.then((result) => {
+// 			console.log(result.body)
+// 			console.log(`http://mydreamsociety.com/token?userId=${encryptedId}token=${encryptedToken}`);
+// 		})
+// 		.catch((err) => {
+// 			console.log(err.statusCode)
+// 		})
+// }
 
 generateOTP = () => {
 	const OTP = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
