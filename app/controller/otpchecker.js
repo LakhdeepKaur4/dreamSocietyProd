@@ -307,7 +307,7 @@ exports.checkOtp = async (req,res,next) => {
                  return res.status(200).json(
                     {
                     otpVerified: true,    
-                    message: 'owner Successfully Activated'
+                    message: 'owner Successfully Activated. Your UserName and password has been deleivered to your email.'
                 });
             }
         }
