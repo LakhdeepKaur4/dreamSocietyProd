@@ -16,6 +16,7 @@ const nexmo = new Nexmo(
 
 const Vendor = db.vendor;
 const Service = db.service;
+const ServiceDetail = db.serviceDetail;
 const Rate =db.rate;
 const VendorService = db.vendorService;
 const Op = db.Sequelize.Op;
@@ -545,7 +546,8 @@ exports.update1 = async (req, res, next) => {
                     where:{
                         vendorId:id,
                         vendorServiceId:req.body.vendorServiceId
-                    }
+                    },
+                    include:[{model:ServiceDetail}]
                     
                 });
                 vendorService.updateAttributes({

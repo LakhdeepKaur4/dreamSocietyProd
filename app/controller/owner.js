@@ -844,7 +844,7 @@ setInterval(async function(){
     otps.map( async otp => {
       let timeStr = otp.createdAt.toString();
       let diff =  Math.abs(ndate - new Date(timeStr.replace(/-/g,'/')));
-      if(Math.abs(Math.floor((diff / (1000 * 60)) % 60)>=3)){
+      if(Math.abs(Math.floor((diff / (1000 * 60)) % 60)>=50)){
         await Owner.destroy({where:{[Op.and]:[{ownerId:otp.ownerId},{isActive:false}]}});
         await otp.destroy();
         console.log("otp destroyed");
@@ -1020,7 +1020,7 @@ let mailToUser = (email,ownerId) => {
 						}
 					],
 					"Subject": "Activation link",
-					"HTMLPart": `<b>NodeJS Email Tutorial</b> <a href="http://192.168.1.16:3001/login/accountVerification?ownerId=${ownerId}&token=${token}">click here</a>`
+					"HTMLPart": `<b>NodeJS Email Tutorial</b> <a href="http://mydreamsociety.herokuapp.com/api/login/accountVerification?ownerId=${ownerId}&token=${token}">click here</a>`
 				}
 			]
 		})
@@ -1062,7 +1062,7 @@ let sendMail = (email,ownerId) => {
         to: email, // list of receivers
         subject: 'test', // Subject line
         text: 'this is to test api. click on the link below to verify', // plain text body
-        html: `<b>NodeJS Email Tutorial</b> <a href="http://192.168.1.16:3000/login/accountVerification?ownerId=${ownerId}&token=${token}">click here</a>` // html body
+        html: `<b>NodeJS Email Tutorial</b> <a href="http://dreamsociety.herokuapp.com/api/login/accountVerification?ownerId=${ownerId}&token=${token}">click here</a>` // html body
     };
 
     transporter.sendMail(mailOptions, (error, info) => {

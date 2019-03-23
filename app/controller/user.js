@@ -4,7 +4,8 @@ const httpStatus = require('http-status');
 var CryptoJS = require("crypto-js");
 var crypto = require('crypto');
 var generator = require('generate-password');
-// var schedule = require('node-schedule');
+const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
+var schedule = require('node-schedule');
 
 const User = db.user;
 const Role = db.role;
@@ -15,6 +16,8 @@ const City = db.city;
 const Country = db.country;
 const State = db.state;
 const Location = db.location;
+const OTPTable = db.otpUserVerify;
+const Token = db.tokenVerify;
 
 const Op = db.Sequelize.Op;
 
@@ -804,6 +807,48 @@ passwordConstraintReturn = (checkConstraint, object, property, entry) => {
 	}
 }
 
+mailToUser = (email, firstName, lastName, id, token) => {
+	const encryptedId = encrypt(id.toString());
+	const encryptedToken = encrypt(token);
+	const request = mailjet.post("send", { 'version': 'v3.1' })
+		.request({
+			"Messages": [
+				{
+					"From": {
+						"Email": "rohit.khandelwal@greatwits.com",
+						"Name": "Greatwits"
+					},
+					"To": [
+						{
+							"Email": decrypt(email),
+							"Name": decrypt(firstName) + ' ' + decrypt(lastName)
+						}
+					],
+					"Subject": "Password reset link",
+					"HTMLPart": `<h3>Hi ${decrypt(firstName)},</h3><br />Please click on the below link to reset your password.<br /><a href=\`http://mydreamsociety.com/token?userId=${encryptedId}&&token=${encryptedToken}\`>Click Here</a>`
+				}
+			]
+		})
+	request
+		.then((result) => {
+			console.log(result.body)
+			console.log(`http://mydreamsociety.com/token?userId=${encryptedId}token=${encryptedToken}`);
+		})
+		.catch((err) => {
+			console.log(err.statusCode)
+		})
+}
+
+generateOTP = () => {
+	const OTP = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
+	return OTP;
+}
+
+generateToken = () => {
+	const token = Math.random().toString(36).replace('0.', '');
+	return token;
+}
+
 exports.signupEncrypted = async (req, res, next) => {
 	console.log('Body ===>', req.body);
 	let password;
@@ -832,7 +877,7 @@ exports.signupEncrypted = async (req, res, next) => {
 			userBody.password = password;
 		}
 
-		if ((userBody['firstName'] !== undefined) && (userBody['lastName'] !== undefined) && (userBody['contact'] !== undefined) ) {
+		if ((userBody['firstName'] !== undefined) && (userBody['lastName'] !== undefined) && (userBody['contact'] !== undefined)) {
 			create = {
 				firstName: encrypt(userBody.firstName),
 				lastName: encrypt(userBody.lastName),
@@ -1217,7 +1262,7 @@ exports.updateEncrypted = async (req, res, next) => {
 				return user.updateAttributes(updates);
 			})
 			.then(user => {
-				if ((user['firstName'] !== null) && (user['lastName'] !== null) && (user['contact'] !== null) && (user['floor'] !== null)) {
+				if ((user['firstName'] !== null) && (user['lastName'] !== null) && (user['contact'] !== null)) {
 					user.firstName = decrypt(user.firstName);
 					user.lastName = decrypt(user.lastName);
 					user.userName = decrypt(user.userName);
@@ -1252,7 +1297,7 @@ exports.updateEncrypted = async (req, res, next) => {
 }
 
 exports.signinDecrypted = async (req, res, next) => {
-	console.log("Sign-In", req.body);
+	console.log("Sign-In 12121", req.body);
 	let society = await Society.findOne({
 		where: {
 			isActive: true
@@ -1295,6 +1340,7 @@ exports.signinDecrypted = async (req, res, next) => {
 			message: "Password cannot be empty"
 		})
 	}
+	console.log("1");
 	User.findOne({
 		where: {
 			[Op.and]: [{
@@ -1311,6 +1357,8 @@ exports.signinDecrypted = async (req, res, next) => {
 			attributes: ['id', 'roleName'],
 		}]
 	}).then(user => {
+		console.log("2");
+		console.log(user)
 		if (!user) {
 			console.log("------user-------");
 			return res.status(httpStatus.OK).send({
@@ -1320,7 +1368,7 @@ exports.signinDecrypted = async (req, res, next) => {
 				message: "Invalid Username!"
 			});
 		}
-		if ((user['firstName'] !== null) && (user['lastName'] !== null) && (user['contact'] !== null) && (user['floor'] !== null)) {
+		if ((user['firstName'] !== null) && (user['lastName'] !== null) && (user['contact'] !== null)) {
 			user.firstName = decrypt(user.firstName);
 			user.lastName = decrypt(user.lastName);
 			user.userName = decrypt(user.userName);
@@ -1368,11 +1416,13 @@ exports.signinDecrypted = async (req, res, next) => {
 		});
 
 	}).catch(err => {
-		console.log()
+		console.log('123',err)
 		res.status(500).json({
 			"message": err
 		});
 	});
+
+	console.log("4");
 }
 
 exports.getUserDecrypted = (req, res, next) => {
@@ -1396,7 +1446,7 @@ exports.getUserDecrypted = (req, res, next) => {
 		})
 			.then(users => {
 				users.map(item => {
-					if ((item['firstName'] !== null) && (item['lastName'] !== null) && (item['contact'] !== null) && (item['floor'] !== null)) {
+					if ((item['firstName'] !== null) && (item['lastName'] !== null) && (item['contact'] !== null)) {
 						item.firstName = decrypt(item.firstName);
 						item.lastName = decrypt(item.lastName);
 						item.userName = decrypt(item.userName);
@@ -1451,7 +1501,7 @@ exports.getPersonDecrypted = (req, res, next) => {
 		})
 			.then(users => {
 				users.map(item => {
-					if ((item['firstName'] !== null) && (item['lastName'] !== null) && (item['contact'] !== null) && (item['floor'] !== null)) {
+					if ((item['firstName'] !== null) && (item['lastName'] !== null) && (item['contact'] !== null)) {
 						item.firstName = decrypt(item.firstName);
 						item.lastName = decrypt(item.lastName);
 						item.userName = decrypt(item.userName);
@@ -1496,12 +1546,21 @@ exports.forgottenPassword = (req, res, next) => {
 		}
 	})
 		.then(user => {
+			// console.log(user);
 			if (user !== null) {
+				token = generateToken();
+				console.log(token);
+				mailToUser(user.email, user.firstName, user.lastName, user.userId, token);
+
+				Token.create({
+					token: token
+				})
+				
 				res.status(httpStatus.OK).json({
 					message: 'Email with reset link is sent to registered email id'
 				});
 			} else {
-				res.status(httpStatus.NOT_FOUND).json({
+				res.status(httpStatus.UNAUTHORIZED).json({
 					errMessage: 'User does not exist'
 				});
 			}
@@ -1520,10 +1579,10 @@ exports.changePassword = (req, res, next) => {
 		.then(user => {
 			if (bcrypt.compareSync(body.oldPassword, user.password) === true) {
 				let password = bcrypt.hashSync(body.newPassword, 8);
-				const updatedPassword = {
+				const passwordUpdate = {
 					password: password
-				}
-				user.updateAttributes(updatedPassword);
+				};
+				user.updateAttributes(passwordUpdate);
 
 				res.status(httpStatus.CREATED).json({
 					message: 'Password Changed Successfully. Please Login Again'
@@ -1541,3 +1600,149 @@ exports.changePassword = (req, res, next) => {
 			})
 		})
 }
+
+exports.tokenVerify = (req, res, next) => {
+	console.log(req.params);
+	url = req.params.url;
+	const reqObj = {};
+	console.log('Body ===>', url);
+	required = url.split('userId=')[1];
+	reqObj.userId = required.split('token=')[0];
+	reqObj.token = required.split('token=')[1];
+
+	userId = decrypt(reqObj.userId);
+	console.log(userId);
+
+	token = decrypt(reqObj.token);
+
+	Token.findOne({
+		where: {
+			token: token
+		}
+	})
+		.then(token => {
+			if (token !== null) {
+				OTP = generateOTP();
+				console.log(OTP);
+
+				OTPTable.create({
+					otp: OTP,
+					userId: userId
+				})
+				res.status(httpStatus.OK).json({
+					message: 'Token verified'
+				});
+			} else {
+				res.status(httpStatus.UNAUTHORIZED).json({
+					messageErr: 'Token expired'
+				})
+			}
+		})
+		.catch(err => {
+			console.log('Error ===>', err);
+			res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+		})
+}
+
+exports.otpVerify = (req, res, next) => {
+	body = req.body;
+	const reqObj = {};
+	console.log('Body ===>', body);
+	required = body.url.split('userId=')[1];
+	reqObj.userId = required.split('token=')[0];
+	reqObj.token = required.split('token=')[1];
+
+	otp = body.otp;
+
+	userId = decrypt(reqObj.userId);
+	console.log(userId);
+
+	token = decrypt(reqObj.token);
+
+	OTPTable.findOne({ where: { userId: userId, otp: otp, isActive: true } })
+		.then(user => {
+			// console.log(user);
+			if (user !== null) {
+				user.destroy();
+				Token.findOne({
+					where: {
+						token: token
+					}
+				})
+				.then(token => {
+					token.destroy();
+				})
+				res.status(httpStatus.OK).json({
+					message: 'OTP verified successfully'
+				})
+			} else {
+				res.status(httpStatus.UNAUTHORIZED).json({
+					messageErr: 'OTP not valid'
+				})
+			}
+		})
+		.catch(err => {
+			console.log('Error ===>', err);
+			res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+		})
+}
+
+exports.resetPassword = (req, res, next) => {
+	body = req.body.values;
+	console.log(body);
+
+	const reqObj = {};
+	console.log('Body ===>', body);
+	required = body.url.split('userId=')[1];
+	reqObj.userId = required.split('token=')[0];
+	reqObj.token = required.split('token=')[1];
+
+	userId = decrypt(reqObj.userId);
+	console.log(userId);
+
+	User.findOne({ where: { userId: userId, isActive: true } })
+		.then(user => {
+			if (user !== null) {
+				const password = {
+					password: bcrypt.hashSync(body.newPassword, 8)
+				}
+				user.updateAttributes(password);
+				res.status(httpStatus.CREATED).json({
+					message: 'Password reset successful'
+				});
+			} else {
+				res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+					messageErr: 'Password reset error'
+				});
+			}
+		})
+		.catch(err => {
+			console.log('Error ===>', err)
+			res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+		})
+}
+
+diff_minutes = (dt2, dt1) => {
+
+	var diff = (dt2.getTime() - dt1.getTime()) / 1000;
+	diff /= 60;
+	return Math.abs(Math.round(diff));
+
+}
+
+var rule = new schedule.RecurrenceRule();
+rule.minute = new schedule.Range(0, 59, 1);
+schedule.scheduleJob(rule, () => {
+	date = new Date();
+	console.log(date);
+	OTPTable.findAll()
+		.then(user => {
+			user.map(item => {
+				console.log(diff_minutes(date, item.createdAt));
+				if (diff_minutes(date, item.createdAt) > 5) {
+					item.destroy();
+				}
+			})
+		})
+		.catch(err => console.log(err))
+});

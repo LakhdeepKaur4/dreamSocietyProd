@@ -62,6 +62,8 @@ db.eventSpace = require('../model/eventSpaceMaster.model')(sequelize,Sequelize);
 db.floor = require('../model/floor.model')(sequelize,Sequelize);
 db.towerFloor = require('../model/towerFloor.model')(sequelize,Sequelize);
 db.otp = require('../model/otp.model')(sequelize,Sequelize);
+db.otpUserVerify = require('../model/otpUserModel')(sequelize, Sequelize);
+db.tokenVerify = require('../model/tokenModel')(sequelize, Sequelize);
  
 db.otp.belongsTo(db.owner,{foreignKey: 'ownerId'});
 db.role.belongsToMany(db.user, { through: 'user_roles', foreignKey: 'roleId', otherKey: 'userId'});

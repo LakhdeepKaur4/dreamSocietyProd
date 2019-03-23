@@ -85,10 +85,10 @@ exports.update = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
         }
         const update = req.body;
-        console.log("update==>", update);
-        // if (!update) {
-        //     return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
-        // }
+        console.log("update==>", update)
+        if (!update) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
+        }
         const flatNo = await FlatDetail.findOne({
             where: {
                 [Op.and]: [
