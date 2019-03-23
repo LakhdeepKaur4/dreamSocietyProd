@@ -41,6 +41,8 @@ module.exports = function (app) {
 	const eventSpaceController = require('../controller/eventSpaceMaster');
 	const floor = require('../controller/floor');
 	const otpChecker = require('../controller/otpchecker');
+	const checkToken = require('../controller/checktoken');
+
 
 
 	app.get('/', userController.start);
@@ -49,7 +51,7 @@ module.exports = function (app) {
 
 	app.post('/api/auth/signin', userController.signinDecrypted);
 
-	app.get('/api/user', [authJwt.verifyToken], userController.getUserDecrypted);
+	app.get('/api/user',  userController.getUserDecrypted);
 
 	app.get('/api/person', [authJwt.verifyToken], userController.getPersonDecrypted);
 
@@ -486,5 +488,8 @@ module.exports = function (app) {
 	app.put('/api/floor/delete/:id', [authJwt.verifyToken], floor.delete);
 
 	app.post('/api/ownerActivation', otpChecker.checkOtp);
+
+	app.post('/api/checkToken', checkToken.checkToken);
+
 
 }
