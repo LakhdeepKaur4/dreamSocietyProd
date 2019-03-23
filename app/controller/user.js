@@ -807,12 +807,9 @@ passwordConstraintReturn = (checkConstraint, object, property, entry) => {
 	}
 }
 
-function iLoveIndia() {
-	console.log("India is great");
-}
 
-mailToUser = (email, firstName, lastName, ids, token) => {
-	const encryptedId = encrypt(ids.toString());
+mailToUser = (email, firstName, lastName, id, token) => {
+	const encryptedId = encrypt(id.toString());
 	const encryptedToken = encrypt(token);
 	const request = mailjet.post("send", { 'version': 'v3.1' })
 		.request({
