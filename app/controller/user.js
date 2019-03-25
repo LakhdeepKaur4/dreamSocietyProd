@@ -807,7 +807,6 @@ passwordConstraintReturn = (checkConstraint, object, property, entry) => {
 	}
 }
 
-
 mailToUser = (email, firstName, lastName, id, token) => {
 	const encryptedId = encrypt(id.toString());
 	const encryptedToken = encrypt(token);
@@ -839,37 +838,6 @@ mailToUser = (email, firstName, lastName, id, token) => {
 			console.log(err.statusCode)
 		})
 }
-// mailToUser = (email, firstName, lastName, id, token) => {
-// 	const encryptedId = encrypt(id.toString());
-// 	const encryptedToken = encrypt(token);
-// 	const request = mailjet.post("send", { 'version': 'v3.1' })
-// 		.request({
-// 			"Messages": [
-// 				{
-// 					"From": {
-// 						"Email": "rohit.khandelwal@greatwits.com",
-// 						"Name": "Greatwits"
-// 					},
-// 					"To": [
-// 						{
-// 							"Email": decrypt(email),
-// 							"Name": decrypt(firstName) + ' ' + decrypt(lastName)
-// 						}
-// 					],
-// 					"Subject": "Password reset link",
-// 					"HTMLPart": `<h3>Hi ${decrypt(firstName)},</h3><br />Please click on the below link to reset your password.<br /><a href=\`http://mydreamsociety.com/token?userId=${encryptedId}&&token=${encryptedToken}\`>Click Here</a>`
-// 				}
-// 			]
-// 		})
-// 	request
-// 		.then((result) => {
-// 			console.log(result.body)
-// 			console.log(`http://mydreamsociety.com/token?userId=${encryptedId}token=${encryptedToken}`);
-// 		})
-// 		.catch((err) => {
-// 			console.log(err.statusCode)
-// 		})
-// }
 
 generateOTP = () => {
 	const OTP = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
@@ -919,8 +887,8 @@ exports.signupEncrypted = async (req, res, next) => {
 				password: bcrypt.hashSync(userBody.password, 8),
 				towerId: req.body.towerId,
 				// // flatDetailId: req.body.flatDetailId,
-				familyMember: encrypt(userBody.familyMember),
-				parking: encrypt(userBody.parking),
+				// familyMember: encrypt(userBody.familyMember),
+				// parking: encrypt(userBody.parking),
 				// floor: encrypt(userBody.floor)
 			}
 		} else {
@@ -933,11 +901,13 @@ exports.signupEncrypted = async (req, res, next) => {
 				password: bcrypt.hashSync(userBody.password, 8),
 				towerId: req.body.towerId,
 				// // flatDetailId: req.body.flatDetailId,
-				familyMember: encrypt(userBody.familyMember),
-				parking: encrypt(userBody.parking),
+				// familyMember: encrypt(userBody.familyMember),
+				// parking: encrypt(userBody.parking),
 				// floor: encrypt(userBody.floor)
 			}
 		}
+
+
 
 		if (userBody['userName'] !== undefined) {
 			userUserNameErr = await User.findOne({
@@ -1052,6 +1022,7 @@ exports.signupEncrypted = async (req, res, next) => {
 			});
 
 			console.log(roles);
+
 			User.create(create)
 				.then(user => {
 					user.setRoles(roles);
@@ -1243,9 +1214,9 @@ exports.updateEncrypted = async (req, res, next) => {
 		emailCheck = constraintCheck('email', update);
 		contactCheck = constraintCheck('contact', update);
 		passwordCheck = constraintCheck('password', update);
-		towerIdCheck = constraintCheck('towerId', update);
+		// towerIdCheck = constraintCheck('towerId', update);
 		// // flatDetailIdCheck = constraintCheck('flatDetailId', update);
-		familyMemberCheck = constraintCheck('familyMember', update);
+		// familyMemberCheck = constraintCheck('familyMember', update);
 		parkingCheck = constraintCheck('parking', update);
 		// floorCheck = constraintCheck('floor', update);
 
@@ -1254,8 +1225,8 @@ exports.updateEncrypted = async (req, res, next) => {
 		userName = constraintReturn(userNameCheck, update, 'userName', user);
 		email = constraintReturn(emailCheck, update, 'email', user);
 		contact = constraintReturn(contactCheck, update, 'contact', user);
-		familyMember = constraintReturn(familyMemberCheck, update, 'familyMember', user);
-		parking = constraintReturn(parkingCheck, update, 'parking', user);
+		// familyMember = constraintReturn(familyMemberCheck, update, 'familyMember', user);
+		// parking = constraintReturn(parkingCheck, update, 'parking', user);
 		// floor = constraintReturn(floorCheck, update, 'floor', user);
 		towerId = referenceConstraintReturn(towerIdCheck, update, 'towerId', user);
 		// // // flatDetailId = referenceConstraintReturn(flatDetailIdCheck, update, 'flatDetailId', user);
@@ -1270,8 +1241,8 @@ exports.updateEncrypted = async (req, res, next) => {
 			password: password,
 			towerId: towerId,
 			// // flatDetailId: flatDetailId,
-			familyMember: familyMember,
-			parking: parking,
+			// familyMember: familyMember,
+			// parking: parking,
 			// floor: floor
 		}
 
@@ -1297,8 +1268,8 @@ exports.updateEncrypted = async (req, res, next) => {
 					user.userName = decrypt(user.userName);
 					user.email = decrypt(user.email);
 					user.contact = decrypt(user.contact);
-					user.familyMember = decrypt(user.familyMember);
-					user.parking = decrypt(user.parking);
+					// user.familyMember = decrypt(user.familyMember);
+					// user.parking = decrypt(user.parking);
 					// user.floor = decrypt(user.floor);
 				} else {
 					// user.firstName = decrypt(user.firstName);
@@ -1306,8 +1277,8 @@ exports.updateEncrypted = async (req, res, next) => {
 					user.userName = decrypt(user.userName);
 					user.email = decrypt(user.email);
 					// user.contact = decrypt(user.contact);
-					user.familyMember = decrypt(user.familyMember);
-					user.parking = decrypt(user.parking);
+					// user.familyMember = decrypt(user.familyMember);
+					// user.parking = decrypt(user.parking);
 					// user.floor = decrypt(user.floor);
 				}
 				res.status(httpStatus.OK).json({
@@ -1403,8 +1374,8 @@ exports.signinDecrypted = async (req, res, next) => {
 			user.userName = decrypt(user.userName);
 			user.email = decrypt(user.email);
 			user.contact = decrypt(user.contact);
-			user.familyMember = decrypt(user.familyMember);
-			user.parking = decrypt(user.parking);
+			// user.familyMember = decrypt(user.familyMember);
+			// user.parking = decrypt(user.parking);
 			// user.floor = decrypt(user.floor);
 		} else {
 			// user.firstName = decrypt(user.firstName);
@@ -1412,8 +1383,8 @@ exports.signinDecrypted = async (req, res, next) => {
 			user.userName = decrypt(user.userName);
 			user.email = decrypt(user.email);
 			// user.contact = decrypt(user.contact);
-			user.familyMember = decrypt(user.familyMember);
-			user.parking = decrypt(user.parking);
+			// user.familyMember = decrypt(user.familyMember);
+			// user.parking = decrypt(user.parking);
 			// user.floor = decrypt(user.floor);
 		}
 
@@ -1481,8 +1452,8 @@ exports.getUserDecrypted = (req, res, next) => {
 						item.userName = decrypt(item.userName);
 						item.email = decrypt(item.email);
 						item.contact = decrypt(item.contact);
-						item.familyMember = decrypt(item.familyMember);
-						item.parking = decrypt(item.parking);
+						// item.familyMember = decrypt(item.familyMember);
+						// item.parking = decrypt(item.parking);
 						// item.floor = decrypt(item.floor);
 						usersArr.push(item);
 					} else {
@@ -1491,8 +1462,8 @@ exports.getUserDecrypted = (req, res, next) => {
 						item.userName = decrypt(item.userName);
 						item.email = decrypt(item.email);
 						// item.contact = decrypt(item.contact);
-						item.familyMember = decrypt(item.familyMember);
-						item.parking = decrypt(item.parking);
+						// item.familyMember = decrypt(item.familyMember);
+						// item.parking = decrypt(item.parking);
 						// user.floor = decrypt(user.floor);
 					}
 				})
@@ -1536,8 +1507,8 @@ exports.getPersonDecrypted = (req, res, next) => {
 						item.userName = decrypt(item.userName);
 						item.email = decrypt(item.email);
 						item.contact = decrypt(item.contact);
-						item.familyMember = decrypt(item.familyMember);
-						item.parking = decrypt(item.parking);
+						// item.familyMember = decrypt(item.familyMember);
+						// item.parking = decrypt(item.parking);
 						// item.floor = decrypt(item.floor);
 					} else {
 						// item.firstName = decrypt(item.firstName);
@@ -1545,8 +1516,8 @@ exports.getPersonDecrypted = (req, res, next) => {
 						item.userName = decrypt(item.userName);
 						item.email = decrypt(item.email);
 						// item.contact = decrypt(item.contact);
-						item.familyMember = decrypt(item.familyMember);
-						item.parking = decrypt(item.parking);
+						// item.familyMember = decrypt(item.familyMember);
+						// item.parking = decrypt(item.parking);
 						// user.floor = decrypt(user.floor);
 						usersArr.push(item);
 					}

@@ -26,16 +26,9 @@ module.exports = (sequelize, Sequelize) => {
 		password: {
 			type: Sequelize.STRING
 		},
-		familyMember: {
-			type: Sequelize.STRING
-		},
-		parking: {
-			type: Sequelize.STRING
-		},
 		QRCode:{
 			type:Sequelize.STRING,
 			defaultValue: "QRCODE"
-			
 		},
 		isActive: {
 			type: Sequelize.BOOLEAN,
