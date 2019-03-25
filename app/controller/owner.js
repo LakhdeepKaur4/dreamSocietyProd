@@ -1,12 +1,4 @@
 
-
-
-
-
-
-
-
-
 const db = require("../config/db.config.js");
 const config = require("../config/config.js");
 const httpStatus = require("http-status");
@@ -54,6 +46,14 @@ setInterval(async function(){
 
 function encrypt(key, data) {
   var cipher = crypto.createCipher("aes-256-cbc", key);
+  var crypted = cipher.update(data, "utf-8", "hex");
+  crypted += cipher.final("hex");
+
+  return crypted;
+}
+
+function encrypt1(key, data) {
+  var cipher = crypto.createCipher("aes-128-cbc", key);
   var crypted = cipher.update(data, "utf-8", "hex");
   crypted += cipher.final("hex");
 
@@ -360,6 +360,28 @@ exports.create1 = async (req, res, next) => {
       // const ownerMember = await OwnerMembersDetail.create(memberBody);
       //    }
     }
+    let ownerName =  decrypt(key,owner.ownerName);
+    let firstName = ownerName.split(' ')[0];
+    let lastName = ownerName.split(' ')[1];
+    let ownerUserName = decrypt(key,owner.userName);
+    let email =  decrypt(key,owner.email);
+    // set users
+    let user = await User.create({
+        firstName:encrypt1(key,firstName),
+        lastName:encrypt1(key,lastName),
+        userName:encrypt1(key,ownerUserName),
+        password:owner.password,
+        email:encrypt1(key,email),
+        isActive:false
+    });
+    // set roles
+
+    let roles = await roles.find({
+        where:{roleId:3}
+    });
+
+    user.setRoles(roles);
+
     const message = mailToUser(req.body.email,ownerId);
     return res.status(httpStatus.CREATED).json({
       message: "Owner successfully created. please activate your account. click on the link delievered to your given email"

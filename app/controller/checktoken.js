@@ -60,6 +60,33 @@ let testSms = (contact) => {
 
 
 exports.checkToken = async (req,res,next) => {
+    if(req.query.ownerId){
+        let ownerId = decrypt(key,req.query.ownerId);
+        let owner = await Owner.findOne({where:{ownerId:ownerId,isActive:true}});
+        if(owner){
+            return res.status(200).json(
+                {
+                alreadyActivated:true,    
+                tokenVerified: false,    
+                message: 'you are already activated. check your email for userName and password.'
+            });
+        }
+    }
+
+
+    if(req.query.tenantId){
+        let tenantId = decrypt1(key,req.query.tenantId);
+        let tenant = await Tenant.findOne({where:{tenantId:tenantId,isActive:true}});
+        if(tenant){
+            return res.status(200).json(
+                {
+                alreadyActivated:true,    
+                tokenVerified: false,    
+                message: 'tenant is already activated'
+            });
+        }
+    }
+    
     //  console.log("req====>",req.body.otp);
     //  console.log("req====>",req.body);
     //  console.log(req.query);
