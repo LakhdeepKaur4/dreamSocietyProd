@@ -1214,7 +1214,7 @@ exports.updateEncrypted = async (req, res, next) => {
 		emailCheck = constraintCheck('email', update);
 		contactCheck = constraintCheck('contact', update);
 		passwordCheck = constraintCheck('password', update);
-		// towerIdCheck = constraintCheck('towerId', update);
+		towerIdCheck = constraintCheck('towerId', update);
 		// // flatDetailIdCheck = constraintCheck('flatDetailId', update);
 		// familyMemberCheck = constraintCheck('familyMember', update);
 		// parkingCheck = constraintCheck('parking', update);
