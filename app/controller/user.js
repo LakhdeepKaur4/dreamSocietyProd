@@ -1052,7 +1052,6 @@ exports.signupEncrypted = async (req, res, next) => {
 			});
 
 			console.log(roles);
-
 			User.create(create)
 				.then(user => {
 					user.setRoles(roles);
