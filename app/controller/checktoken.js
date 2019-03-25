@@ -73,7 +73,6 @@ exports.checkToken = async (req,res,next) => {
         }
     }
 
-
     if(req.query.tenantId){
         let tenantId = decrypt1(key,req.query.tenantId);
         let tenant = await Tenant.findOne({where:{tenantId:tenantId,isActive:true}});
@@ -82,7 +81,7 @@ exports.checkToken = async (req,res,next) => {
                 {
                 alreadyActivated:true,    
                 tokenVerified: false,    
-                message: 'tenant is already activated'
+                message: 'you are already activated. check your email for userName and password.'
             });
         }
     }

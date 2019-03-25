@@ -29,6 +29,15 @@ exports.start = (req, res) => {
 	res.send('Dream Society Api Running');
 }
 
+
+function decrypt1(key, data) {
+	var decipher = crypto.createDecipher("aes-128-cbc", key);
+	var decrypted = decipher.update(data, "hex", "utf-8");
+	decrypted += decipher.final("utf-8");
+  
+	return decrypted;
+  }
+  
 exports.signup = async (req, res) => {
 	// Save User to Database
 	let alreadyExists = false;
@@ -1217,7 +1226,7 @@ exports.updateEncrypted = async (req, res, next) => {
 		towerIdCheck = constraintCheck('towerId', update);
 		// // flatDetailIdCheck = constraintCheck('flatDetailId', update);
 		// familyMemberCheck = constraintCheck('familyMember', update);
-		// parkingCheck = constraintCheck('parking', update);
+		parkingCheck = constraintCheck('parking', update);
 		// floorCheck = constraintCheck('floor', update);
 
 		firstName = constraintReturn(firstNameCheck, update, 'firstName', user);
@@ -1389,6 +1398,8 @@ exports.signinDecrypted = async (req, res, next) => {
 		}
 
 		var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
+		// const password = User.findOne({where:{password:decrypt(req.body.password),isActive:true}});
+		
 		console.log("isvalid===>", passwordIsValid)
 		if (!passwordIsValid) {
 			return res.status(httpStatus.OK).send({
@@ -1396,7 +1407,6 @@ exports.signinDecrypted = async (req, res, next) => {
 				auth: false,
 				user: user,
 				message: "Invalid Password!"
-
 			});
 		}
 

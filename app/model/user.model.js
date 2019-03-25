@@ -29,6 +29,7 @@ module.exports = (sequelize, Sequelize) => {
 		QRCode:{
 			type:Sequelize.STRING,
 			defaultValue: "QRCODE"
+			
 		},
 		isActive: {
 			type: Sequelize.BOOLEAN,

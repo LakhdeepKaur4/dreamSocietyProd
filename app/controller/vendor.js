@@ -286,7 +286,7 @@ exports.create1 = async (req, res, next) => {
                 vendorId: vendorId,
                 rateId: body.rateId1,
                 rate: body.rate1,
-                userId: req.userId, //req.userId
+                userId: 1, //req.userId
                 serviceId: body.serviceId1
             })
         }
@@ -459,6 +459,15 @@ exports.update1 = async (req, res, next) => {
         
         if (!update) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
+        }
+        if(req.body.contact !== undefined && req.body.contact !== null){
+            let existingVendor1 = await Vendor.find({
+                where: {[Op.and]: [{contact: encrypt(key, req.body.contact)}, { vendorId: {[Op.ne]: req.params.id }}]}
+            
+            });
+            if(existingVendor1) {
+                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'contact already exist'});
+            }
         }
         const updatedVendor = await Vendor.find({ where: { vendorId: id } }).then(vendor => {
             // if(req.files.profilePicture[0]){

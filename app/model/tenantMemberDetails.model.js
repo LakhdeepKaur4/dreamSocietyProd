@@ -10,7 +10,7 @@ module.exports = (sequelize, Sequelize) => {
             allowNull:false
         },
         memberDob: {
-            type: Sequelize.DATE,
+            type: Sequelize.DATEONLY,
             allowNull:false
         },
         gender: {

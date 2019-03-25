@@ -44,14 +44,13 @@ module.exports = function (app) {
 	const checkToken = require('../controller/checktoken');
 
 
-
 	app.get('/', userController.start);
 
 	app.post('/api/auth/signup', [verifySignUp.checkRolesExisted], userController.signupEncrypted);
 
 	app.post('/api/auth/signin', userController.signinDecrypted);
 
-	app.get('/api/user',  userController.getUserDecrypted);
+	app.get('/api/user', [authJwt.verifyToken], userController.getUserDecrypted);
 
 	app.get('/api/person', [authJwt.verifyToken], userController.getPersonDecrypted);
 
@@ -490,6 +489,5 @@ module.exports = function (app) {
 	app.post('/api/ownerActivation', otpChecker.checkOtp);
 
 	app.post('/api/checkToken', checkToken.checkToken);
-
 
 }

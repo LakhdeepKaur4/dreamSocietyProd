@@ -7,7 +7,11 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const Sequelize = require('sequelize');
+const bcrypt = require('bcryptjs');
 const Op = db.Sequelize.Op;
+const jwt = require('jsonwebtoken');
+const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
+
 
 const Tenant = db.tenant;
 const TenantMembersDetail = db.tenantMembersDetail;
@@ -16,6 +20,60 @@ const FlatDetail = db.flatDetail;
 const Tower = db.tower;
 const Society = db.society;
 const Relation = db.relation;
+const Floor = db.floor;
+const User = db.user;
+const Otp = db.otp;
+const Role = db.role;
+
+setInterval(async function(){
+    let ndate = new Date();
+    let otps = await Otp.findAll();
+    if(otps){
+      otps.map( async otp => {
+        let timeStr = otp.createdAt.toString();
+        let diff =  Math.abs(ndate - new Date(timeStr.replace(/-/g,'/')));
+        if(Math.abs(Math.floor((diff / (1000 * 60)) % 60)>=50)){
+          await Owner.destroy({where:{[Op.and]:[{ownerId:otp.ownerId},{isActive:false}]}});
+          await otp.destroy();
+          console.log("otp destroyed");
+        }
+      })
+    }
+  },2000);
+
+  let mailToUser = (email,tenantId) => {
+    const token = jwt.sign(
+      {data:'foo'},
+     'secret', { expiresIn: '1h' });
+    tenantId = encrypt(tenantId.toString());
+      const request = mailjet.post("send", { 'version': 'v3.1' })
+          .request({
+              "Messages": [
+                  {
+                      "From": {
+                          "Email": "rohit.khandelwal@greatwits.com",
+                          "Name": "Greatwits"
+                      },
+                      "To": [
+                          {
+                              "Email": email,
+                              "Name": 'Atin' + ' ' + 'Tanwar'
+                          }
+                      ],
+                      "Subject": "Activation link",
+                      "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://192.168.1.16:3000/login/tokenVerification?tenantId=${tenantId}&token=${token}">click here</a>`
+                  }
+              ]
+          })
+      request
+          .then((result) => {
+              console.log(result.body)
+              // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
+          })
+          .catch((err) => {
+              console.log(err.statusCode)
+          })
+  }
 
 function saveToDisc(name, fileExt, base64String, callback) {
     console.log("HERE ", name, fileExt);
@@ -32,40 +90,6 @@ function saveToDisc(name, fileExt, base64String, callback) {
         }
     });
 }
-
-let mailToUser = (email,ownerId) => {
-    const token = jwt.sign(
-      {data:'foo'},
-     'secret', { expiresIn: '1h' });
-    ownerId = encrypt(key,ownerId.toString());
-      const request = mailjet.post("send", { 'version': 'v3.1' })
-          .request({
-              "Messages": [
-                  {
-                      "From": {
-                          "Email": "rohit.khandelwal@greatwits.com",
-                          "Name": "Greatwits"
-                      },
-                      "To": [
-                          {
-                              "Email": email,
-                              "Name": 'Atin' + ' ' + 'Tanwar'
-                          }
-                      ],
-                      "Subject": "Activation link",
-                      "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?tenantId=${tenantId}&token=${token}">click here</a>`
-                  }
-              ]
-          })
-      request
-          .then((result) => {
-              console.log(result.body)
-              // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
-          })
-          .catch((err) => {
-              console.log(err.statusCode)
-          })
-  }
 
 exports.create = async (req, res, next) => {
     try {
@@ -111,6 +135,7 @@ exports.create = async (req, res, next) => {
             const updatedMember = await TenantMembersDetail.update(bodyToUpdate, { where: { memberId: { [Op.in]: memberId } } });
 
         }
+
         return res.status(httpStatus.CREATED).json({
             message: "Tenant successfully created",
             tenant
@@ -176,7 +201,7 @@ exports.delete = async (req, res, next) => {
         if (!update) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
-        const updatedTenant = await Tenant.find({ where: { tenantId: id } }).then(tenant => {
+        const updatedTenant = await Tenant.find({ where: { tenantId: id } }).then(tenant => { 
             return tenant.updateAttributes(update)
         })
         if (updatedTenant) {
@@ -233,7 +258,7 @@ referenceConstraintReturn = (checkConstraint, object, property, entry) => {
     }
 }
 
-exports.createEncrypted = (req, res, next) => {
+exports.createEncrypted = async (req, res, next) => {
     try {
         console.log('Creating Tenant');
 
@@ -243,7 +268,7 @@ exports.createEncrypted = (req, res, next) => {
         const ownersArr = [];
         let tenantCreated;
         tenant.userId = req.userId;
-        let userName = tenant.tenantName + 'T' + tenant.towerId + tenant.flatDetailId;
+        let userName = tenant.tenantName.replace(/ /g, '') + 'T' + tenant.towerId + tenant.flatDetailId;
         tenant.userName = userName;
         index = tenant.fileName.lastIndexOf('.');
         tenant.fileExt = tenant.fileName.slice(index + 1);
@@ -256,18 +281,42 @@ exports.createEncrypted = (req, res, next) => {
         tenant.password = password;
         console.log(tenant);
 
-        Tenant.findOrCreate({
-            where: {
-                email: encrypt(tenant.email),
-                contact: encrypt(tenant.contact),
-                // isActive: true
-            },
-            defaults: {
+        if (tenant['email'] !== undefined) {
+            tenantEmailErr = await Tenant.findOne({ where: { email: encrypt(tenant.email), isActive: true } });
+        } else {
+            tenantEmailErr = null;
+        }
+        if (tenant['contact'] !== undefined) {
+            tenantContactErr = await Tenant.findOne({ where: { contact: encrypt(tenant.contact), isActive: true } });
+        } else {
+            tenantContactErr = null;
+        }
+
+        if (tenantEmailErr !== null) {
+            messageEmailErr = 'Email already in use';
+        }
+        else {
+            messageEmailErr = '';
+        }
+        if (tenantContactErr !== null) {
+            messageContactErr = 'Contact already in use';
+        }
+        else {
+            messageContactErr = '';
+        }
+
+        const messageErr = {
+            messageEmailErr: messageEmailErr,
+            messageContactErr: messageContactErr
+        };
+
+        if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
+            Tenant.create({
                 tenantName: encrypt(tenant.tenantName),
                 userName: encrypt(tenant.userName),
                 dob: tenant.dob,
-                // email: encrypt(tenant.email),
-                // contact: encrypt(tenant.contact),
+                email: encrypt(tenant.email),
+                contact: encrypt(tenant.contact),
                 password: tenant.password,
                 permanentAddress: encrypt(tenant.permanentAddress),
                 aadhaarNumber: encrypt(tenant.aadhaarNumber),
@@ -283,15 +332,45 @@ exports.createEncrypted = (req, res, next) => {
                 // ownerId2: tenant.ownerId2,
                 // ownerId3: tenant.ownerId3,
                 userId: tenant.userId,
+                floorId: tenant.floorId,
                 societyId: tenant.societyId,
                 towerId: tenant.towerId,
                 flatDetailId: tenant.flatDetailId
-            }
-        })
-            .spread(async (entry, created) => {
-                if (created) {
+            })
+                .then(async entry => {
                     console.log('Body ==>', entry);
                     tenantCreated = entry;
+
+                    if (tenant.tenantName.indexOf(' ') !== -1) {
+                        lastName = encrypt(tenant.tenantName.slice(tenant.tenantName.indexOf(' ') + 1));
+                        firstName = encrypt(tenant.tenantName.slice(0, tenant.tenantName.indexOf(' ')));
+                    }
+                    else {
+                        lastName = encrypt('...');
+                        firstName = encrypt(tenant.tenantName);
+                    }
+
+                    roles = await Role.findOne({
+                        where: {
+                            id: 4
+                        }
+                    })
+
+                    User.create({
+                        firstName: firstName,
+                        lastName: lastName,
+                        userName: encrypt(tenant.userName),
+                        contact: encrypt(tenant.contact),
+                        email: encrypt(tenant.email),
+                        password: bcrypt.hashSync(tenant.password, 8),
+                        // familyMember: encrypt(tenant.noOfMembers.toString()),
+                        // parking: encrypt('...'),
+                        towerId: tenant.towerId,
+                        isActive: false
+                    })
+                    .then(user => {
+                        user.setRoles(roles);
+                    })
                     if (tenant.profilePicture) {
 
                         await saveToDisc(tenant.fileName, tenant.fileExt, tenant.profilePicture, (err, res) => {
@@ -359,54 +438,42 @@ exports.createEncrypted = (req, res, next) => {
                                 Tenant.update(ownersIds, { where: { tenantId: entry.tenantId } });
                             }
                         })
-                } else {
-                    entry.tenantName = decrypt(entry.tenantName);
-                    entry.userName = decrypt(entry.userName);
-                    entry.email = decrypt(entry.email);
-                    entry.contact = decrypt(entry.contact);
-                    entry.picture = decrypt(entry.picture);
-                    entry.permanentAddress = decrypt(entry.permanentAddress);
-                    entry.aadhaarNumber = decrypt(entry.aadhaarNumber);
-                    entry.bankName = decrypt(entry.bankName);
-                    entry.accountHolderName = decrypt(entry.accountHolderName);
-                    entry.accountNumber = decrypt(entry.accountNumber);
-                    entry.gender = decrypt(entry.gender);
-                    entry.panCardNumber = decrypt(entry.panCardNumber);
-                    entry.IFSCCode = decrypt(entry.IFSCCode);
-                    return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                        message: "Tenant already exist with same email and contact",
-                        tenant: entry
-                    });
-                }
-            })
-            .then(() => {
-                Tenant.find({
-                    where: {
-                        tenantId: tenantCreated.tenantId
-                    }
                 })
-                    .then(tenantSend => {
-                        tenantSend.tenantName = decrypt(tenantSend.tenantName);
-                        tenantSend.userName = decrypt(tenantSend.userName);
-                        tenantSend.email = decrypt(tenantSend.email);
-                        tenantSend.contact = decrypt(tenantSend.contact);
-                        tenantSend.picture = decrypt(tenantSend.picture);
-                        tenantSend.aadhaarNumber = decrypt(tenantSend.aadhaarNumber);
-                        tenantSend.permanentAddress = decrypt(tenantSend.permanentAddress);
-                        tenantSend.bankName = decrypt(tenantSend.bankName);
-                        tenantSend.accountHolderName = decrypt(tenantSend.accountHolderName);
-                        tenantSend.accountNumber = decrypt(tenantSend.accountNumber);
-                        tenantSend.gender = decrypt(tenantSend.gender);
-                        tenantSend.panCardNumber = decrypt(tenantSend.panCardNumber);
-                        tenantSend.IFSCCode = decrypt(tenantSend.IFSCCode);
-                        const message = mailToUser(req.body.email,tenantSend.tenantId);
-                        return res.status(httpStatus.CREATED).json({
-                          message: "Tenant successfully created. please activate your account. click on the link delievered to your given email"
-                        });
+                .then(() => {
+                    Tenant.find({
+                        where: {
+                            tenantId: tenantCreated.tenantId
+                        }
                     })
-                    .catch(err => console.log(err))
-            })
-            .catch(err => console.log(err))
+                        .then(tenantSend => {
+                            tenantSend.tenantName = decrypt(tenantSend.tenantName);
+                            tenantSend.userName = decrypt(tenantSend.userName);
+                            tenantSend.email = decrypt(tenantSend.email);
+                            tenantSend.contact = decrypt(tenantSend.contact);
+                            tenantSend.picture = decrypt(tenantSend.picture);
+                            tenantSend.aadhaarNumber = decrypt(tenantSend.aadhaarNumber);
+                            tenantSend.permanentAddress = decrypt(tenantSend.permanentAddress);
+                            tenantSend.bankName = decrypt(tenantSend.bankName);
+                            tenantSend.accountHolderName = decrypt(tenantSend.accountHolderName);
+                            tenantSend.accountNumber = decrypt(tenantSend.accountNumber);
+                            tenantSend.gender = decrypt(tenantSend.gender);
+                            tenantSend.panCardNumber = decrypt(tenantSend.panCardNumber);
+                            tenantSend.IFSCCode = decrypt(tenantSend.IFSCCode);
+
+                            const message = mailToUser(req.body.email,tenantSend.tenantId);
+                            return res.status(httpStatus.CREATED).json({
+                              message: "Tenant successfully created. please activate your account. click on the link delievered to your given email",
+                              tenant: tenantSend
+                            });
+                        })
+                        .catch(err => console.log(err))
+                })
+                .catch(err => console.log(err))
+        } else {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
+        }
+
+
     } catch (error) {
         console.log("error==>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
@@ -426,6 +493,7 @@ exports.getDecrypted = async (req, res, next) => {
                 { model: Society },
                 { model: Tower },
                 { model: FlatDetail },
+                { model: Floor },
                 { model: Owner, as: 'Owner1' },
                 { model: Owner, as: 'Owner2' },
                 { model: Owner, as: 'Owner3' }
@@ -540,6 +608,7 @@ exports.updateEncrypted = async (req, res, next) => {
         societyIdCheck = constraintCheck('societyId', update);
         towerIdCheck = constraintCheck('towerId', update);
         flatDetailIdCheck = constraintCheck('flatDetailId', update);
+        floorIdCheck = constraintCheck('floorId', update);
 
         tenantName = constraintReturn(tenantNameCheck, update, 'tenantName', tenant);
         dob = referenceConstraintReturn(dobCheck, update, 'dob', tenant);
@@ -556,6 +625,7 @@ exports.updateEncrypted = async (req, res, next) => {
         societyId = referenceConstraintReturn(societyIdCheck, update, 'societyId', tenant);
         towerId = referenceConstraintReturn(towerIdCheck, update, 'towerId', tenant);
         flatDetailId = referenceConstraintReturn(flatDetailIdCheck, update, 'flatDetailId', tenant);
+        floorId = referenceConstraintReturn(floorIdCheck, update, 'floorId', tenant);
 
         await Owner.findAll({
             attributes: ['ownerId'],
@@ -631,6 +701,7 @@ exports.updateEncrypted = async (req, res, next) => {
             gender: gender,
             panCardNumber: panCardNumber,
             IFSCCode: IFSCCode,
+            floorId: floorId,
             userId: req.userId,
             societyId: societyId,
             towerId: towerId,
@@ -672,6 +743,7 @@ exports.updateEncrypted = async (req, res, next) => {
 
 exports.getTenantMembers = async (req, res, next) => {
     const tenantId = req.params.id;
+    const membersArr = [];
     console.log('Tenant-ID ===>', tenantId);
 
     // const tenant = Tenant.findOne({
@@ -696,12 +768,14 @@ exports.getTenantMembers = async (req, res, next) => {
     });
     // console.log(tenantMembers)
 
+
+
     tenantMembers.map(item => {
         item.memberName = decrypt(item.memberName);
         item.gender = decrypt(item.gender);
     })
 
-    return res.status(httpStatus.OK).json({
+    res.status(httpStatus.OK).json({
         message: "Tenant Members Details",
         members: tenantMembers
     });
@@ -802,7 +876,7 @@ exports.editTenantMembers = async (req, res, next) => {
 }
 
 exports.deleteSelectedTenantMembers = (req, res, next) => {
-    const ids = req.body.ids.split(',');
+    const ids = req.body.ids;
 
     if (!ids) {
         return res.status(httpStatus.UNPROCESSABLE_ENTITY).json('Ids are missing');

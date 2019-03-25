@@ -51,7 +51,7 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.STRING
         },
         dob: {
-            type: Sequelize.DATE
+            type: Sequelize.DATEONLY
         },
         isActive: {
             type: Sequelize.BOOLEAN,

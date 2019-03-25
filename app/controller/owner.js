@@ -14,7 +14,7 @@ const nodeMailer = require('nodemailer');
 const smtpTransport = require('nodemailer-smtp-transport');
 const jwt = require('jsonwebtoken');
 const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
-
+const bcrypt = require('bcryptjs');
 
 const Owner = db.owner;
 
@@ -25,6 +25,7 @@ const Society = db.society;
 const User = db.user;
 const Relation = db.relation;
 const Otp = db.otp;
+const Role = db.role;
 
 
 setInterval(async function(){
@@ -52,6 +53,7 @@ function encrypt(key, data) {
   return crypted;
 }
 
+
 function encrypt1(key, data) {
   var cipher = crypto.createCipher("aes-128-cbc", key);
   var crypted = cipher.update(data, "utf-8", "hex");
@@ -59,7 +61,6 @@ function encrypt1(key, data) {
 
   return crypted;
 }
-
 function decrypt(key, data) {
   var decipher = crypto.createDecipher("aes-256-cbc", key);
   var decrypted = decipher.update(data, "hex", "utf-8");
@@ -219,7 +220,7 @@ let mailToUser = (email,ownerId) => {
 						}
 					],
 					"Subject": "Activation link",
-					"HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?ownerId=${ownerId}&token=${token}">click here</a>`
+					"HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://192.168.1.16:3000/login/tokenVerification?ownerId=${ownerId}&token=${token}">click here</a>`
 				}
 			]
 		})
@@ -253,7 +254,7 @@ exports.create1 = async (req, res, next) => {
     let ownerBody = req.body;
     let memberBody = req.body;
     let memberId = [];
-    ownerBody.userId = req.userId;
+    ownerBody.userId = 1;
     let customVendorName = req.body.ownerName;
     let userName = customVendorName + "O" + req.body.towerId + req.body.flatDetailId;
     // console.log("userName==>", userName);
@@ -361,8 +362,15 @@ exports.create1 = async (req, res, next) => {
       //    }
     }
     let ownerName =  decrypt(key,owner.ownerName);
-    let firstName = ownerName.split(' ')[0];
-    let lastName = ownerName.split(' ')[1];
+if (ownerName.indexOf(' ') !== -1) {
+    firstName = ownerName.split(' ')[0];
+    lastName = ownerName.split(' ')[1];
+} else {
+    firstName = ownerName;
+    lastName = '...';
+}
+   
+    
     let ownerUserName = decrypt(key,owner.userName);
     let email =  decrypt(key,owner.email);
     // set users
@@ -370,18 +378,20 @@ exports.create1 = async (req, res, next) => {
         firstName:encrypt1(key,firstName),
         lastName:encrypt1(key,lastName),
         userName:encrypt1(key,ownerUserName),
-        password:owner.password,
+        password:bcrypt.hashSync(owner.password,8),
+        contact:encrypt1(key,owner.contact),
+        towerId:owner.towerId,
         email:encrypt1(key,email),
         isActive:false
     });
     // set roles
-
-    let roles = await roles.find({
-        where:{roleId:3}
+    console.log(owner.password);
+    console.log(user.password);
+    let roles = await Role.find({
+        where:{id:3}
     });
 
     user.setRoles(roles);
-
     const message = mailToUser(req.body.email,ownerId);
     return res.status(httpStatus.CREATED).json({
       message: "Owner successfully created. please activate your account. click on the link delievered to your given email"
@@ -519,7 +529,7 @@ exports.get1 = async (req, res, next) => {
       owner.contact = decrypt(key, owner.contact);
       owner.gender = decrypt(key, owner.gender);
       owner.permanentAddress = decrypt(key, owner.permanentAddress);
-      owner.picture = decrypt(key, owner.picture);
+      // owner.picture = decrypt(key, owner.picture);
       owner.picture = owner.picture.replace('../', '');
       owner.picture = owner.picture.replace('../', '');
       owner.bankName = decrypt(key, owner.bankName);

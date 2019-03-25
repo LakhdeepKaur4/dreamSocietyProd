@@ -67,7 +67,6 @@ db.tokenVerify = require('../model/tokenModel')(sequelize, Sequelize);
  
 db.otp.belongsTo(db.owner,{foreignKey: 'ownerId'});
 db.otp.belongsTo(db.tenant,{foreignKey: 'tenantId'});
-
 db.role.belongsToMany(db.user, { through: 'user_roles', foreignKey: 'roleId', otherKey: 'userId'});
 db.user.belongsToMany(db.role, { through: 'user_roles', foreignKey: 'userId', otherKey: 'roleId'});
 db.society.belongsTo(db.city,{foreignKey: 'cityId'});
@@ -167,6 +166,5 @@ db.floor.belongsTo(db.user,{foreignKey:'userId'});
 db.tower.belongsTo(db.user, {foreignKey: 'userId',constraints: false, allowNull:true, defaultValue:null});
 db.tower.belongsToMany(db.floor, { as:'Floors',through: 'tower_floor_master', foreignKey: 'towerId',otherKey:'floorId'});
 db.floor.belongsToMany(db.tower, { as:'Towers',through: 'tower_floor_master', foreignKey: 'floorId',otherKey:'towerId'});
-db.otpUserVerify.belongsTo(db.user, {foreignKey:'userId'});
 
 module.exports = db;
