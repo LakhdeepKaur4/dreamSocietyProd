@@ -939,8 +939,6 @@ exports.signupEncrypted = async (req, res, next) => {
 			}
 		}
 
-
-
 		if (userBody['userName'] !== undefined) {
 			userUserNameErr = await User.findOne({
 				where: {

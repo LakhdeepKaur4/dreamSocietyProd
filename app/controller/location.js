@@ -92,29 +92,29 @@ exports.update = async (req, res) => {
     const updates = req.body;
     console.log("updates==>",updates);
 
-    // const location = await Location.findOne({
-    //     where: {
-    //         [Op.and]:[
-    //             {isActive: true},
-    //             { locationId: id },
-    //             { stateId: req.body.stateId },
-    //             { countryId: req.body.countryId },
-    //             { cityId: req.body.cityId },
-    //         ]
-    //     }
-    // })
-    // console.log("location==>",location)
-    // if(location.locationName === updates.locationName){
-    //     const updatedLocation = await Location.find({ where: { locationId: id } }).then(location => {
-    //         return location.updateAttributes(updates)
-    //     })
-    //     if (updatedLocation) {
-    //         return res.status(httpStatus.OK).json({
-    //             message: "Location Updated Page",
-    //             updatedLocation: updatedLocation 
-    //         });
-    //     }
-    // }else{
+    const location = await Location.findOne({
+        where: {
+            [Op.and]:[
+                {isActive: true},
+                { locationId: id },
+                { stateId: req.body.stateId },
+                { countryId: req.body.countryId },
+                { cityId: req.body.cityId },
+            ]
+        }
+    })
+    console.log("location==>",location)
+    if(location.locationName === updates.locationName){
+        const updatedLocation = await Location.find({ where: { locationId: id } }).then(location => {
+            return location.updateAttributes(updates)
+        })
+        if (updatedLocation) {
+            return res.status(httpStatus.OK).json({
+                message: "Location Updated Page",
+                updatedLocation: updatedLocation 
+            });
+        }
+    }else{
     const locations = await Location.findAll({
         where: {
             [Op.and]:[
@@ -142,7 +142,7 @@ exports.update = async (req, res) => {
         .then(updatedLocation => {
             res.json({ message: "Location updated successfully!", updatedLocation: updatedLocation });
         });
-// }
+}
 }
 
 exports.delete = async (req, res, next) => {

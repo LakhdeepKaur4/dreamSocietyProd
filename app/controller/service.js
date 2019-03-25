@@ -77,9 +77,30 @@ exports.getById = (req, res) => {
 
 exports.update =async (req, res) => {
   const id = req.params.id;
+  const updates = req.body;
   if (!id) {
     res.json("Please enter id");
   }
+  const service = await Service.findOne({
+    where: {
+        [Op.and]:[
+            {isActive: true},
+            {serviceDetailId:req.body.serviceDetailId}
+        ]
+    }
+})
+console.log("location==>",location)
+if(service.serviceName === updates.serviceName){
+    const updatedService = await Service.find({ where: { serviceId: id } }).then(service => {
+        return service.updateAttributes(updates)
+    })
+    if (updatedService) {
+        return res.status(httpStatus.OK).json({
+            message: "Service Updated Page",
+            updatedService: updatedService 
+        });
+    }
+}else{
   const services = await Service.findAll({
     where: {
       [Op.and]:[
@@ -88,7 +109,7 @@ exports.update =async (req, res) => {
     ]
     }
   })
-  console.log(services);
+  // console.log(services);
   let error = services.some(service => {
     return service.serviceName.toLowerCase().replace(/ /g, '') == req.body.serviceName.toLowerCase().replace(/ /g, '');
   });
@@ -96,7 +117,7 @@ exports.update =async (req, res) => {
     console.log("inside country");
     return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Service Name already Exists" })
   }
-  const updates = req.body;
+  
   Service.find({
     where: { serviceId: id }
   })
@@ -106,6 +127,7 @@ exports.update =async (req, res) => {
     .then(updatedService => {
       res.json({ message: "Service updated successfully!", updatedService: updatedService });
     });
+  }
 }
 
 exports.delete = (req, res) => {
