@@ -1217,7 +1217,7 @@ exports.updateEncrypted = async (req, res, next) => {
 		// towerIdCheck = constraintCheck('towerId', update);
 		// // flatDetailIdCheck = constraintCheck('flatDetailId', update);
 		// familyMemberCheck = constraintCheck('familyMember', update);
-		parkingCheck = constraintCheck('parking', update);
+		// parkingCheck = constraintCheck('parking', update);
 		// floorCheck = constraintCheck('floor', update);
 
 		firstName = constraintReturn(firstNameCheck, update, 'firstName', user);
