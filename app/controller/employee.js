@@ -524,5 +524,3 @@ exports.updateEncrypt = async (req, res, next) => {
 
 //     }
 // }
-
-////////
