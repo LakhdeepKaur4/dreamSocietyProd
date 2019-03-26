@@ -35,7 +35,7 @@ setInterval(async function(){
     otps.map( async otp => {
       let timeStr = otp.createdAt.toString();
       let diff =  Math.abs(ndate - new Date(timeStr.replace(/-/g,'/')));
-      if(Math.abs(Math.floor((diff / (1000 * 60)) % 60)>=50)){
+      if(Math.abs(Math.floor((diff / (1000 * 60)) % 60)>=500)){
         await Owner.destroy({where:{[Op.and]:[{ownerId:otp.ownerId},{isActive:false}]}});
         await otp.destroy();
         console.log("otp destroyed");
@@ -253,7 +253,7 @@ exports.create1 = async (req, res, next) => {
     let ownerBody = req.body;
     let memberBody = req.body;
     let memberId = [];
-    ownerBody.userId = 1;
+    ownerBody.userId = req.userId;
     let customVendorName = req.body.ownerName;
     let userName = customVendorName + "O" + req.body.towerId + req.body.flatDetailId;
     // console.log("userName==>", userName);
