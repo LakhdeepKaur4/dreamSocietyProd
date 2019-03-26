@@ -127,6 +127,7 @@ exports.getFloorByTowerIdForTenant = async (req, res) => {
         const towerId = req.params.id;
         const floorIds = [];
         const flatIds = [];
+        let flatDetailId;
         const floors = await TowerFloor.findAll({where :{isActive:true,towerId:towerId}});
         floors.map(floor=>{
             floorIds.push(floor.floorId);
@@ -146,15 +147,17 @@ exports.getFloorByTowerIdForTenant = async (req, res) => {
             , order: [['createdAt', 'DESC']]
         });
      
-        const flatDetail = await FlatDetail.findAll({ where: { towerId:towerId,floorId: { [Op.in]: floorIds } } })
+        const flatDetail = await FlatDetail.findAll({ where: { isActive:true,towerId:towerId,floorId: { [Op.in]: floorIds } } })
         flatDetail.map(flats=>{
             flatIds.push(flats.flatDetailId);
         })
-        console.log("flatsId==>",flatIds)
-        const owner = await Owner.findAll({where:{towerId:towerId,flatDetailId:{[Op.in]:flatIds}}})
-        console.log(owner.length)
-        if (tower && flatDetail && owner.length > 0) {
-           return res.status(httpStatus.OK).json({ message: 'Tower Floor Page', tower:tower,flatDetail:flatDetail})
+        const owner = await Owner.findAll({where:{isActive:true,flatDetailId:{[Op.in]:flatIds}}})
+        owner.map(flat => {
+            flatDetailId =flat.flatDetailId;
+        })
+        const flat = await FlatDetail.findAll({where:{isActive:true,flatDetailId:flatDetailId}})
+        if (tower && flatDetail && flat) {
+           return res.status(httpStatus.OK).json({ message: 'Tower Floor Page', tower:tower,flatDetail:flat})
         }else{
             return res.status(httpStatus.OK).json({ message: 'No Flats Found'})
         }
