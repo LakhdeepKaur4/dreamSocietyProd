@@ -5,6 +5,7 @@ const httpStatus = require('http-status');
 
 const Tower = db.tower;
 const Floor = db.floor;
+const Owner = db.owner;
 const TowerFloor = db.towerFloor;
 const FlatDetail = db.flatDetail;
 const Op = db.Sequelize.Op;
@@ -113,6 +114,49 @@ exports.getFloorByTowerId = async (req, res) => {
         const flatDetail = await FlatDetail.findAll({ where: { towerId:towerId,floorId: { [Op.in]: floorIds } } })
         if (tower && flatDetail) {
             res.status(httpStatus.OK).json({ message: 'Tower Floor Page', tower:tower,flatDetail:flatDetail})
+        }
+    } catch (error) {
+        console.log(error)
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message })
+    }
+}
+
+exports.getFloorByTowerIdForTenant = async (req, res) => {
+    try {
+        console.log("in here")
+        const towerId = req.params.id;
+        const floorIds = [];
+        const flatIds = [];
+        const floors = await TowerFloor.findAll({where :{isActive:true,towerId:towerId}});
+        floors.map(floor=>{
+            floorIds.push(floor.floorId);
+        })
+        console.log("floorIds===>",floorIds);
+        const tower = await Tower.findOne({
+            where: { isActive: true, towerId: towerId },
+            include: [{
+                model: Floor,
+                as: 'Floors',
+                attributes: ['floorId', 'floorName'],
+                through: {
+                    attributes: ['floorId', 'floorName'],
+                }
+            }
+            ]
+            , order: [['createdAt', 'DESC']]
+        });
+     
+        const flatDetail = await FlatDetail.findAll({ where: { towerId:towerId,floorId: { [Op.in]: floorIds } } })
+        flatDetail.map(flats=>{
+            flatIds.push(flats.flatDetailId);
+        })
+        console.log("flatsId==>",flatIds)
+        const owner = await Owner.findAll({where:{towerId:towerId,flatDetailId:{[Op.in]:flatIds}}})
+        console.log(owner.length)
+        if (tower && flatDetail && owner.length > 0) {
+           return res.status(httpStatus.OK).json({ message: 'Tower Floor Page', tower:tower,flatDetail:flatDetail})
+        }else{
+            return res.status(httpStatus.OK).json({ message: 'No Flats Found'})
         }
     } catch (error) {
         console.log(error)

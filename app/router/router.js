@@ -156,6 +156,8 @@ module.exports = function (app) {
 
 	app.get('/api/towerFloor', [authJwt.verifyToken], towerController.getTowerAndFloor);
 
+	app.get('/api/tower/towerFloor/:id', [authJwt.verifyToken], towerController.getFloorByTowerIdForTenant);
+
 	app.get('/api/towerFloor/:id', [authJwt.verifyToken], towerController.getFloorByTowerId);
 
 	app.put('/api/towerFloor/update/:id', [authJwt.verifyToken], towerController.update);

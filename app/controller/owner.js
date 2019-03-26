@@ -224,8 +224,7 @@ let mailToUser = (email,ownerId) => {
 				}
 			]
 		})
-	request
-		.then((result) => {
+	request.then((result) => {
 			console.log(result.body)
 			// console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
 		})
@@ -529,9 +528,9 @@ exports.get1 = async (req, res, next) => {
       owner.contact = decrypt(key, owner.contact);
       owner.gender = decrypt(key, owner.gender);
       owner.permanentAddress = decrypt(key, owner.permanentAddress);
-      owner.picture = decrypt(key, owner.picture);
-      // owner.picture = owner.picture.replace('../', '');
-      // owner.picture = owner.picture.replace('../', '');
+      // owner.picture = decrypt(key, owner.picture);
+      owner.picture = owner.picture.replace('../', '');
+      owner.picture = owner.picture.replace('../', '');
       owner.bankName = decrypt(key, owner.bankName);
       owner.accountHolderName = decrypt(key, owner.accountHolderName);
       owner.accountNumber = decrypt(key, owner.accountNumber);

@@ -286,7 +286,7 @@ exports.create1 = async (req, res, next) => {
                 vendorId: vendorId,
                 rateId: body.rateId1,
                 rate: body.rate1,
-                userId: req.userId,
+                userId: 1, //req.userId
                 serviceId: body.serviceId1
             })
         }
