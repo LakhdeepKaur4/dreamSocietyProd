@@ -26,20 +26,23 @@ const Otp = db.otp;
 const Role = db.role;
 
 setInterval(async function(){
+    // console.log("atin")
     let ndate = new Date();
     let otps = await Otp.findAll();
     if(otps){
       otps.map( async otp => {
         let timeStr = otp.createdAt.toString();
         let diff =  Math.abs(ndate - new Date(timeStr.replace(/-/g,'/')));
-        if(Math.abs(Math.floor((diff / (1000 * 60)) % 60)>=500)){
+        console.log("diff==>",diff);
+        if(Math.abs(Math.floor((diff / (1000 * 60)) % 60)>=50)){
           await Owner.destroy({where:{[Op.and]:[{ownerId:otp.ownerId},{isActive:false}]}});
           await otp.destroy();
           console.log("otp destroyed");
         }
       })
     }
-  },2000);
+  },10000009);
+
 
   let mailToUser = (email,tenantId) => {
     const token = jwt.sign(
