@@ -256,7 +256,7 @@ exports.create1 = async (req, res, next) => {
     let memberId = [];
     ownerBody.userId = 1;
     let customVendorName = req.body.ownerName;
-    let userName = customVendorName + "O" + req.body.towerId + req.body.flatDetailId;
+    let userName = customVendorName + 'O' + req.body.towerId + req.body.flatDetailId;
     // console.log("userName==>", userName);
      userName = userName.replace(/ /g,'').toLowerCase();
      console.log("my name is",userName);
@@ -800,7 +800,6 @@ exports.update1 = async (req, res, next) => {
         //     });
         // }
       }
-
       return res.status(httpStatus.OK).json({
         message: "Owner Updated Page",
         owner: updatedOwner1
@@ -811,7 +810,6 @@ exports.update1 = async (req, res, next) => {
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
 };
-
 
 exports.delete = async (req, res, next) => {
   try {
@@ -865,10 +863,8 @@ exports.deleteSelected = async (req, res, next) => {
   }
 }
 
-
 exports.getMembers = async (req, res, next) => {
   try{
-    
   let memberArr = [];
 
   let ownerId = req.params.id;

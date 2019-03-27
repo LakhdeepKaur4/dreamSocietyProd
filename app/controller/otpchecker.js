@@ -271,8 +271,6 @@ function decrypt(key, data) {
               console.log(err.statusCode)
           })
   }
-  
-
 
   function sendMail(owner) {
     let email = decrypt(key,owner.email);
@@ -370,6 +368,7 @@ exports.checkOtp = async (req,res,next) => {
             }
         }
         if(req.query.tenantId){
+        
         let tenantId = decrypt1(key,req.query.tenantId);
         console.log(tenantId);
         let tenant = await Tenant.findOne({where:{tenantId:tenantId,isActive:false}});

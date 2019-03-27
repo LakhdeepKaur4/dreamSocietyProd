@@ -420,28 +420,32 @@ exports.get1 = async (req, res, next) => {
 
 
 
+//   let deletePhoto = function (vendor) {
+//     let x = decrypt(key,vendor.picture);
+//       fs.unlinkSync( x ); 
+//   };
 
+//   let deleteDocumentOne = function(vendor) {
+//     let x = decrypt(key,vendor.documentOne);
+//     fs.unlinkSync( x ) 
 
-  let deletePhoto = function (vendor) {
-    let x = decrypt(key,vendor.picture);
-      fs.unlinkSync( x ); 
+//   }
+
+//   let deleteDocumentTwo = function(vendor) {
+//     let x = decrypt(key,vendor.documentTwo);
+//     fs.unlinkSync( x ); 
+//   }
+
+  let deleteFile = function (photo) {
+    let x = decrypt(key,photo);
+      fs.unlink( x ,(err) => {
+        if(err){
+            console.log("file to delete is missing")
+        }
+      }); 
   };
 
-  let deleteDocumentOne = function(vendor) {
-    let x = decrypt(key,vendor.documentOne);
-    fs.unlinkSync( x ) 
-
-  }
-
-  let deleteDocumentTwo = function(vendor) {
-    let x = decrypt(key,vendor.documentTwo);
-    fs.unlinkSync( x ); 
-  }
-
-
-
-
-exports.update1 = async (req, res, next) => {
+  exports.update1 = async (req, res, next) => {
     let updAttr = {};
     let attrArr = ['userName','vendorName','permanentAddress','currentAddress','contact'];
     let attrFiles = ['profilePicture','documentOne','documentTwo'];
@@ -460,51 +464,8 @@ exports.update1 = async (req, res, next) => {
         if (!update) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
-        if(req.body.contact !== undefined && req.body.contact !== null){
-            let existingVendor1 = await Vendor.find({
-                where: {[Op.and]: [{contact: encrypt(key, req.body.contact)}, { vendorId: {[Op.ne]: req.params.id }}]}
-            
-            });
-            if(existingVendor1) {
-                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'contact already exist'});
-            }
-        }
         const updatedVendor = await Vendor.find({ where: { vendorId: id } }).then(vendor => {
-            // if(req.files.profilePicture[0]){
-            //     deletePhoto(vendor);
-            // }
-            // if(req.files.documentOne[0]){
-            //     deleteDocumentOne(vendor);
-            // }
-            // if(req.files.documentTwo[0]){
-            //     deleteDocumentTwo(vendor);
-            // }
-        //  let findAttr = (prop) => {
-        //      if(prop in req.body && req.body[prop]!==undefined) {
-        //          updAttr[prop] = encrypt(key,req.body[prop]);
-        //      }          
-        //  }
-
-        //  let findFiles = (prop) => {
-        //      if(req.files[prop] && req.files[prop]!==undefined){
-        //          if(prop === 'profilePicture'){
-        //             deletePhoto(vendor);
-        //              updAttr.picture = encrypt(key,req.files[prop][0].path);
-        //          }
-        //          if(prop === 'documentOne'){
-        //             deleteDocumentOne(vendor);
-        //             updAttr[prop] = encrypt(key,req.files[prop][0].path);
-        //          }
-        //          if(prop === 'documentTwo'){
-        //             deleteDocumentTwo(vendor);
-        //             updAttr[prop] = encrypt(key,req.files[prop][0].path);
-        //          }
-              
-        //      }
-        //  }
-        //  attrArr.forEach(attr => findAttr(attr));
-        //  attrFiles.forEach(attr => findFiles(attr));
-        //  console.log(updAttr);
+          
            attrArr.forEach(attr => {
                if(attr in req.body && req.body[attr]!==undefined && req.body[attr]!==null){
                    updAttr[attr] = encrypt(key,req.body[attr]);
@@ -513,17 +474,21 @@ exports.update1 = async (req, res, next) => {
            attrFiles.forEach(attr => {
                if(attr in req.files && req.files[attr][0]!==undefined && req.files[attr][0]!==null){
                    if(attr === 'profilePicture'){
-                       deletePhoto(vendor);
+                       let photoToDelete = vendor.picture
                        updAttr.picture = encrypt(key,req.files[attr][0].path)
+                       deleteFile(photoToDelete);
+                       
                    }
                    else if(attr === 'documentOne'){
-                    deleteDocumentOne(vendor);
-                    updAttr.documentOne = encrypt(key,req.files[attr][0].path);
+                    let documentOneToDelete = vendor.documentOne;
+                    updAttr.documentOne = encrypt(key,req.files[attr][0].path);   
+                    deleteFile(documentOneToDelete);
+                    
                    }
                    else if(attr === 'documentTwo'){
-                    deleteDocumentTwo(vendor);
+                    let documentTwoToDelete = vendor.documentTwo;
                     updAttr.documentTwo = encrypt(key,req.files[attr][0].path);
-
+                    deleteFile(documentTwoToDelete);
                    }
                }
 
@@ -580,6 +545,101 @@ exports.update1 = async (req, res, next) => {
     }
 }
 
+
+
+// exports.update1 = async (req, res, next) => {
+//     let updAttr = {};
+//     let attrArr = ['userName','vendorName','permanentAddress','currentAddress','contact'];
+//     let attrFiles = ['profilePicture','documentOne','documentTwo'];
+//     try {
+//         console.log("updating vendor");
+//         console.log(":::::req.body==>",req.body)
+//         const id = req.params.id;
+//         console.log(":::::id",id)
+//         if (!id) {
+//             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
+//         }
+//         const update = req.body;
+
+        
+//         if (!update) {
+//             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
+//         }
+//         if(req.body.contact !== undefined && req.body.contact !== null){
+//             let existingVendor1 = await Vendor.find({
+//                 where: {[Op.and]: [{contact: encrypt(key, req.body.contact)}, { vendorId: {[Op.ne]: req.params.id }}]}
+            
+//             });
+//             if(existingVendor1) {
+//                 return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'contact already exist'});
+//             }
+//         }
+//         const updatedVendor = await Vendor.find({ where: { vendorId: id } }).then(vendor => {
+     
+//            attrArr.forEach(attr => {
+//                if(attr in req.body && req.body[attr]!==undefined && req.body[attr]!==null){
+//                    updAttr[attr] = encrypt(key,req.body[attr]);
+//                }
+//            })
+//            attrFiles.forEach(attr => {
+//                if(attr in req.files && req.files[attr][0]!==undefined && req.files[attr][0]!==null){
+//                    if(attr === 'profilePicture'){
+//                        deletePhoto(vendor);
+//                        updAttr.picture = encrypt(key,req.files[attr][0].path)
+//                    }
+//                    else if(attr === 'documentOne'){
+//                     deleteDocumentOne(vendor);
+//                     updAttr.documentOne = encrypt(key,req.files[attr][0].path);
+//                    }
+//                    else if(attr === 'documentTwo'){
+//                     deleteDocumentTwo(vendor);
+//                     updAttr.documentTwo = encrypt(key,req.files[attr][0].path);
+
+//                    }
+//                }
+
+//            })
+
+//             return vendor.updateAttributes(updAttr);
+//         })
+//         if (updatedVendor) {
+//             updatedVendor.userName = decrypt(key,updatedVendor.userName)
+//             updatedVendor.vendorName = decrypt(key,updatedVendor.vendorName)
+//             updatedVendor.picture = decrypt(key,updatedVendor.picture)
+//             updatedVendor.documentOne = decrypt(key,updatedVendor.documentOne)
+//             updatedVendor.documentTwo = decrypt(key,updatedVendor.documentTwo)
+//             updatedVendor.permanentAddress = decrypt(key,updatedVendor.permanentAddress)
+//             updatedVendor.currentAddress = decrypt(key,updatedVendor.currentAddress)
+//             updatedVendor.contact = decrypt(key,updatedVendor.contact)
+
+//             if ( req.body.vendorServiceId!==undefined && req.body.rate1!==undefined && req.body.rate1!==null && req.body.rateId1!==undefined && req.body.rateId1!==null) {
+//                 let vendorService = await VendorService.find({
+//                     where:{
+//                         vendorId:id,
+//                         vendorServiceId:req.body.vendorServiceId
+//                     },
+//                     include:[{model:ServiceDetail}]
+//                 });
+//                 vendorService.updateAttributes({
+//                     rateId:req.body.rateId1,
+//                     rate:req.body.rate1
+//                 });
+//                 if(req.body.serviceId){
+//                     vendorService.updateAttributes({
+//                         serviceId:req.body.serviceId
+//                     });
+//                 }
+//             }
+//             return res.status(httpStatus.OK).json({
+//                 message: "Vendor Updated Page",
+//                 vendor: updatedVendor
+//             });
+//         }
+//     } catch (error) {
+//         console.log(error)
+//         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+//     }
+// }
 
 exports.deleteVendorService = async (req, res, next) => {
     try {

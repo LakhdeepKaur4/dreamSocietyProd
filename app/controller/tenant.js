@@ -43,6 +43,56 @@ setInterval(async function(){
     }
   },10000009);
 
+  encrypt = (text) => {
+    let key = config.secret;
+    let algorithm = 'aes-128-cbc';
+    let cipher = crypto.createCipher(algorithm, key);
+    let encryptedText = cipher.update(text, 'utf8', 'hex');
+    encryptedText += cipher.final('hex');
+    return encryptedText;
+}
+
+decrypt = (text) => {
+    let key = config.secret;
+    let algorithm = 'aes-128-cbc';
+    let decipher = crypto.createDecipher(algorithm, key);
+    let decryptedText = decipher.update(text, 'hex', 'utf8');
+    decryptedText += decipher.final('utf8');
+    return decryptedText;
+}
+
+constraintCheck = (property, object) => {
+    if ((property in object) && object[property] !== undefined && object[property] !== '' && object[property] !== null) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+constraintReturn = (checkConstraint, object, property, entry) => {
+    if (checkConstraint) {
+        return encrypt(object[property]);
+    } else {
+        return entry[property];
+    }
+}
+
+referenceConstraintReturn = (checkConstraint, object, property, entry) => {
+    if (checkConstraint) {
+        return object[property];
+    } else {
+        return entry[property];
+    }
+}
+
+
+  function decrypt1(key, data) {
+    var decipher = crypto.createDecipher("aes-256-cbc", key);
+    var decrypted = decipher.update(data, "hex", "utf-8");
+    decrypted += decipher.final("utf-8");
+  
+    return decrypted;
+  }
 
   let mailToUser = (email,tenantId) => {
     const token = jwt.sign(
@@ -65,6 +115,42 @@ setInterval(async function(){
                       ],
                       "Subject": "Activation link",
                       "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?tenantId=${tenantId}&token=${token}">click here</a>`
+                  }
+              ]
+          })
+      request
+          .then((result) => {
+              console.log(result.body)
+              // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
+          })
+          .catch((err) => {
+              console.log(err.statusCode)
+          })
+  }
+
+  let mailToOwner=async (ownerId,tenant) => {
+    // let email = decrypt1(key,owner.email);
+    // let password = owner.password;
+    const  owner = await Owner.findOne({where :{isActive:true,ownerId:ownerId}});
+    let email = decrypt1(key,owner.email)
+    let userName = decrypt(tenant.userName);
+      const request = mailjet.post("send", { 'version': 'v3.1' })
+          .request({
+              "Messages": [
+                  {
+                      "From": {
+                          "Email": "rohit.khandelwal@greatwits.com",
+                          "Name": "Greatwits"
+                      },
+                      "To": [
+                          {
+                              "Email": email,
+                              "Name": 'Atin' + ' ' + 'Tanwar'
+                          }
+                      ],
+                      "Subject": "Tenant tried to register in Dream Society",
+                      "HTMLPart":`${userName} is registering in Dream society`
+                    //   "HTMLPart": `your username is: ${userName} and password is: ${password}. `
                   }
               ]
           })
@@ -218,48 +304,6 @@ exports.delete = async (req, res, next) => {
     }
 }
 
-
-encrypt = (text) => {
-    let key = config.secret;
-    let algorithm = 'aes-128-cbc';
-    let cipher = crypto.createCipher(algorithm, key);
-    let encryptedText = cipher.update(text, 'utf8', 'hex');
-    encryptedText += cipher.final('hex');
-    return encryptedText;
-}
-
-decrypt = (text) => {
-    let key = config.secret;
-    let algorithm = 'aes-128-cbc';
-    let decipher = crypto.createDecipher(algorithm, key);
-    let decryptedText = decipher.update(text, 'hex', 'utf8');
-    decryptedText += decipher.final('utf8');
-    return decryptedText;
-}
-
-constraintCheck = (property, object) => {
-    if ((property in object) && object[property] !== undefined && object[property] !== '' && object[property] !== null) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-constraintReturn = (checkConstraint, object, property, entry) => {
-    if (checkConstraint) {
-        return encrypt(object[property]);
-    } else {
-        return entry[property];
-    }
-}
-
-referenceConstraintReturn = (checkConstraint, object, property, entry) => {
-    if (checkConstraint) {
-        return object[property];
-    } else {
-        return entry[property];
-    }
-}
 
 exports.createEncrypted = async (req, res, next) => {
     try {
@@ -462,8 +506,9 @@ exports.createEncrypted = async (req, res, next) => {
                             tenantSend.gender = decrypt(tenantSend.gender);
                             tenantSend.panCardNumber = decrypt(tenantSend.panCardNumber);
                             tenantSend.IFSCCode = decrypt(tenantSend.IFSCCode);
-
+                            
                             const message = mailToUser(req.body.email,tenantSend.tenantId);
+                            mailToOwner(tenantSend.ownerId1,tenantSend);
                             return res.status(httpStatus.CREATED).json({
                               message: "Tenant successfully created. please activate your account. click on the link delievered to your given email",
                               tenant: tenantSend
