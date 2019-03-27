@@ -10,8 +10,11 @@ module.exports = (sequelize, Sequelize) => {
       },
       autoGenerate:{
         type: Sequelize.BOOLEAN,
-        defaultValue: true
-      },
+        defaultValue: false
+      },  
+      dateOfPurchase:{
+        type: Sequelize.DATEONLY,
+      }, 
       rate:{
         type:Sequelize.FLOAT,
         defaultValue: true

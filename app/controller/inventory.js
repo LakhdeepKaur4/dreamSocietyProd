@@ -9,23 +9,35 @@ const Op = db.Sequelize.Op;
 exports.create = async (req, res, next) => {
     try {
         console.log("creating inventory");
-        console.log("userId==>", req.userId)
+        console.log("userId==>", req.userId);
         let body = req.body;
         body.userId = req.userId;
         let serialNumber;
         let assetName;
         let inventory;
-        console.log("body assert id ==>0", body.assetId)
+        console.log("body assert id ==>", body.assetId)
         const assets = await Assets.findOne({ where: { assetId: body.assetId } });
         assetName = assets.assetName;
-        if (body.number) {
-            for (i = 0; i < body.number; i++) {
+        if (body.number && req.body.autoGenerate) {
+            for (let i = 0; i < body.number; i++) {
                 serialNumber = assetName.toUpperCase().substring(0, 2) + i;
                 body.serialNumber = serialNumber;
                 inventory = await Inventory.create(body);
             }
         }
-
+        else {
+            for (let i = 0; i < body.serialNumber.length; i++) {
+                inventory = await Inventory.create({
+                    assetId: body.assetId,
+                    assetTypeId: body.assetTypeId,
+                    number: body.number,
+                    rate: body.rate,
+                    serialNumber: body.serialNumber[i],
+                    dateOfPurchase:body.dateOfPurchase,
+                    userId: req.userId
+                })
+            }
+        }
         return res.status(httpStatus.CREATED).json({
             message: "Inventory successfully created",
             inventory
