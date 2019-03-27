@@ -363,6 +363,13 @@ exports.createEncrypted = async (req, res, next) => {
             messageEmailErr: messageEmailErr,
             messageContactErr: messageContactErr
         };
+        
+        if ((tenant.locationId === '') && (tenant.stateId === '') && (tenant.cityId === '') && (tenant.countryId === '')) {
+            tenant.locationId = null;
+            tenant.stateId = null;
+            tenant.cityId = null;
+            tenant.countryId = null;
+        }
 
         if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
             Tenant.create({
