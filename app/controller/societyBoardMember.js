@@ -310,7 +310,8 @@ exports.getDecrypted =async (req, res, next) => {
             .then(societyBoardMember => {
                 societyBoardMember.map(item => {
                     item.firstName = decrypt(item.firstName);
-                    item.lastName = decrypt(item.lastName);                    item.currentAddress = decrypt(item.currentAddress);
+                    item.lastName = decrypt(item.lastName);                    
+                    item.currentAddress = decrypt(item.currentAddress);
                     item.permanentAddress = decrypt(item.permanentAddress);
                     item.contactNumber = decrypt(item.contactNumber);
                     item.panCardNumber = decrypt(item.panCardNumber);
