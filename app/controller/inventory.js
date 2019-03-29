@@ -1,5 +1,6 @@
 const db = require('../config/db.config.js');
-const httpStatus = require('http-status')
+const httpStatus = require('http-status');
+const sequelize = require('sequelize')
 
 const Inventory = db.inventory;
 const Assets = db.assets;
@@ -33,7 +34,7 @@ exports.create = async (req, res, next) => {
                     number: body.number,
                     rate: body.rate,
                     serialNumber: body.serialNumber[i],
-                    dateOfPurchase:body.dateOfPurchase,
+                    dateOfPurchase: body.dateOfPurchase,
                     userId: req.userId
                 })
             }
@@ -50,18 +51,66 @@ exports.create = async (req, res, next) => {
 
 exports.get = async (req, res, next) => {
     try {
+        const assetsId = [];
+        const assetTypesId = [];
+        // const inventory = await Inventory.findAll({
+        //     where: { isActive: true },
+        //     distinct:true,
+        //     order: [['createdAt', 'DESC']],
+        //     include: [
+        //         { model: Assets },
+        //         { model: AssetsType }
+        //     ]
+        // });
+        // inventory.map(asset => assetsId.push(asset.assetId))
+        // console.log(assetsId)
+        // const distinctInventories = await Inventory.findAll({
+        // where:{ assetId: { [Op.in]: assetsId }},
+        // distinct:'assetId'
+        // })
+        // console.log(distinctInventories.length);
         const inventory = await Inventory.findAll({
-            where: { isActive: true },
-            order: [['createdAt', 'DESC']],
-            include: [
-                { model: Assets },
-                { model: AssetsType }
+            // distinct: true,
+            raw:true,
+            attributes: [
+                [sequelize.fn('DISTINCT', sequelize.col('assetId')), 'assetId'], 'assetTypeId', 'number', 'rate', 'assetId', 'dateOfPurchase'
+            ],include:[
+                {model:Assets}
             ]
         });
+        inventory.map(asset => assetsId.push(asset.assetId));
+        inventory.map(asset => assetTypesId.push(asset.assetTypeId))
+        const assets = await Assets.findAll({
+            attributes: ['assetId', 'assetName'],
+            where: {
+                [Op.and]: {
+                    isActive: true,
+                    assetId: { [Op.in]: assetsId }
+                },
+            }
+        })
+
+        const assetsType = await AssetsType.findAll({
+            attributes: ['assetTypeId', 'assetType'],
+            where: {
+                [Op.and]: {
+                    isActive: true,
+                    assetTypeId: { [Op.in]: assetTypesId }
+                },
+            }
+        })
+        // inventory['assets'] = assets;
+        // inventory['assetstype'] =assetsType;
+
+        // inventory.splice(0, 0, assets);
+        // inventory.splice(0, 0, assetsType);
+
+        // inventory.push({assets:assets,assetsType:assetsType})
+        inventory['assets'] = assets;
         if (inventory) {
             return res.status(httpStatus.OK).json({
                 message: "Inventory Content Page",
-                inventory: inventory
+                inventory: inventory,
             });
         }
     } catch (error) {

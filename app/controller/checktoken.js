@@ -17,6 +17,8 @@ const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921a
 
 const Owner = db.owner;
 const Tenant = db.tenant;
+const Vendor = db.vendor;
+const Employee = db.employee;
 
 const OwnerMembersDetail = db.ownerMembersDetail;
 const FlatDetail = db.flatDetail;
@@ -73,6 +75,33 @@ exports.checkToken = async (req,res,next) => {
         }
     }
 
+
+    if(req.query.employeeId){
+        let employeeId = decrypt1(key,req.query.employeeId);
+        let employee = await Employee.findOne({where:{employeeId:employeeId,isActive:true}});
+        if(employee){
+            return res.status(200).json(
+                {
+                alreadyActivated:true,    
+                tokenVerified: false,    
+                message: 'you are already activated. check your email for userName and password.'
+            });
+        }
+    }
+
+    if(req.query.vendorId){
+        let vendorId = decrypt(key,req.query.vendorId);
+        let vendor = await Vendor.findOne({where:{vendorId:vendorId,isActive:true}});
+        if(vendor){
+            return res.status(200).json(
+                {
+                alreadyActivated:true,    
+                tokenVerified: false,    
+                message: 'you are already activated. check your email for userName and password.'
+            });
+        }
+    }
+
     if(req.query.tenantId){
         let tenantId = decrypt1(key,req.query.tenantId);
         let tenant = await Tenant.findOne({where:{tenantId:tenantId,isActive:true}});
@@ -110,6 +139,34 @@ exports.checkToken = async (req,res,next) => {
                 }) 
               
             }
+
+            if(req.query.employeeId){
+                let employeeId = decrypt1(key,req.query.employeeId);
+               let employee = await Employee.findOne({where:{employeeId:employeeId}});
+               let contact = decrypt1(key,employee.contact);
+               let otp = testSms(contact);
+               let dbotp = await Otp.create({
+                otpvalue:otp,
+                employeeId:employee.employeeId
+                }) 
+              
+            }
+
+            if(req.query.vendorId){
+                let vendorId = decrypt(key,req.query.vendorId);
+               let vendor = await Vendor.findOne({where:{vendorId:vendorId}});
+               let contact = decrypt(key,vendor.contact);
+               let otp = testSms(contact);
+               let dbotp = await Otp.create({
+                otpvalue:otp,
+                vendorId:vendor.vendorId
+                }) 
+              
+            }
+
+
+
+
             if(req.query.tenantId){
                 let tenantId = decrypt1(key,req.query.tenantId);
                let tenant = await Tenant.findOne({where:{tenantId:tenantId}});

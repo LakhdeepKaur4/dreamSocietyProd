@@ -1766,9 +1766,18 @@ schedule.scheduleJob(rule, () => {
 
 exports.assignRoles = async (req, res, next) => {
 	try {
-		console.log("assigning roles==>")
-		const user = await User.findOne({ where: { isActive: true, userName: req.body.userName } })
-		console.log("user", user);
+		console.log("assigning roles==>");
+		let userArr = [];
+		const user = await User.findOne({ where: { isActive: true, userId: req.body.userId }, attributes: ['userId', 'firstName', 'lastName', 'userName'], include: [{ model: Role }] })
+		user.firstName = decrypt(user.firstName);
+		user.lastName = decrypt(user.lastName);
+		user.userName = decrypt(user.userName);
+		userArr.push(user);
+		const role = await Role.find({ where: { id: req.body.id } });
+
+		const roleAssigned = await user.setRoles(role);
+		res.json({ userArr, role, roleAssigned });
+
 	} catch (error) {
 		console.log(error);
 		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Sequelize Error' })
@@ -1789,11 +1798,12 @@ exports.getRolesForActivation = async (req, res, next) => {
 exports.activeUsersByRole = async (req, res, next) => {
 	try {
 		const roleId = req.params.id;
+		console.log(roleId);
 		const tenantsArr = [];
 		const ownersArr = [];
 		const vendorsArr = [];
 		const employeesArr = [];
-		console.log(roleId)
+		console.log(roleId);
 		switch (roleId) {
 			case "3":
 				const owners = await Owner.findAll({ where: { isActive: true }, attributes: ['ownerId', 'ownerName'] });
@@ -1801,32 +1811,44 @@ exports.activeUsersByRole = async (req, res, next) => {
 					owner.ownerName = decrypt1(key, owner.ownerName);
 					ownersArr.push(owner);
 				})
-				res.status(httpStatus.OK).json({ owner: ownersArr });
+				res.status(httpStatus.OK).json({ users: ownersArr });
 				break;
 			case "4":
 				const tenants = await Tenant.findAll({ where: { isActive: true }, attributes: ['tenantId', 'firstName'] });
 				// console.log(tenants)
 				tenants.map(tenant => {
-					tenant.firstName = decrypt( tenant.firstName);
-					tenantsArr.push(tenant);
+					let firstName = decrypt(tenant.firstName);
+					let lastName = decrypt(tenant.lastName);
+					tenant.fullName = firstName + " " + lastName;
+					tenantArr['fullName'] = fullName;
+					tenantsArr['type'] = 'Tenant',
+						tenantsArr.push({ fullName: fullName, userId: tenant.tenantId, type: 'ActiveTenant' });
 				})
-				res.status(httpStatus.OK).json({ tenant: tenants });
+				res.status(httpStatus.OK).json({ users: tenants });
 				break;
 			case "5":
-				const vendors = await Vendor.findAll({ where: { isActive: true }, attributes: ['vendorId', 'userName']  });
+				const vendors = await Vendor.findAll({ where: { isActive: true }, attributes: ['vendorId', 'userName'] });
 				vendors.map(vendor => {
-					vendor.userName = decrypt1(key, vendor.userName);
-					vendorsArr.push(vendor);
+					let firstName = decrypt1(key, vendor.firstName);
+					let lastName = decrypt1(key, vendor.lastName);
+					vendorsArr['fullName'] = fullName;
+					vendorsArr.push({ fullName: fullName, userId: vendor.vendorId, type: 'ActiveVendor' });
 				})
-				res.status(httpStatus.OK).json({vendor:vendorsArr});
+				res.status(httpStatus.OK).json({ users: vendorsArr });
 				break;
 			case "6":
-				const employees = await Employee.findAll({ where: { isActive: true } ,attributes: ['employeeId', 'firstName']  });
+				const employees = await Employee.findAll({ where: { isActive: true }, attributes: ['employeeId', 'firstName', 'middleName', 'lastName'] });
 				employees.map(employee => {
-					employee.firstName = decrypt(employee.firstName);
-					employeesArr.push(employee);
+
+					let firstName = decrypt(employee.firstName);
+					let middleName = decrypt(employee.middleName);
+					let lastName = decrypt(employee.lastName);
+					let fullName = firstName + " " + middleName + " " + lastName
+					employeesArr['fullName'] = fullName;
+					employeesArr.push({ fullName: fullName, userId: employee.employeeId, type: 'ActiveEmployee' });
 				})
-				res.status(httpStatus.OK).json({employee:employeesArr});
+				console.log(employeesArr)
+				res.status(httpStatus.OK).json({ users: employeesArr });
 				break;
 			default:
 				res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No Role Found with this Id" })
@@ -1867,32 +1889,42 @@ exports.deactiveUsersByRole = async (req, res, next) => {
 					owner.ownerName = decrypt1(key, owner.ownerName);
 					ownersArr.push(owner);
 				})
-				res.status(httpStatus.OK).json({ owner: ownersArr });
+				res.status(httpStatus.OK).json({ users: ownersArr });
 				break;
 			case "4":
 				const tenants = await Tenant.findAll({ where: { isActive: false }, attributes: ['tenantId', 'firstName'] });
 				// console.log(tenants)
 				tenants.map(tenant => {
-					tenant.firstName = decrypt( tenant.firstName);
-					tenantsArr.push(tenant);
+					let firstName = decrypt(tenant.firstName);
+					let lastName = decrypt(tenant.lastName);
+					tenant.fullName = firstName + " " + lastName;
+					tenantArr['fullName'] = fullName;
+					tenantsArr.push({ fullName: fullName, userId: tenant.tenantId, type: 'DeactiveTenant' });
 				})
-				res.status(httpStatus.OK).json({ tenant: tenants });
+				res.status(httpStatus.OK).json({ users: tenants });
 				break;
 			case "5":
-				const vendors = await Vendor.findAll({ where: { isActive: false }, attributes: ['vendorId', 'userName']  });
+				const vendors = await Vendor.findAll({ where: { isActive: false }, attributes: ['vendorId', 'userName'] });
 				vendors.map(vendor => {
-					vendor.userName = decrypt1(key, vendor.userName);
-					vendorsArr.push(vendor);
+					let firstName = decrypt1(key, vendor.firstName);
+					let lastName = decrypt1(key, vendor.lastName);
+					vendorsArr['fullName'] = fullName;
+					vendorsArr.push({ fullName: fullName, userId: vendor.vendorId, type: 'DeactiveVendor' });
 				})
-				res.status(httpStatus.OK).json({vendor:vendorsArr});
+				res.status(httpStatus.OK).json({ users: vendorsArr });
 				break;
 			case "6":
-				const employees = await Employee.findAll({ where: { isActive: false } ,attributes: ['employeeId', 'firstName']  });
+				const employees = await Employee.findAll({ where: { isActive: false }, attributes: ['employeeId', 'firstName', 'lastName', 'middleName'] });
 				employees.map(employee => {
-					employee.firstName = decrypt(employee.firstName);
-					employeesArr.push(employee);
+					let firstName = decrypt(employee.firstName);
+
+					let middleName = decrypt(employee.middleName);
+					let lastName = decrypt(employee.lastName);
+					let fullName = firstName + " " + middleName + " " + lastName
+					employeesArr['fullName'] = fullName;
+					employeesArr.push({ fullName: fullName, userId: employee.employeeId, type: 'DeactiveEmployee' });
 				})
-				res.status(httpStatus.OK).json({employee:employeesArr});
+				res.status(httpStatus.OK).json({ users: employeesArr });
 				break;
 			default:
 				res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No Role Found with this Id" })
@@ -1917,3 +1949,70 @@ exports.deactiveUsersByRole = async (req, res, next) => {
 		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Sequelize Error' })
 	}
 }
+
+exports.rolesToAssign = async (req, res, next) => {
+	try {
+		const role = await Role.findAll({
+			where: {
+				id: {
+					[Op.in]: [1, 2]
+				},
+			},
+		});
+		if (role) {
+			return res.status(httpStatus.OK).json(role);
+		}
+	} catch (error) {
+		console.log(error);
+		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Sequelize Error' })
+	}
+}
+
+exports.deactivateUsers = async (req, res, next) => {
+	try {
+		console.log(req.body);
+		const userId = req.body.userId;
+		console.log(userId)
+		const type = req.body.type;
+		const update = { isActive: true };
+		switch (type) {
+			case "DeactiveTenant":
+				const tenant = await Tenant.findOne({ where: { tenantId: userId, isActive: false } });
+				if (tenant) {
+					await Tenant.update(update, { where: { tenantId: userId } });
+					res.status(httpStatus.OK).json({ message: "Tenant deactivated successfully" });
+				}
+				break;
+			case "DeactiveOwner":
+				const owner = await Owner.findOne({ where: { ownerId: userId, isActive: false } });
+				if (owner) {
+					await Owner.update(update, { where: { ownerId: userId } });
+					res.status(httpStatus.OK).json({ message: "Owner deactivated successfully" });
+				}
+				break;
+			case "DeactiveVendor":
+				const vendor = await Vendor.findOne({ where: { tenantId: userId, isActive: false } });
+				if (vendor) {
+					await Vendor.update(update, { where: { vendorId: userId } });
+					res.status(httpStatus.OK).json({ message: "Vendor deactivated successfully" });
+				}
+				break;
+			case "DeactiveEmployee":
+				const employee = await Employee.findOne({ where: { employeeId: userId, isActive: false } });
+				console.log(employee)
+				if (employee) {
+					await Employee.update(update, { where: { employeeId: userId } });
+					res.status(httpStatus.OK).json({ message: "Employee deactivated successfully" });
+				}
+				break;
+			default:
+				res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'No user found with this userId' });
+
+		}
+	} catch (error) {
+		console.log(error);
+		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Sequelize Error' })
+	}
+}
+
+

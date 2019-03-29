@@ -64,7 +64,11 @@ module.exports = function (app) {
 
 	app.get('/api/user/role', [authJwt.verifyToken], userController.role);
 
+	app.get('/api/user/role/assign', [authJwt.verifyToken], userController.rolesToAssign);
+
 	app.get('/api/user/deactive/:id', [authJwt.verifyToken], userController.deactiveUsersByRole);
+
+	app.put('/api/user/deactivate/user',[authJwt.verifyToken],userController.deactivateUsers);
 
 	app.get('/api/user/role/activate', [authJwt.verifyToken], userController.getRolesForActivation);
 

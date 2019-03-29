@@ -5,7 +5,11 @@ module.exports = (sequelize, Sequelize) => {
             autoIncrement: true,
             primaryKey: true
         },
-        societyBoardMemberName: {
+        firstName: {
+            type: Sequelize.STRING,
+            allowNull: false,
+        },
+        lastName: {
             type: Sequelize.STRING,
             allowNull: false,
         },

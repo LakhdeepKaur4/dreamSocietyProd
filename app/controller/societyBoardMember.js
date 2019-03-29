@@ -211,7 +211,8 @@ exports.createEncrypted = async (req, res, next) => {
 
         if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
             const create = {
-                societyBoardMemberName: encrypt(member.societyBoardMemberName),
+                firstName: encrypt(member.firstName),
+                lastName: encrypt(member.lastName),
                 currentAddress: encrypt(member.currentAddress),
                 permanentAddress: encrypt(member.permanentAddress),
                 contactNumber: encrypt(member.contactNumber),
@@ -242,7 +243,8 @@ exports.createEncrypted = async (req, res, next) => {
             })
                 .spread((societyBoardMember, created) => {
                     if (created) {
-                        societyBoardMember.societyBoardMemberName = decrypt(societyBoardMember.societyBoardMemberName);
+                        societyBoardMember.firstName = decrypt(societyBoardMember.firstName);
+                        societyBoardMember.lastName = decrypt(societyBoardMember.lastName);
                         societyBoardMember.currentAddress = decrypt(societyBoardMember.currentAddress);
                         societyBoardMember.permanentAddress = decrypt(societyBoardMember.permanentAddress);
                         societyBoardMember.contactNumber = decrypt(societyBoardMember.contactNumber);
@@ -260,8 +262,8 @@ exports.createEncrypted = async (req, res, next) => {
                         });
                     } else {
                         console.log('Duplicate Email or Contact, member not created');
-                        societyBoardMember.societyBoardMemberName = decrypt(societyBoardMember.societyBoardMemberName);
-                        societyBoardMember.currentAddress = decrypt(societyBoardMember.currentAddress);
+                        societyBoardMember.firstName = decrypt(societyBoardMember.firstName);
+                        societyBoardMember.lastName = decrypt(societyBoardMember.lastName);                        societyBoardMember.currentAddress = decrypt(societyBoardMember.currentAddress);
                         societyBoardMember.permanentAddress = decrypt(societyBoardMember.permanentAddress);
                         societyBoardMember.contactNumber = decrypt(societyBoardMember.contactNumber);
                         societyBoardMember.panCardNumber = decrypt(societyBoardMember.panCardNumber);
@@ -304,8 +306,8 @@ exports.getDecrypted =async (req, res, next) => {
         })
             .then(societyBoardMember => {
                 societyBoardMember.map(item => {
-                    item.societyBoardMemberName = decrypt(item.societyBoardMemberName);
-                    item.currentAddress = decrypt(item.currentAddress);
+                    item.firstName = decrypt(item.firstName);
+                    item.lastName = decrypt(item.lastName);                    item.currentAddress = decrypt(item.currentAddress);
                     item.permanentAddress = decrypt(item.permanentAddress);
                     item.contactNumber = decrypt(item.contactNumber);
                     item.panCardNumber = decrypt(item.panCardNumber);
@@ -378,7 +380,8 @@ exports.updateEncrypted = async (req, res, next) => {
         }
 
         if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
-            societyBoardMemberNameCheck = constraintCheck('societyBoardMemberName', update);
+            firstNameCheck = constraintCheck('firstName', update);
+            lastNameCheck = constraintCheck('lastName', update);
             currentAddressCheck = constraintCheck('currentAddress', update);
             permanentAddressCheck = constraintCheck('permanentAddress', update);
             contactNumberCheck = constraintCheck('contactNumber', update);
@@ -398,7 +401,8 @@ exports.updateEncrypted = async (req, res, next) => {
             cityIdCheck = constraintCheck('cityId', update);
             locationIdCheck = constraintCheck('locationId', update);
 
-            societyBoardMemberName = constraintReturn(societyBoardMemberNameCheck, update, 'societyBoardMemberName', societyBoardMember);
+            firstName = constraintReturn(firstNameCheck, update, 'firstName', societyBoardMember);
+            lastName = constraintReturn(lastNameCheck, update, 'lastName', societyBoardMember);
             currentAddress = constraintReturn(currentAddressCheck, update, 'currentAddress', societyBoardMember);
             permanentAddress = constraintReturn(permanentAddressCheck, update, 'permanentAddress', societyBoardMember);
             contactNumber = constraintReturn(contactNumberCheck, update, 'contactNumber', societyBoardMember);
@@ -419,7 +423,8 @@ exports.updateEncrypted = async (req, res, next) => {
             locationId = referenceConstraintReturn(locationIdCheck, update, 'locationId', societyBoardMember);
 
             const updates = {
-                societyBoardMemberName: societyBoardMemberName,
+                firstName: firstName,
+                lastName: lastName,
                 currentAddress: currentAddress,
                 permanentAddress: permanentAddress,
                 contactNumber: contactNumber,
@@ -448,7 +453,8 @@ exports.updateEncrypted = async (req, res, next) => {
                     return societyBoardMember.updateAttributes(updates);
                 })
                 .then(societyBoardMember => {
-                    societyBoardMember.societyBoardMemberName = decrypt(societyBoardMember.societyBoardMemberName);
+                    societyBoardMember.firstName = decrypt(societyBoardMember.firstName);
+                    societyBoardMember.lastName = decrypt(societyBoardMember.lastName);
                     societyBoardMember.currentAddress = decrypt(societyBoardMember.currentAddress);
                     societyBoardMember.permanentAddress = decrypt(societyBoardMember.permanentAddress);
                     societyBoardMember.contactNumber = decrypt(societyBoardMember.contactNumber);

@@ -5,6 +5,9 @@ var passwordGenerator = require('generate-password');
 const Nexmo = require("nexmo");
 const config = require('../config/config.js');
 const fs = require('fs');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
 
 const nexmo = new Nexmo(
     {
@@ -14,14 +17,36 @@ const nexmo = new Nexmo(
     { debug: true }
 );
 
+const User = db.user;
 const Vendor = db.vendor;
 const Service = db.service;
 const ServiceDetail = db.serviceDetail;
 const Rate =db.rate;
 const VendorService = db.vendorService;
 const Op = db.Sequelize.Op;
+const Otp = db.otp;
+const Role = db.role;
 
 const key = config.secret;
+
+
+
+setInterval(async function(){
+    let ndate = new Date();
+    let otps = await Otp.findAll();
+    if(otps){
+      otps.map( async otp => {
+        let timeStr = otp.createdAt.toString();
+        let diff =  Math.abs(ndate - new Date(timeStr.replace(/-/g,'/')));
+        console.log(diff);
+        if(Math.abs(Math.floor((diff / (1000 * 60)) % 60)>=5)){
+          // await Owner.destroy({where:{[Op.and]:[{ownerId:otp.ownerId},{isActive:false}]}});
+          await otp.destroy();
+          console.log("otp destroyed");
+        }
+      })
+    }
+  },1000);
 
 function encrypt(key, data) {
     var cipher = crypto.createCipher('aes-256-cbc', key);
@@ -30,6 +55,22 @@ function encrypt(key, data) {
 
     return crypted;
 }
+
+function encrypt1(key, data) {
+    var cipher = crypto.createCipher("aes-128-cbc", key);
+    var crypted = cipher.update(data, "utf-8", "hex");
+    crypted += cipher.final("hex");
+  
+    return crypted;
+  }
+
+function decrypt1(key, data) {
+    var decipher = crypto.createDecipher("aes-128-cbc", key);
+    var decrypted = decipher.update(data, "hex", "utf-8");
+    decrypted += decipher.final("utf-8");
+  
+    return decrypted;
+  }
 
 function decrypt(key, data) {
     var decipher = crypto.createDecipher('aes-256-cbc', key);
@@ -250,6 +291,41 @@ exports.deleteSelected = async (req, res, next) => {
 }
 
 
+let mailToUser = (email,vendorId) => {
+    const token = jwt.sign(
+      {data:'foo'},
+     'secret', { expiresIn: '1h' });
+    vendorId = encrypt(key,vendorId.toString());
+      const request = mailjet.post("send", { 'version': 'v3.1' })
+          .request({
+              "Messages": [
+                  {
+                      "From": {
+                          "Email": "rohit.khandelwal@greatwits.com",
+                          "Name": "Greatwits"
+                      },
+                      "To": [
+                          {
+                              "Email": email,
+                              "Name": 'Atin' + ' ' + 'Tanwar'
+                          }
+                      ],
+                      "Subject": "Activation link",
+                      "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://localhost:3000/login/tokenVerification?vendorId=${vendorId}&token=${token}">click here</a>`
+                  }
+              ]
+          })
+      request.then((result) => {
+              console.log(result.body)
+              // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
+          })
+          .catch((err) => {
+              console.log(err.statusCode)
+          })
+  }
+  
+
+
 exports.create1 = async (req, res, next) => {
     try {
         let body = req.body;
@@ -263,8 +339,8 @@ exports.create1 = async (req, res, next) => {
         if(existingContact){
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({message:'Contact already exists'})
         }
-        let customVendorName = body.vendorName;
-        const userName = customVendorName += Math.floor((Math.random() * 100) + 1);
+        let customVendorName = body.firstName + body.lastName; 
+        const userName = customVendorName += 'v'+ Math.floor((Math.random() * 100) + 1);
         const password = passwordGenerator.generate({
             length: 10,
             numbers: true
@@ -272,10 +348,12 @@ exports.create1 = async (req, res, next) => {
         const vendor = await Vendor.create({
             userName: encrypt(key,userName),
             password: password,
-            vendorName: encrypt(key,body.vendorName),
+            firstName: encrypt(key,body.firstName),
+            lastName: encrypt(key,body.lastName),
             permanentAddress: encrypt(key,body.permanentAddress),
             currentAddress: encrypt(key,body.currentAddress),
             contact: encrypt(key,body.contact),
+            email: encrypt(key,body.email),
             userId: req.userId
             // document: body.document
         });
@@ -333,31 +411,66 @@ exports.create1 = async (req, res, next) => {
                 return vendor.updateAttributes(updateDocument)
             })
         }
-        const message = `Welcome to Dream society your username is ${userName} and password is ${password}.Do not share with anyone.`
-        // nexmo.message.sendSms(config.number, body.contact, message, { type: 'text' }, (err, resp) => {
-        //     if (err) {
-        //         console.log(err);
-        //     } else {
-        //         console.log(resp);
-        //     }
-        // });
+        const message1 = `Welcome to Dream society your username is ${userName} and password is ${password}.Do not share with anyone.`
         console.log("vendor ==>",vendor);
         decryptedVendor = {
             userName : decrypt(key,vendor.userName),
-            vendorName: decrypt(key,vendor.vendorName),
+            firstName: decrypt(key,vendor.firstName),
+            lastName: decrypt(key,vendor.lastName),
             permanentAddress: decrypt(key,vendor.permanentAddress),
             currentAddress: decrypt(key,vendor.currentAddress),
             contact:decrypt(key,vendor.contact)
         }
-        return res.status(httpStatus.CREATED).json({
-            message: "Please check mobile for details",
-            decryptedVendor
-        });
-    } catch (error) {
-        console.log(error);
-        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
-    }
+
+        // let vendorName =  decrypt(key,vendor.vendorName);
+        // if (vendorName.indexOf(' ') !== -1) {
+        //     firstName = vendorName.split(' ')[0];
+        //     lastName = vendorName.split(' ')[1];
+        // } else {
+        //     firstName = vendorName;
+        //     lastName = '...';
+        // }
+        
+        if(decryptedVendor.firstName && decryptedVendor.lastName!==''){
+            firstName = decrypt(key,vendor.firstName);
+            lastName = decrypt(key,vendor.lastName)
+        }
+        else if(decryptedVendor.firstName && decryptedVendor.lastName ===''){
+            firstName = decrypt(key,vendor.firstName);
+            lastName = '...';
+        }
+
+        
+    let vendorUserName = decrypt(key,vendor.userName);
+    let email =  decrypt(key,vendor.email);
+    // set users
+    let user = await User.create({
+        firstName:encrypt1(key,firstName),
+        lastName:encrypt1(key,lastName),
+        userName:encrypt1(key,vendorUserName),
+        password:bcrypt.hashSync(vendor.password,8),
+        contact:encrypt1(key,vendor.contact),
+        email:encrypt1(key,email),
+        isActive:false
+    });
+    // set roles
+    console.log(vendor.password);
+    console.log(user.password);
+    let roles = await Role.find({
+        where:{id:5}
+    });
+
+    user.setRoles(roles);
+    const message = mailToUser(req.body.email,vendorId);
+    return res.status(httpStatus.CREATED).json({
+      message: "Vendor successfully created. please activate your account. click on the link delievered to your given email"
+    });
+  } catch (error) {
+    console.log("error==>", error);
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+  }
 }
+
 
 
 
@@ -373,8 +486,10 @@ exports.get1 = async (req, res, next) => {
         if (vendors) {
             vendors.map(vendor => {
                 vendor.userName = decrypt(key,vendor.userName);
-                vendor.vendorName = decrypt(key,vendor.vendorName)
+                vendor.firstName = decrypt(key,vendor.firstName);
+                vendor.lastName = decrypt(key,vendor.lastName)
                 vendor.picture = decrypt(key,vendor.picture)
+                vendor.email = decrypt(key,vendor.email);
                 vendor.documentOne = decrypt(key,vendor.documentOne)
                 vendor.documentTwo = decrypt(key,vendor.documentTwo)
                 // vendor.documentOne = (vendor.documentOne).replace('\\','/');
@@ -447,7 +562,7 @@ exports.get1 = async (req, res, next) => {
 
   exports.update1 = async (req, res, next) => {
     let updAttr = {};
-    let attrArr = ['userName','vendorName','permanentAddress','currentAddress','contact'];
+    let attrArr = ['userName','firstName','lastName','permanentAddress','currentAddress','contact','email'];
     let attrFiles = ['profilePicture','documentOne','documentTwo'];
     try {
         console.log("updating vendor");
@@ -493,27 +608,20 @@ exports.get1 = async (req, res, next) => {
                }
 
            })
-            // return vendor.updateAttributes({
-            //     userName:encrypt(key,req.body.userName),
-            //     vendorName:encrypt(key,req.body.vendorName),
-            //     picture:encrypt(key,req.files.profilePicture[0].path),
-            //     documentOne:encrypt(key,req.files.documentOne[0].path),
-            //     documentTwo:encrypt(key,req.files.documentTwo[0].path),
-            //     permanentAddress:encrypt(key,req.body.permanentAddress),
-            //     currentAddress:encrypt(key,req.body.currentAddress),
-            //     contact:encrypt(key,req.body.contact),
-            // })
             return vendor.updateAttributes(updAttr);
         })
         if (updatedVendor) {
             updatedVendor.userName = decrypt(key,updatedVendor.userName)
-            updatedVendor.vendorName = decrypt(key,updatedVendor.vendorName)
+            updatedVendor.firstName = decrypt(key,updatedVendor.firstName)
+            updatedVendor.lastName = decrypt(key,updatedVendor.lastName)
             updatedVendor.picture = decrypt(key,updatedVendor.picture)
             updatedVendor.documentOne = decrypt(key,updatedVendor.documentOne)
             updatedVendor.documentTwo = decrypt(key,updatedVendor.documentTwo)
             updatedVendor.permanentAddress = decrypt(key,updatedVendor.permanentAddress)
             updatedVendor.currentAddress = decrypt(key,updatedVendor.currentAddress)
             updatedVendor.contact = decrypt(key,updatedVendor.contact)
+            updatedVendor.email = decrypt(key,updatedVendor.email)
+
 
             if ( req.body.vendorServiceId!==undefined && req.body.rate1!==undefined && req.body.rate1!==null && req.body.rateId1!==undefined && req.body.rateId1!==null) {
                 let vendorService = await VendorService.find({
@@ -547,99 +655,7 @@ exports.get1 = async (req, res, next) => {
 
 
 
-// exports.update1 = async (req, res, next) => {
-//     let updAttr = {};
-//     let attrArr = ['userName','vendorName','permanentAddress','currentAddress','contact'];
-//     let attrFiles = ['profilePicture','documentOne','documentTwo'];
-//     try {
-//         console.log("updating vendor");
-//         console.log(":::::req.body==>",req.body)
-//         const id = req.params.id;
-//         console.log(":::::id",id)
-//         if (!id) {
-//             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
-//         }
-//         const update = req.body;
 
-        
-//         if (!update) {
-//             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
-//         }
-//         if(req.body.contact !== undefined && req.body.contact !== null){
-//             let existingVendor1 = await Vendor.find({
-//                 where: {[Op.and]: [{contact: encrypt(key, req.body.contact)}, { vendorId: {[Op.ne]: req.params.id }}]}
-            
-//             });
-//             if(existingVendor1) {
-//                 return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'contact already exist'});
-//             }
-//         }
-//         const updatedVendor = await Vendor.find({ where: { vendorId: id } }).then(vendor => {
-     
-//            attrArr.forEach(attr => {
-//                if(attr in req.body && req.body[attr]!==undefined && req.body[attr]!==null){
-//                    updAttr[attr] = encrypt(key,req.body[attr]);
-//                }
-//            })
-//            attrFiles.forEach(attr => {
-//                if(attr in req.files && req.files[attr][0]!==undefined && req.files[attr][0]!==null){
-//                    if(attr === 'profilePicture'){
-//                        deletePhoto(vendor);
-//                        updAttr.picture = encrypt(key,req.files[attr][0].path)
-//                    }
-//                    else if(attr === 'documentOne'){
-//                     deleteDocumentOne(vendor);
-//                     updAttr.documentOne = encrypt(key,req.files[attr][0].path);
-//                    }
-//                    else if(attr === 'documentTwo'){
-//                     deleteDocumentTwo(vendor);
-//                     updAttr.documentTwo = encrypt(key,req.files[attr][0].path);
-
-//                    }
-//                }
-
-//            })
-
-//             return vendor.updateAttributes(updAttr);
-//         })
-//         if (updatedVendor) {
-//             updatedVendor.userName = decrypt(key,updatedVendor.userName)
-//             updatedVendor.vendorName = decrypt(key,updatedVendor.vendorName)
-//             updatedVendor.picture = decrypt(key,updatedVendor.picture)
-//             updatedVendor.documentOne = decrypt(key,updatedVendor.documentOne)
-//             updatedVendor.documentTwo = decrypt(key,updatedVendor.documentTwo)
-//             updatedVendor.permanentAddress = decrypt(key,updatedVendor.permanentAddress)
-//             updatedVendor.currentAddress = decrypt(key,updatedVendor.currentAddress)
-//             updatedVendor.contact = decrypt(key,updatedVendor.contact)
-
-//             if ( req.body.vendorServiceId!==undefined && req.body.rate1!==undefined && req.body.rate1!==null && req.body.rateId1!==undefined && req.body.rateId1!==null) {
-//                 let vendorService = await VendorService.find({
-//                     where:{
-//                         vendorId:id,
-//                         vendorServiceId:req.body.vendorServiceId
-//                     },
-//                     include:[{model:ServiceDetail}]
-//                 });
-//                 vendorService.updateAttributes({
-//                     rateId:req.body.rateId1,
-//                     rate:req.body.rate1
-//                 });
-//                 if(req.body.serviceId){
-//                     vendorService.updateAttributes({
-//                         serviceId:req.body.serviceId
-//                     });
-//                 }
-//             }
-//             return res.status(httpStatus.OK).json({
-//                 message: "Vendor Updated Page",
-//                 vendor: updatedVendor
-//             });
-//         }
-//     } catch (error) {
-//         console.log(error)
-//         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
-//     }
-// }
 
 exports.deleteVendorService = async (req, res, next) => {
     try {
@@ -725,7 +741,5 @@ exports.updateVendorService = async (req,res,next) => {
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
-
-
 
 

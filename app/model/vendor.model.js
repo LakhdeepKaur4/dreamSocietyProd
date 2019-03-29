@@ -8,10 +8,14 @@ module.exports = (sequelize, Sequelize) => {
         userName: {
             type: Sequelize.STRING
         },
-        password: {
+        
+        firstName: {
             type: Sequelize.STRING
         },
-        vendorName: {
+        lastName: {
+            type: Sequelize.STRING
+        },
+        password: {
             type: Sequelize.STRING
         },
         picture:{
@@ -35,7 +39,10 @@ module.exports = (sequelize, Sequelize) => {
         },
         isActive: {
             type: Sequelize.BOOLEAN,
-            defaultValue: true
+            defaultValue: false
+        },
+        email: {
+            type: Sequelize.STRING
         },
         createdAt: {
             allowNull: false,

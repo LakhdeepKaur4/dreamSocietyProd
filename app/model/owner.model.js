@@ -5,7 +5,11 @@ module.exports = (sequelize, Sequelize) => {
                   autoIncrement: true,
                   primaryKey: true
             },
-            ownerName: {
+            firstName: {
+                  type: Sequelize.STRING,
+                  allowNull: false
+            },
+            lastName: {
                   type: Sequelize.STRING,
                   allowNull: false
             },
@@ -41,6 +45,10 @@ module.exports = (sequelize, Sequelize) => {
                   allowNull: false
             },
             permanentAddress: {
+                  type: Sequelize.STRING,
+                  allowNull: false
+            },
+            correspondenceAddress: {
                   type: Sequelize.STRING,
                   allowNull: false
             },

@@ -170,6 +170,8 @@ const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921a
 
 const Owner = db.owner;
 const Tenant = db.tenant;
+const Employee = db.employee;
+const Vendor = db.vendor
 
 const OwnerMembersDetail = db.ownerMembersDetail;
 const FlatDetail = db.flatDetail;
@@ -205,7 +207,7 @@ function decrypt(key, data) {
   }
 
 
-  let mailToUser = (owner) => {
+  let mailToOwnerOrVendor = (owner) => {
     let email = decrypt(key,owner.email);
     let password = owner.password;
     let userName = decrypt(key,owner.userName);
@@ -239,7 +241,7 @@ function decrypt(key, data) {
   }
   
 
-  let mailToTenant = (tenant) => {
+  let mailToTenantOrEmployee = (tenant) => {
     let email = decrypt1(key,tenant.email);
     let password = tenant.password;
     let userName = decrypt1(key,tenant.userName);
@@ -272,54 +274,11 @@ function decrypt(key, data) {
           })
   }
 
-  function sendMail(owner) {
-    let email = decrypt(key,owner.email);
-    let password = owner.password;
-    let userName = decrypt(key,owner.userName);
-    let transporter = nodeMailer.createTransport(smtpTransport({
-      service: 'gmail',
-      auth: {
-          user: 'avitanwar1234@gmail.com',
-          pass: '8459143023'
-      },
-      
-  }));
   
-     
-      let mailOptions = {
-          from: ' "avi" <avitanwar1234@gmail.com>', // sender address
-          to: email, // list of receivers
-          subject: 'test', // Subject line
-          text: 'this is to test api. click on the link below to verify', // plain text body
-          html: `your username is: ${userName} and password is: ${password}. ` // html body
-      };
-  
-      transporter.sendMail(mailOptions, (error, info) => {
-          if (error) {
-              return console.log(error);
-          }
-          console.log('Message %s sent: %s', info.messageId, info.response);
-          console.log('mail send');
-      });
-  };
-  
-
 
 exports.checkOtp = async (req,res,next) => {
 
     console.log("my name is atin===>", req.query);
-//  console.log("req====>",req.body.otp);
-//  console.log("req====>",req.body);
-//  console.log(req.query);
-// jwt.verify(req.query.token, 'secret', async (err, decoded) => {
-//     if (err){
-//         console.log(err);
-//         return res.status(500).json({ 
-//                 auth: false, 
-//                 message: 'Fail to Authentication. Error -> ' + err 
-//             });
-//     }
-    // else{
         if(req.query.ownerId){
             let ownerId = decrypt(key,req.query.ownerId);
             console.log(ownerId);
@@ -367,6 +326,122 @@ exports.checkOtp = async (req,res,next) => {
                 });
             }
         }
+
+// added vendor
+
+if(req.query.vendorId){
+    let vendorId = decrypt(key,req.query.vendorId);
+    console.log(vendorId);
+    let vendor = await Vendor.findOne({where:{vendorId:vendorId,isActive:false}});
+    console.log("vendor====>",vendor);
+    if(!vendor){
+        return res.status(403).json(
+            {
+            otpVerified: false,    
+            message: 'vendor does not exist or have already been activated'
+        });
+        // return console.log("owner does not exist or have already been activated");
+    }
+    let otpToCheck = parseInt(req.body.otp);
+    let vendorKey = vendor.vendorId;
+    let findOtp = await Otp.findOne({where:{otpvalue:otpToCheck,vendorId:vendorKey}});
+    if(findOtp===null || findOtp===undefined){
+        //  return console.log(' your otp  is invalid');
+        return res.status(200).json(
+            {
+            otpVerified: false,    
+            message: 'otp is invalid'
+        });
+        
+    }
+    let updatedVendor = await vendor.updateAttributes({isActive:true});
+    if(updatedVendor){
+        //  console.log('owner Successfully activated');
+         mailToOwnerOrVendor(updatedVendor);
+         let userName = decrypt(key,updatedVendor.userName);
+        // set users
+        let user = await User.findOne({
+            where:{userName:encrypt1(key,userName),
+            isActive:false
+            }
+        });
+        console.log("user==>",user);
+        if(user){
+            user.updateAttributes({isActive:true});
+        }
+         return res.status(200).json(
+            {
+            otpVerified: true, 
+            message: 'vendor Successfully Activated'
+        });
+    }
+}
+
+
+
+if(req.query.employeeId){
+        
+    let employeeId = decrypt1(key,req.query.employeeId);
+    console.log(employeeId);
+    let employee = await Employee.findOne({where:{employeeId:employeeId,isActive:false}});
+    if(employee===undefined || employee===null){
+        return res.status(403).json(
+            {
+            otpVerified: false,    
+            message: 'employee does not exist or have already been activated'
+        });
+    }
+    let otpToCheck = parseInt(req.body.otp);
+    let employeeKey = employee.employeeId;
+    let findOtp = await Otp.findOne({where:{otpvalue:otpToCheck,employeeId:employeeKey}});
+    if(findOtp===null || findOtp===undefined){
+         return res.status(200).json(
+                {
+                otpVerified: false,    
+                message: 'otp is invalid or expired'
+            });
+    }
+    let updatedEmployee = await employee.updateAttributes({isActive:true});
+    console.log(updatedEmployee);
+    if(updatedEmployee){
+         mailToTenantOrEmployee(updatedEmployee);
+
+        // set user
+        let userName = decrypt1(key,updatedEmployee.userName);
+        // set users
+        let user = await User.findOne({
+            where:{userName:encrypt1(key,userName)}
+        });
+        console.log("user===>======>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",user);
+        if(user){
+            user.updateAttributes({isActive:true});
+        }
+       
+        // set roles
+
+         return res.status(200).json(
+            {
+            otpVerified: false,    
+            message: 'employee successfully activated'
+        });
+    }
+    }
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         if(req.query.tenantId){
         
         let tenantId = decrypt1(key,req.query.tenantId);
