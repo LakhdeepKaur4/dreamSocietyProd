@@ -45,6 +45,10 @@ module.exports = (sequelize, Sequelize) => {
             allowNull: false,
             unique:'compositeIndex'
         },
+        gender: {
+            type: Sequelize.STRING,
+            allowNull: false,
+        },
         optionalMail: {
             type: Sequelize.STRING
         },

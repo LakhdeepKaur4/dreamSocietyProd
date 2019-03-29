@@ -221,6 +221,7 @@ exports.createEncrypted = async (req, res, next) => {
                 accountHolderName: encrypt(member.accountHolderName),
                 accountNumber: encrypt(member.accountNumber),
                 email: encrypt(member.email),
+                gender: encrypt(member.gender),
                 optionalMail: encrypt(member.optionalMail),
                 optionalContactNumber: encrypt(member.optionalContactNumber),
                 IFSCCode: encrypt(member.IFSCCode),
@@ -253,6 +254,7 @@ exports.createEncrypted = async (req, res, next) => {
                         societyBoardMember.accountHolderName = decrypt(societyBoardMember.accountHolderName);
                         societyBoardMember.accountNumber = decrypt(societyBoardMember.accountNumber);
                         societyBoardMember.email = decrypt(societyBoardMember.email);
+                        societyBoardMember.gender = decrypt(societyBoardMember.gender);
                         societyBoardMember.optionalMail = decrypt(societyBoardMember.optionalMail);
                         societyBoardMember.optionalContactNumber = decrypt(societyBoardMember.optionalContactNumber);
                         societyBoardMember.IFSCCode = decrypt(societyBoardMember.IFSCCode);
@@ -271,6 +273,7 @@ exports.createEncrypted = async (req, res, next) => {
                         societyBoardMember.accountHolderName = decrypt(societyBoardMember.accountHolderName);
                         societyBoardMember.accountNumber = decrypt(societyBoardMember.accountNumber);
                         societyBoardMember.email = decrypt(societyBoardMember.email);
+                        societyBoardMember.gender = decrypt(societyBoardMember.gender);
                         societyBoardMember.optionalMail = decrypt(societyBoardMember.optionalMail);
                         societyBoardMember.optionalContactNumber = decrypt(societyBoardMember.optionalContactNumber);
                         societyBoardMember.IFSCCode = decrypt(societyBoardMember.IFSCCode);
@@ -315,6 +318,7 @@ exports.getDecrypted =async (req, res, next) => {
                     item.accountHolderName = decrypt(item.accountHolderName);
                     item.accountNumber = decrypt(item.accountNumber);
                     item.email = decrypt(item.email);
+                    item.gender = decrypt(item.gender);
                     item.optionalMail = decrypt(item.optionalMail);
                     item.optionalContactNumber = decrypt(item.optionalContactNumber);
                     item.IFSCCode = decrypt(item.IFSCCode);
@@ -390,6 +394,7 @@ exports.updateEncrypted = async (req, res, next) => {
             accountHolderNameCheck = constraintCheck('accountHolderName', update);
             accountNumberCheck = constraintCheck('accountNumber', update);
             emailCheck = constraintCheck('email', update);
+            genderCheck = constraintCheck('gender', update);
             optionalMailCheck = constraintCheck('optionalMail', update);
             optionalContactNumberCheck = constraintCheck('optionalContactNumber', update);
             IFSCCodeCheck = constraintCheck('IFSCCode', update);
@@ -411,6 +416,7 @@ exports.updateEncrypted = async (req, res, next) => {
             accountHolderName = constraintReturn(accountHolderNameCheck, update, 'accountHolderName', societyBoardMember);
             accountNumber = constraintReturn(accountNumberCheck, update, 'accountNumber', societyBoardMember);
             email = constraintReturn(emailCheck, update, 'email', societyBoardMember);
+            gender = constraintReturn(genderCheck, update, 'gender', societyBoardMember);
             optionalMail = constraintReturn(optionalMailCheck, update, 'optionalMail', societyBoardMember);
             optionalContactNumber = constraintReturn(optionalContactNumberCheck, update, 'optionalContactNumber', societyBoardMember);
             IFSCCode = constraintReturn(IFSCCodeCheck, update, 'IFSCCode', societyBoardMember);
@@ -433,6 +439,7 @@ exports.updateEncrypted = async (req, res, next) => {
                 accountHolderName: accountHolderName,
                 accountNumber: accountNumber,
                 email: email,
+                gender: gender,
                 optionalMail: optionalMail,
                 optionalContactNumber: optionalContactNumber,
                 IFSCCode: IFSCCode,
@@ -463,6 +470,7 @@ exports.updateEncrypted = async (req, res, next) => {
                     societyBoardMember.accountHolderName = decrypt(societyBoardMember.accountHolderName);
                     societyBoardMember.accountNumber = decrypt(societyBoardMember.accountNumber);
                     societyBoardMember.email = decrypt(societyBoardMember.email);
+                    societyBoardMember.gender = decrypt(societyBoardMember.gender);
                     societyBoardMember.optionalMail = decrypt(societyBoardMember.optionalMail);
                     societyBoardMember.optionalContactNumber = decrypt(societyBoardMember.optionalContactNumber);
                     societyBoardMember.IFSCCode = decrypt(societyBoardMember.IFSCCode);
