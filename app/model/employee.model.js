@@ -4,13 +4,7 @@ module.exports = (sequelize, Sequelize) => {
 			type: Sequelize.INTEGER,
 			autoIncrement: true,
 			primaryKey: true
-        },
-        uniqueId: {
-            type: Sequelize.STRING
-        },
-        userName: {
-            type: Sequelize.STRING
-        },
+		},
 		firstName: {
             type: Sequelize.STRING
         },
@@ -20,22 +14,10 @@ module.exports = (sequelize, Sequelize) => {
 		lastName: {
             type: Sequelize.STRING,
         },
-        password: {
-            type: Sequelize.STRING,
-        },
-        email: {
-            type: Sequelize.STRING,
-        },
-        contact: {
-            type: Sequelize.STRING,
-        },
         salary:{
             type: Sequelize.STRING,
         },
         address: {
-            type: Sequelize.STRING,
-        },
-        serviceType:{
             type: Sequelize.STRING,
         },
         startDate:{
@@ -52,7 +34,7 @@ module.exports = (sequelize, Sequelize) => {
         },
         isActive: {
 			type: Sequelize.BOOLEAN,
-			defaultValue: false
+			defaultValue: true
 		},
 	}, {
 		freezeTableName: true
