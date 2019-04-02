@@ -26,8 +26,8 @@ exports.create = async (req, res) => {
     // }
     const locations = await Location.findAll({
         where: {
-            [Op.and]:[
-                {isActive: true},
+            [Op.and]: [
+                { isActive: true },
                 { stateId: req.body.stateId },
                 { countryId: req.body.countryId },
                 { cityId: req.body.cityId },
@@ -59,9 +59,9 @@ exports.get = (req, res) => {
     Location.findAll({
         where: { isActive: true },
         order: [['createdAt', 'DESC']],
-        include: [{ model: State, attributes: ['stateId', 'stateName'] },
-        { model: Country, attributes: ['countryId', 'countryName'] },
-        { model: City, attributes: ['cityId', 'cityName'] },
+        include: [{ where: { isActive: true }, model: State, attributes: ['stateId', 'stateName'] },
+        { where: { isActive: true }, model: Country, attributes: ['countryId', 'countryName'] },
+        { where: { isActive: true }, model: City, attributes: ['cityId', 'cityName'] },
         ]
     })
         .then(location => {
@@ -71,7 +71,7 @@ exports.get = (req, res) => {
 
 exports.getById = (req, res) => {
     Location.findAll({
-        where: { cityId: req.params.id },
+        where: { isActive:true,cityId: req.params.id },
     }).then(location => {
         res.status(200).json(
             location
@@ -90,12 +90,12 @@ exports.update = async (req, res) => {
         res.json("Please enter id");
     }
     const updates = req.body;
-    console.log("updates==>",updates);
+    console.log("updates==>", updates);
 
     const location = await Location.findOne({
         where: {
-            [Op.and]:[
-                {isActive: true},
+            [Op.and]: [
+                { isActive: true },
                 { locationId: id },
                 { stateId: req.body.stateId },
                 { countryId: req.body.countryId },
@@ -103,46 +103,46 @@ exports.update = async (req, res) => {
             ]
         }
     })
-    console.log("location==>",location)
-    if(location.locationName === updates.locationName){
+    console.log("location==>", location)
+    if (location.locationName === updates.locationName) {
         const updatedLocation = await Location.find({ where: { locationId: id } }).then(location => {
             return location.updateAttributes(updates)
         })
         if (updatedLocation) {
             return res.status(httpStatus.OK).json({
                 message: "Location Updated Page",
-                updatedLocation: updatedLocation 
+                updatedLocation: updatedLocation
             });
         }
-    }else{
-    const locations = await Location.findAll({
-        where: {
-            [Op.and]:[
-                {isActive: true},
-                { stateId: req.body.stateId },
-                { countryId: req.body.countryId },
-                { cityId: req.body.cityId },
-            ]
-        }
-    })
-    console.log(locations);
-    let error = locations.some(location => {
-        return location.locationName.toLowerCase().replace(/ /g, '') == req.body.locationName.toLowerCase().replace(/ /g, '');
-    });
-    if (error) {
-        console.log("inside state");
-        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Location Name already Exists" })
-    }
-    Location.find({
-        where: { locationId: id }
-    })
-        .then(location => {
-            return location.updateAttributes(updates)
+    } else {
+        const locations = await Location.findAll({
+            where: {
+                [Op.and]: [
+                    { isActive: true },
+                    { stateId: req.body.stateId },
+                    { countryId: req.body.countryId },
+                    { cityId: req.body.cityId },
+                ]
+            }
         })
-        .then(updatedLocation => {
-            res.json({ message: "Location updated successfully!", updatedLocation: updatedLocation });
+        console.log(locations);
+        let error = locations.some(location => {
+            return location.locationName.toLowerCase().replace(/ /g, '') == req.body.locationName.toLowerCase().replace(/ /g, '');
         });
-}
+        if (error) {
+            console.log("inside state");
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Location Name already Exists" })
+        }
+        Location.find({
+            where: { locationId: id }
+        })
+            .then(location => {
+                return location.updateAttributes(updates)
+            })
+            .then(updatedLocation => {
+                res.json({ message: "Location updated successfully!", updatedLocation: updatedLocation });
+            });
+    }
 }
 
 exports.delete = async (req, res, next) => {

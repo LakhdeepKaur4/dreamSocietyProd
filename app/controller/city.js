@@ -46,8 +46,8 @@ exports.get = (req, res) => {
     City.findAll({
         where: { isActive: true },
         order: [['createdAt', 'DESC']],
-        include: [{ model: State, attributes: ['stateId', 'stateName'] },
-        { model: Country, attributes: ['countryId', 'countryName'] }]
+        include: [{ where:{isActive:true},model: State, attributes: ['stateId', 'stateName'] },
+         { where:{isActive:true},model: Country, attributes: ['countryId', 'countryName'] }]
     })
         .then(cities => {
             res.json(cities);

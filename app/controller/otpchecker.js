@@ -307,7 +307,7 @@ exports.checkOtp = async (req,res,next) => {
             let updatedOwner = await owner.updateAttributes({isActive:true});
             if(updatedOwner){
                 //  console.log('owner Successfully activated');
-                 mailToUser(updatedOwner);
+                mailToOwnerOrVendor(updatedOwner);
                  let userName = decrypt(key,updatedOwner.userName);
                 // set users
                 let user = await User.findOne({

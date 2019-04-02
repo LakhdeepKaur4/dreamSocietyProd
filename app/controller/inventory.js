@@ -6,6 +6,7 @@ const Inventory = db.inventory;
 const Assets = db.assets;
 const AssetsType = db.assetsType;
 const Op = db.Sequelize.Op;
+const shortId = require('short-id');
 
 exports.create = async (req, res, next) => {
     try {
@@ -21,7 +22,7 @@ exports.create = async (req, res, next) => {
         assetName = assets.assetName;
         if (body.number && req.body.autoGenerate) {
             for (let i = 0; i < body.number; i++) {
-                serialNumber = assetName.toUpperCase().substring(0, 2) + i;
+                serialNumber = assetName.toUpperCase().substring(0, 2) + shortId.generate();
                 body.serialNumber = serialNumber;
                 inventory = await Inventory.create(body);
             }
@@ -53,64 +54,38 @@ exports.get = async (req, res, next) => {
     try {
         const assetsId = [];
         const assetTypesId = [];
-        // const inventory = await Inventory.findAll({
-        //     where: { isActive: true },
-        //     distinct:true,
-        //     order: [['createdAt', 'DESC']],
-        //     include: [
-        //         { model: Assets },
-        //         { model: AssetsType }
-        //     ]
-        // });
-        // inventory.map(asset => assetsId.push(asset.assetId))
-        // console.log(assetsId)
-        // const distinctInventories = await Inventory.findAll({
-        // where:{ assetId: { [Op.in]: assetsId }},
-        // distinct:'assetId'
-        // })
-        // console.log(distinctInventories.length);
         const inventory = await Inventory.findAll({
-            // distinct: true,
-            raw:true,
-            attributes: [
-                [sequelize.fn('DISTINCT', sequelize.col('assetId')), 'assetId'], 'assetTypeId', 'number', 'rate', 'assetId', 'dateOfPurchase'
-            ],include:[
-                {model:Assets}
-            ]
+            where:{isActive:true},
+            attributes: ['inventoryId','dateOfPurchase', [sequelize.fn('count', sequelize.col('serialNumber')), 'count'], [sequelize.fn('AVG', sequelize.col('rate')),'avgRate'],[sequelize.fn('SUM', sequelize.col('rate')),'sum']],
+            include: [{ model: Assets, attributes: ['assetId','assetName'] },
+            { model: AssetsType, attributes: ['assetTypeId', 'assetType'] },
+            ],
+            group: ['inventory_master.assetId'],
+            order: [['createdAt', 'DESC']],
+            // raw: false,
+            order: sequelize.literal('count DESC')
         });
-        inventory.map(asset => assetsId.push(asset.assetId));
-        inventory.map(asset => assetTypesId.push(asset.assetTypeId))
-        const assets = await Assets.findAll({
-            attributes: ['assetId', 'assetName'],
-            where: {
-                [Op.and]: {
-                    isActive: true,
-                    assetId: { [Op.in]: assetsId }
-                },
-            }
-        })
-
-        const assetsType = await AssetsType.findAll({
-            attributes: ['assetTypeId', 'assetType'],
-            where: {
-                [Op.and]: {
-                    isActive: true,
-                    assetTypeId: { [Op.in]: assetTypesId }
-                },
-            }
-        })
-        // inventory['assets'] = assets;
-        // inventory['assetstype'] =assetsType;
-
-        // inventory.splice(0, 0, assets);
-        // inventory.splice(0, 0, assetsType);
-
-        // inventory.push({assets:assets,assetsType:assetsType})
-        inventory['assets'] = assets;
+        
         if (inventory) {
             return res.status(httpStatus.OK).json({
                 message: "Inventory Content Page",
                 inventory: inventory,
+            });
+        }
+    } catch (error) {
+        console.log("error==>", error)
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
+
+exports.getInventoryByAssetId = async (req, res, next) => {
+    try {
+        const assetId = req.params.id;
+        const inventories = await Inventory.findAll({ where: { isActive: true, assetId: assetId }, include: [Assets, AssetsType] })
+        if (inventories) {
+            return res.status(httpStatus.OK).json({
+                message: "Inventory Content Page",
+                inventory: inventories,
             });
         }
     } catch (error) {

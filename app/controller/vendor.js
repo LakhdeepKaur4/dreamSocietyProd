@@ -38,7 +38,6 @@ setInterval(async function(){
       otps.map( async otp => {
         let timeStr = otp.createdAt.toString();
         let diff =  Math.abs(ndate - new Date(timeStr.replace(/-/g,'/')));
-        console.log(diff);
         if(Math.abs(Math.floor((diff / (1000 * 60)) % 60)>=5)){
           // await Owner.destroy({where:{[Op.and]:[{ownerId:otp.ownerId},{isActive:false}]}});
           await otp.destroy();
@@ -421,15 +420,6 @@ exports.create1 = async (req, res, next) => {
             currentAddress: decrypt(key,vendor.currentAddress),
             contact:decrypt(key,vendor.contact)
         }
-
-        // let vendorName =  decrypt(key,vendor.vendorName);
-        // if (vendorName.indexOf(' ') !== -1) {
-        //     firstName = vendorName.split(' ')[0];
-        //     lastName = vendorName.split(' ')[1];
-        // } else {
-        //     firstName = vendorName;
-        //     lastName = '...';
-        // }
         
         if(decryptedVendor.firstName && decryptedVendor.lastName!==''){
             firstName = decrypt(key,vendor.firstName);
@@ -456,11 +446,13 @@ exports.create1 = async (req, res, next) => {
     // set roles
     console.log(vendor.password);
     console.log(user.password);
-    let roles = await Role.find({
+     let roles = await Role.findOne({
         where:{id:5}
     });
 
-    user.setRoles(roles);
+    // user.setRoles(roles);
+    console.log("vendor role==>",roles)
+    UserRoles.create({userId:user.userId,roleId:roles.id});
     const message = mailToUser(req.body.email,vendorId);
     return res.status(httpStatus.CREATED).json({
       message: "Vendor successfully created. please activate your account. click on the link delievered to your given email"
@@ -715,7 +707,7 @@ exports.updateVendorService = async (req,res,next) => {
         console.log("updating vendor");
         console.log(":::::req.body==>",req.body)
         const id = req.params.id;
-        console.log(":::::id",id)
+        console.log(":::::ids",req.params);
         if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
         }
@@ -724,6 +716,14 @@ exports.updateVendorService = async (req,res,next) => {
         if (!update) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
+        // if(req.body.rateId && req.body.serviceId){
+            let ups = await VendorService.findOne({where:{serviceId:req.body.serviceId , rateId:req.body.rateId, vendorId:req.body.vendorId } });
+            if(ups){
+                console.log(ups);
+                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "this service already exist" });
+            }
+        // }
+        
         const updatedVendorService = await VendorService.find({ where: { vendorServiceId: id } }).then(vendorService => {
            
            attrArr.forEach(attr => {

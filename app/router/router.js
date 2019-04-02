@@ -42,6 +42,7 @@ module.exports = function (app) {
 	const floor = require('../controller/floor');
 	const otpChecker = require('../controller/otpchecker');
 	const checkToken = require('../controller/checktoken');
+	const eventBooking = require('../controller/eventBooking');
 
 
 	app.get('/', userController.start);
@@ -52,7 +53,7 @@ module.exports = function (app) {
 
 	app.get('/api/user', [authJwt.verifyToken], userController.getUserDecrypted);
 
-	app.post('/api/assignRoles',[authJwt.verifyToken],userController.assignRoles);
+	app.post('/api/assignRoles', [authJwt.verifyToken], userController.assignRoles);
 
 	app.get('/api/person', [authJwt.verifyToken], userController.getPersonDecrypted);
 
@@ -68,7 +69,13 @@ module.exports = function (app) {
 
 	app.get('/api/user/deactive/:id', [authJwt.verifyToken], userController.deactiveUsersByRole);
 
-	app.put('/api/user/deactivate/user',[authJwt.verifyToken],userController.deactivateUsers);
+	app.put('/api/user/deactivate/user', [authJwt.verifyToken], userController.deactivateUsers);
+
+	app.put('/api/user/activate', [authJwt.verifyToken], userController.activateUsers);
+
+	app.put('/api/user/multiple/deactivate', [authJwt.verifyToken], userController.multipleDeactivateUsers);
+
+	app.put('/api/user/multiple/activate', [authJwt.verifyToken], userController.multipleActivateUsers);
 
 	app.get('/api/user/role/activate', [authJwt.verifyToken], userController.getRolesForActivation);
 
@@ -366,17 +373,19 @@ module.exports = function (app) {
 
 	app.get('/api/inventory', [authJwt.verifyToken], inventoryController.get);
 
+	app.get('/api/inventory/:id', [authJwt.verifyToken], inventoryController.getInventoryByAssetId);
+
 	app.put('/api/inventory/:id', [authJwt.verifyToken], inventoryController.update);
 
 	app.put('/api/inventory/delete/deleteSelected', [authJwt.verifyToken], inventoryController.deleteSelected);
 
 	app.put('/api/inventory/delete/:id', [authJwt.verifyToken], inventoryController.delete);
 
-	app.post('/api/employee', [authJwt.verifyToken], fileUploadConfig.fields([{ name: 'profilePicture', maxCount: 1 }, { name: 'documentOne', maxCount: 1 }, { name: 'documentTwo', maxCount: 1 }]), employeeController.createEncrypt);
+	app.post('/api/employee', fileUploadConfig.fields([{ name: 'profilePicture', maxCount: 1 }, { name: 'documentOne', maxCount: 1 }, { name: 'documentTwo', maxCount: 1 }]), employeeController.createEncrypt);
 
 	app.put('/api/employee/delete/deleteSelected', [authJwt.verifyToken], employeeController.deleteSelected);
 
-	app.get('/api/employee', [authJwt.verifyToken], employeeController.getDecrypt);
+	app.get('/api/employee', employeeController.getDecrypt);
 
 	// app.put('/api/employee/:id',[authJwt.verifyToken],employeeController.update);
 
@@ -503,5 +512,11 @@ module.exports = function (app) {
 	app.post('/api/ownerActivation', otpChecker.checkOtp);
 
 	app.post('/api/checkToken', checkToken.checkToken);
+
+	app.post('/api/createEventBooking', [authJwt.verifyToken], eventBooking.create);
+
+	app.get('/api/getEventBookings', [authJwt.verifyToken], eventBooking.get);
+
+	app.put('/api/updateEventBookings/:id', [authJwt.verifyToken], eventBooking.update);
 
 }

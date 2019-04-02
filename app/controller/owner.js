@@ -26,6 +26,7 @@ const User = db.user;
 const Relation = db.relation;
 const Otp = db.otp;
 const Role = db.role;
+const UserRoles = db.userRole;
 
 
 // setInterval(async function(){
@@ -390,11 +391,13 @@ if (ownerName.indexOf(' ') !== -1) {
     // set roles
     console.log(owner.password);
     console.log(user.password);
-    let roles = await Role.find({
+    let roles = await Role.findOne({
         where:{id:3}
     });
 
-    user.setRoles(roles);
+    // user.setRoles(roles);
+    console.log("owner role==>",roles);
+    UserRoles.create({userId:user.userId,roleId:roles.id});
     const message = mailToUser(req.body.email,ownerId);
     return res.status(httpStatus.CREATED).json({
       message: "Owner successfully created. please activate your account. click on the link delievered to your given email"

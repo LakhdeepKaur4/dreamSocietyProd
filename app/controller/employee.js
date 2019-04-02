@@ -11,8 +11,8 @@ const jwt = require('jsonwebtoken');
 const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
 
 const Employee = db.employee;
-// const EmployeeType =db.employeeType;
-// const EmployeeWorkType =db.employeeWorkType;
+const EmployeeType = db.employeeType;
+const EmployeeWorkType = db.employeeWorkType;
 const Country = db.country;
 const City = db.city;
 const State = db.state;
@@ -21,41 +21,43 @@ const Op = db.Sequelize.Op;
 const User = db.user;
 const Otp = db.otp;
 const Role = db.role;
+const EmployeeDetail = db.employeeDetail;
+const UserRoles = db.userRole;
 
 
 
-let mailToUser = (email,employeeId) => {
+let mailToUser = (email, employeeId) => {
     const token = jwt.sign(
-      {data:'foo'},
-     'secret', { expiresIn: 20 });
+        { data: 'foo' },
+        'secret', { expiresIn: '1h'});
     employeeId = encrypt(employeeId.toString());
-      const request = mailjet.post("send", { 'version': 'v3.1' })
-          .request({
-              "Messages": [
-                  {
-                      "From": {
-                          "Email": "rohit.khandelwal@greatwits.com",
-                          "Name": "Greatwits"
-                      },
-                      "To": [
-                          {
-                              "Email": email,
-                              "Name": 'Atin' + ' ' + 'Tanwar'
-                          }
-                      ],
-                      "Subject": "Activation link",
-                      "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://localhost:3000/login/tokenVerification?employeeId=${employeeId}&token=${token}">click here</a>`
-                  }
-              ]
-          })
-      request.then((result) => {
-              console.log(result.body)
-              // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
-          })
-          .catch((err) => {
-              console.log(err.statusCode)
-          })
-  }
+    const request = mailjet.post("send", { 'version': 'v3.1' })
+        .request({
+            "Messages": [
+                {
+                    "From": {
+                        "Email": "rohit.khandelwal@greatwits.com",
+                        "Name": "Greatwits"
+                    },
+                    "To": [
+                        {
+                            "Email": email,
+                            "Name": 'Atin' + ' ' + 'Tanwar'
+                        }
+                    ],
+                    "Subject": "Activation link",
+                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://localhost:3000/login/tokenVerification?employeeId=${employeeId}&token=${token}">click here</a>`
+                }
+            ]
+        })
+    request.then((result) => {
+        console.log(result.body)
+        // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
+    })
+        .catch((err) => {
+            console.log(err.statusCode)
+        })
+}
 
 exports.create = async (req, res, next) => {
     try {
@@ -318,19 +320,24 @@ exports.createEncrypt = async (req, res, next) => {
                     firstName: encrypt(body.firstName),
                     middleName: encrypt(body.middleName),
                     email: encrypt(body.email),
-                    password:password,
+                    password: password,
                     contact: encrypt(body.contact),
                     lastName: encrypt(body.lastName),
                     salary: encrypt(body.salary),
-                    address: encrypt(body.address),
+                    permanentAddress: encrypt(body.permanentAddress),
+                    currentAddress: encrypt(body.currentAddress),
                     startDate: encrypt(body.startDate),
-                    serviceType: encrypt(body.serviceType),
+                    employeeDetailId: body.employeeDetailId,
                     // // endDate: encrypt(body.endDate),
                     userId: body.userId,
-                    countryId: body.countryId,
-                    stateId: body.stateId,
-                    cityId: body.cityId,
-                    locationId: body.locationId
+                    countryId1: body.countryId1,
+                    stateId1: body.stateId1,
+                    cityId1: body.cityId1,
+                    locationId1: body.locationId1,
+                    countryId2: body.countryId2,
+                    stateId2: body.stateId2,
+                    cityId2: body.cityId2,
+                    locationId2: body.locationId2
                 })
                 .then(emp => {
                     // console.log(emp);
@@ -342,7 +349,6 @@ exports.createEncrypt = async (req, res, next) => {
                 .catch(err => console.log('Creation Error ===>', err))
 
             if (req.files) {
-
                 let profileImage;
                 // console.log(req.files.profilePicture[0].path);
                 profileImage = req.files.profilePicture[0].path;
@@ -378,75 +384,77 @@ exports.createEncrypt = async (req, res, next) => {
                     })
                     .catch(err => console.log(err))
 
+            }
+
+            Employee.find({
+                where: {
+                    employeeId: employeeId
                 }
+            })
+                .then(async employee => {
+                    console.log(employee);
+                    employee.userName = decrypt(employee.userName);
+                    employee.firstName = decrypt(employee.firstName);
+                    employee.middleName = decrypt(employee.middleName);
+                    employee.lastName = decrypt(employee.lastName);
+                    employee.email = decrypt(employee.email);
+                    employee.contact = decrypt(employee.contact);
+                    employee.salary = decrypt(employee.salary);
+                    employee.permanentAddress = decrypt(employee.permanentAddress);
+                    employee.currentAddress = decrypt(employee.currentAddress);
+                    employee.startDate = decrypt(employee.startDate);
+                    // employee.serviceType = decrypt(employee.serviceType);
+                    // // employee.endDate = decrypt(employee.endDate);
+                    // employee.picture = decrypt(employee.picture);
+                    // employee.documentOne = decrypt(employee.documentOne);
+                    // employee.documentTwo = decrypt(employee.documentTwo);
 
-                Employee.find({
-                    where: {
-                        employeeId: employeeId
+
+                    if (employee.firstName && employee.lastName !== '') {
+                        firstName = employee.firstName;
+                        lastName = employee.lastName;
                     }
-                })
-                    .then(async employee => {
-                        console.log(employee);
-                        employee.userName = decrypt(employee.userName);
-                        employee.firstName = decrypt(employee.firstName);
-                        employee.middleName = decrypt(employee.middleName);
-                        employee.lastName = decrypt(employee.lastName);
-                        employee.email = decrypt(employee.email);
-                        employee.contact = decrypt(employee.contact);
-                        employee.salary = decrypt(employee.salary);
-                        employee.address = decrypt(employee.address);
-                        employee.startDate = decrypt(employee.startDate);
-                        employee.serviceType = decrypt(employee.serviceType);
-                        // // employee.endDate = decrypt(employee.endDate);
-                        // employee.picture = decrypt(employee.picture);
-                        // employee.documentOne = decrypt(employee.documentOne);
-                        // employee.documentTwo = decrypt(employee.documentTwo);
+                    else if (employee.firstName && employee.lastName === '') {
+                        firstName = employee.firstName;
+                        lastName = '...';
+                    }
 
-                        
-                        if(employee.firstName && employee.lastName!==''){
-                            firstName = employee.firstName;
-                            lastName = employee.lastName;
-                        }
-                        else if(employee.firstName && employee.lastName ===''){
-                            firstName = employee.firstName;
-                            lastName = '...';
-                        }
-                
-                        
+
                     let employeeUserName = employee.userName;
                     // let email =  employee.email;
                     // set users
                     let user = await User.create({
-                        firstName:encrypt(firstName),
-                        lastName:encrypt(lastName),
-                        userName:encrypt(employeeUserName),
-                        password:bcrypt.hashSync(employee.password,8),
-                        contact:encrypt(employee.contact),
-                        email:encrypt(employee.email),
-                        isActive:false
+                        firstName: encrypt(firstName),
+                        lastName: encrypt(lastName),
+                        userName: encrypt(employeeUserName),
+                        password: bcrypt.hashSync(employee.password, 8),
+                        contact: encrypt(employee.contact),
+                        email: encrypt(employee.email),
+                        isActive: false
                     });
                     // set roles
                     console.log(employee.password);
                     console.log(employee.password);
-                    let roles = await Role.find({
-                        where:{id:6}
+                    let roles = await Role.findOne({
+                        where: { id: 6 }
                     });
-                
-                    user.setRoles(roles);
-                    const message = mailToUser(req.body.email,employeeId);
+                    console.log("employee role",roles)
+                    // user.setRoles(roles);
+                    UserRoles.create({userId:user.userId,roleId:roles.id});
+                    const message = mailToUser(req.body.email, employeeId);
                     return res.status(httpStatus.CREATED).json({
-                      message: "Employee successfully created. please activate your account. click on the link delievered to your given email"
+                        message: "Employee successfully created. please activate your account. click on the link delievered to your given email"
                     });
-                    })
-                    .catch(err => console.log(err))
-            }else {
-                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
-            }
-        } catch (error) {
-            console.log(error);
-            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+                })
+                .catch(err => console.log(err))
+        } else {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
         }
-    } 
+    } catch (error) {
+        console.log(error);
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
 
 exports.getDecrypt = async (req, res, next) => {
     try {
@@ -457,10 +465,21 @@ exports.getDecrypt = async (req, res, next) => {
             },
             order: [['createdAt', 'DESC']],
             include: [
-                { model: City },
-                { model: State },
-                { model: Location },
-                { model: Country }
+                { model: City, as: 'City1' },
+                { model: State, as: 'State1' },
+                { model: Location, as: 'Location1' },
+                { model: Country, as: 'Country1' },
+                { model: City, as: 'City2' },
+                { model: State, as: 'State2' },
+                { model: Location, as: 'Location2' },
+                { model: Country, as: 'Country2' },
+                {
+                    model: EmployeeDetail,
+                    include: [
+                        { model: EmployeeType },
+                        { model: EmployeeWorkType }
+                    ]
+                }
             ]
         })
             .then(async emp => {
@@ -473,9 +492,10 @@ exports.getDecrypt = async (req, res, next) => {
                     item.email = decrypt(item.email);
                     item.contact = decrypt(item.contact);
                     item.salary = decrypt(item.salary);
-                    item.address = decrypt(item.address);
+                    item.permanentAddress = decrypt(item.permanentAddress);
+                    item.currentAddress = decrypt(item.currentAddress);
                     item.startDate = decrypt(item.startDate);
-                    item.serviceType = decrypt(item.serviceType);
+                    // item.serviceType = decrypt(item.serviceType);
                     // // item.endDate = decrypt(item.endDate);
                     item.picture = decrypt(item.picture);
                     item.documentOne = decrypt(item.documentOne);
@@ -530,7 +550,7 @@ exports.updateEncrypt = async (req, res, next) => {
         } else {
             employeeContactErr = null;
         }
-    
+
         if (employeeEmailErr !== null) {
             messageEmailErr = 'Email already in use';
         }
@@ -614,30 +634,40 @@ exports.updateEncrypt = async (req, res, next) => {
             emailCheck = constraintCheck('email', update);
             contactCheck = constraintCheck('contact', update);
             salaryCheck = constraintCheck('salary', update);
-            addressCheck = constraintCheck('address', update);
+            permanentAddressCheck = constraintCheck('permanentAddress', update);
+            currentAddressCheck = constraintCheck('currentAddress', update);
             startDateCheck = constraintCheck('startDate', update);
-            serviceTypeCheck = constraintCheck('serviceType', update);
+            employeeDetailIdCheck = constraintCheck('employeeDetailId', update);
             // // endDateCheck = constraintCheck('endDate', update);
-            countryIdCheck = constraintCheck('countryId', update);
-            stateIdCheck = constraintCheck('stateId', update);
-            cityIdCheck = constraintCheck('cityId', update);
-            locationIdCheck = constraintCheck('locationId', update);
-    
+            countryId1Check = constraintCheck('countryId1', update);
+            stateId1Check = constraintCheck('stateId1', update);
+            cityId1Check = constraintCheck('cityId1', update);
+            locationId1Check = constraintCheck('locationId1', update);
+            countryId2Check = constraintCheck('countryId2', update);
+            stateId2Check = constraintCheck('stateId2', update);
+            cityId2Check = constraintCheck('cityId2', update);
+            locationId2Check = constraintCheck('locationId2', update);
+
             firstName = constraintReturn(firstNameCheck, update, 'firstName', employee);
             middleName = constraintReturn(middleNameCheck, update, 'middleName', employee);
             lastName = constraintReturn(lastNameCheck, update, 'lastName', employee);
             email = constraintReturn(emailCheck, update, 'email', employee);
             contact = constraintReturn(contactCheck, update, 'contact', employee);
             salary = constraintReturn(salaryCheck, update, 'salary', employee);
-            address = constraintReturn(addressCheck, update, 'address', employee);
+            permanentAddress = constraintReturn(permanentAddressCheck, update, 'permanentAddress', employee);
+            currentAddress = constraintReturn(currentAddressCheck, update, 'currentAddress', employee);
             startDate = constraintReturn(startDateCheck, update, 'startDate', employee);
-            serviceType = constraintReturn(serviceTypeCheck, update, 'serviceType', employee);
+            employeeDetailId = referenceConstraintReturn(employeeDetailIdCheck, update, 'employeeDetailId', employee);
             // // // endDate = constraintReturn(endDateCheck, update, 'endDate', employee);
-            countryId = referenceConstraintReturn(countryIdCheck, update, 'countryId', employee);
-            stateId = referenceConstraintReturn(stateIdCheck, update, 'stateId', employee);
-            cityId = referenceConstraintReturn(cityIdCheck, update, 'cityId', employee);
-            locationId = referenceConstraintReturn(locationIdCheck, update, 'locationId', employee);
-    
+            countryId1 = referenceConstraintReturn(countryId1Check, update, 'countryId1', employee);
+            stateId1 = referenceConstraintReturn(stateId1Check, update, 'stateId1', employee);
+            cityId1 = referenceConstraintReturn(cityId1Check, update, 'cityId1', employee);
+            locationId1 = referenceConstraintReturn(locationId1Check, update, 'locationId1', employee);
+            countryId2 = referenceConstraintReturn(countryId2Check, update, 'countryId2', employee);
+            stateId2 = referenceConstraintReturn(stateId2Check, update, 'stateId2', employee);
+            cityId2 = referenceConstraintReturn(cityId2Check, update, 'cityId2', employee);
+            locationId2 = referenceConstraintReturn(locationId2Check, update, 'locationId2', employee);
+
             const toBeUpdated = {
                 firstName: firstName,
                 middleName: middleName,
@@ -645,15 +675,20 @@ exports.updateEncrypt = async (req, res, next) => {
                 email: email,
                 contact: contact,
                 salary: salary,
-                address: address,
+                permanentAddress: permanentAddress,
+                currentAddress: currentAddress,
                 startDate: startDate,
-                serviceType: serviceType,
+                employeeDetailId: employeeDetailId,
                 // // endDate: endDate,
                 userId: update.userId,
-                countryId: countryId,
-                stateId: stateId,
-                cityId: cityId,
-                locationId: locationId,
+                countryId1: countryId1,
+                stateId1: stateId1,
+                cityId1: cityId1,
+                locationId1: locationId1,
+                countryId2: countryId2,
+                stateId2: stateId2,
+                cityId2: cityId2,
+                locationId2: locationId2,
                 picture: profileImage,
                 documentOne: documentOne,
                 documentTwo: documentTwo
@@ -674,8 +709,9 @@ exports.updateEncrypt = async (req, res, next) => {
                     employee.email = decrypt(employee.email);
                     employee.contact = decrypt(employee.contact);
                     employee.salary = decrypt(employee.salary);
-                    employee.address = decrypt(employee.address);
-                    employee.serviceType = decrypt(employee.serviceType);
+                    employee.permanentAddress = decrypt(employee.permanentAddress);
+                    employee.currentAddress = decrypt(employee.currentAddress);
+                    // employee.serviceType = decrypt(employee.serviceType);
                     employee.startDate = decrypt(employee.startDate);
                     // // employee.endDate = decrypt(employee.endDate);
                     employee.picture = decrypt(employee.picture);

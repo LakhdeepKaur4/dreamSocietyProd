@@ -5,12 +5,11 @@ module.exports = (sequelize, Sequelize) => {
             autoIncrement: true,
             primaryKey: true
         },
-        societyEventName: {
-            allowNull: false,
-            type: Sequelize.STRING,
-
-        },
         startDate: {
+            allowNull: false,
+            type: Sequelize.DATEONLY
+        },
+        endDate: {
             allowNull: false,
             type: Sequelize.DATEONLY
         },
@@ -38,6 +37,10 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.BOOLEAN,
             defaultValue: false
         },
+        drinks:{
+            type: Sequelize.BOOLEAN,
+            defaultValue: false
+        },
         dj:{
             type: Sequelize.BOOLEAN,
             defaultValue: false
@@ -51,7 +54,7 @@ module.exports = (sequelize, Sequelize) => {
         },
         childAbove:{
             allowNull: false,
-            type:Sequelize.INTEGER
+            type:Sequelize.STRING
         },
         charges:{
             type:Sequelize.FLOAT

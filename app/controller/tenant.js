@@ -409,7 +409,7 @@ exports.createEncrypted = async (req, res, next) => {
                     tenantCreated = entry;
 
 
-                    roles = await Role.findOne({
+                   const roles = await Role.findOne({
                         where: {
                             id: 4
                         }
@@ -428,7 +428,13 @@ exports.createEncrypted = async (req, res, next) => {
                         isActive: false
                     })
                         .then(user => {
-                            user.setRoles(roles);
+                            // user.setRoles(roles);
+                            let roleId;
+                            // user.setRoles(roles);
+                            roles.map(role=>{
+                                roleId = role.id;
+                            });
+                            UserRoles.create({userId:user.userId,roleId:roleId});
                         })
                     if (tenant.profilePicture) {
 
