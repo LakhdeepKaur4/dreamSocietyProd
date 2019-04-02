@@ -428,20 +428,6 @@ if(req.query.employeeId){
     }
     
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         if(req.query.tenantId){
         
         let tenantId = decrypt1(key,req.query.tenantId);

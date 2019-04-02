@@ -1796,7 +1796,7 @@ exports.assignRoles = async (req, res, next) => {
 		console.log("assigning roles==>");
 		let userArr = [];
 		const roleId = req.body.roleId;
-		console.log(roleId)
+		console.log(roleId);
 		switch (roleId) {
 			case "3": {
 				const owner = await Owner.findOne({ where: { isActive: true, ownerId: req.body.userId } });
@@ -1861,7 +1861,6 @@ exports.assignRoles = async (req, res, next) => {
 				// let employeeEmail = decrypt(employee.email);
 				// console.log(employeeEmail);
 				const user = await User.findOne({ where: { isActive: true, email:employee.email }, attributes: ['userId', 'firstName', 'lastName', 'userName','email'], include: [{ model: Role, attributes: ['id', 'roleName'] }] });
-				console.log("user==>,user",user)
 				user.firstName = decrypt(user.firstName);
 				user.lastName = decrypt(user.lastName);
 				user.userName = decrypt(user.userName);

@@ -53,24 +53,19 @@ module.exports = (sequelize, Sequelize) => {
                   allowNull: false
             },
             bankName: {
-                  type: Sequelize.STRING,
-                  allowNull: false
+                  type: Sequelize.STRING
             },
             accountHolderName: {
-                  type: Sequelize.STRING,
-                  allowNull: false
+                  type: Sequelize.STRING
             },
             accountNumber: {
-                  type: Sequelize.STRING,
-                  allowNull: false
+                  type: Sequelize.STRING
             },
             panCardNumber: {
-                  type: Sequelize.STRING,
-                  allowNull: false
+                  type: Sequelize.STRING
             },
             IFSCCode: {
-                  type: Sequelize.STRING,
-                  allowNull: false
+                  type: Sequelize.STRING
             },
             adhaarCardNo:{
                   type: Sequelize.STRING,

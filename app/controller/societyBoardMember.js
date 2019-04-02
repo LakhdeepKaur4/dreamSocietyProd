@@ -229,10 +229,10 @@ exports.createEncrypted = async (req, res, next) => {
                 userId: member.userId,
                 societyId: member.societyId,
                 designationId: member.designationId,
-                countryId: member.countryId,
-                stateId: member.stateId,
-                cityId: member.cityId,
-                locationId: member.locationId,
+                // countryId: member.countryId,
+                // stateId: member.stateId,
+                // cityId: member.cityId,
+                // locationId: member.locationId,
             }
             SocietyBoardMember.findOrCreate({
                 where: {
@@ -300,10 +300,6 @@ exports.getDecrypted =async (req, res, next) => {
             order: [['createdAt', 'DESC']],
             include: [
                 { model: Designation, attributes: ['designationId', 'designationName'] },
-                { model: Country, attributes: ['countryId', 'countryName'] },
-                { model: City, attributes: ['cityId', 'cityName'] },
-                { model: State, attributes: ['stateId', 'stateName'] },
-                { model: Location, attributes: ['locationId', 'locationName'] },
                 { model: Society, attributes: ['societyId', 'societyName'] }
             ]
         })
@@ -401,10 +397,10 @@ exports.updateEncrypted = async (req, res, next) => {
             dobCheck = constraintCheck('dob', update);
             societyIdCheck = constraintCheck('societyId', update);
             designationIdCheck = constraintCheck('designationId', update);
-            countryIdCheck = constraintCheck('countryId', update);
-            stateIdCheck = constraintCheck('stateId', update);
-            cityIdCheck = constraintCheck('cityId', update);
-            locationIdCheck = constraintCheck('locationId', update);
+            // countryIdCheck = constraintCheck('countryId', update);
+            // stateIdCheck = constraintCheck('stateId', update);
+            // cityIdCheck = constraintCheck('cityId', update);
+            // locationIdCheck = constraintCheck('locationId', update);
 
             firstName = constraintReturn(firstNameCheck, update, 'firstName', societyBoardMember);
             lastName = constraintReturn(lastNameCheck, update, 'lastName', societyBoardMember);
@@ -423,10 +419,10 @@ exports.updateEncrypted = async (req, res, next) => {
             dob = referenceConstraintReturn(dobCheck, update, 'dob', societyBoardMember);
             societyId = referenceConstraintReturn(societyIdCheck, update, 'societyId', societyBoardMember);
             designationId = referenceConstraintReturn(designationIdCheck, update, 'designationId', societyBoardMember);
-            countryId = referenceConstraintReturn(countryIdCheck, update, 'countryId', societyBoardMember);
-            stateId = referenceConstraintReturn(stateIdCheck, update, 'stateId', societyBoardMember);
-            cityId = referenceConstraintReturn(cityIdCheck, update, 'cityId', societyBoardMember);
-            locationId = referenceConstraintReturn(locationIdCheck, update, 'locationId', societyBoardMember);
+            // countryId = referenceConstraintReturn(countryIdCheck, update, 'countryId', societyBoardMember);
+            // stateId = referenceConstraintReturn(stateIdCheck, update, 'stateId', societyBoardMember);
+            // cityId = referenceConstraintReturn(cityIdCheck, update, 'cityId', societyBoardMember);
+            // locationId = referenceConstraintReturn(locationIdCheck, update, 'locationId', societyBoardMember);
 
             const updates = {
                 firstName: firstName,
@@ -447,10 +443,10 @@ exports.updateEncrypted = async (req, res, next) => {
                 userId: req.userId,
                 societyId: societyId,
                 designationId: designationId,
-                countryId: countryId,
-                stateId: stateId,
-                cityId: cityId,
-                locationId: locationId
+                // countryId: countryId,
+                // stateId: stateId,
+                // cityId: cityId,
+                // locationId: locationId
             }
 
             SocietyBoardMember.find({

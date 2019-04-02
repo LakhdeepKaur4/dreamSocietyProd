@@ -55,7 +55,6 @@ function encrypt(key, data) {
   return crypted;
 }
 
-
 function encrypt1(key, data) {
   var cipher = crypto.createCipher("aes-128-cbc", key);
   var crypted = cipher.update(data, "utf-8", "hex");
@@ -238,6 +237,7 @@ let mailToUser = (email,ownerId) => {
 
 exports.create1 = async (req, res, next) => {
   try {
+    let fieldsArr = [""]
     console.log("creating owner");
     console.log(req.body);
     let existingOwner = await Owner.find({
@@ -256,7 +256,7 @@ exports.create1 = async (req, res, next) => {
     let memberBody = req.body;
     let memberId = [];
     ownerBody.userId = 1;
-    let customVendorName = req.body.ownerName;
+    let customVendorName = req.body.firstName + req.body.lastName;
     let userName = customVendorName + 'O' + req.body.towerId + req.body.flatDetailId;
     // console.log("userName==>", userName);
      userName = userName.replace(/ /g,'').toLowerCase();
@@ -285,11 +285,6 @@ exports.create1 = async (req, res, next) => {
       gender: encrypt(key, ownerBody.gender),
       permanentAddress: encrypt(key, ownerBody.permanentAddress),
       correspondenceAddress: encrypt(key, ownerBody.correspondenceAddress),
-      bankName: encrypt(key, ownerBody.bankName),
-      accountHolderName: encrypt(key, ownerBody.accountHolderName),
-      accountNumber: encrypt(key, ownerBody.accountNumber),
-      panCardNumber: encrypt(key, ownerBody.panCardNumber),
-      IFSCCode: encrypt(key, ownerBody.IFSCCode),
       adhaarCardNo:encrypt(key,ownerBody.adhaarCardNo),
       noOfMembers: ownerBody.noOfMembers,
       userId: req.userId,
@@ -365,14 +360,15 @@ exports.create1 = async (req, res, next) => {
       // const ownerMember = await OwnerMembersDetail.create(memberBody);
       //    }
     }
-    let ownerName =  decrypt(key,owner.ownerName);
-if (ownerName.indexOf(' ') !== -1) {
-    firstName = ownerName.split(' ')[0];
-    lastName = ownerName.split(' ')[1];
-} else {
-    firstName = ownerName;
-    lastName = '...';
-}
+    if(owner.firstName && owner.lastName!==''){
+      firstName = decrypt(key,owner.firstName);
+      lastName = decrypt(key,owner.lastName)
+  }
+  else if(owner.firstName && owner.lastName!==''){
+      firstName = decrypt(key,owner.firstName);
+      lastName = '...';
+  }
+
    
     
     let ownerUserName = decrypt(key,owner.userName);
@@ -392,13 +388,13 @@ if (ownerName.indexOf(' ') !== -1) {
     console.log(owner.password);
     console.log(user.password);
     let roles = await Role.findOne({
-        where:{id:3}
-    });
+      where:{id:3}
+  });
 
-    // user.setRoles(roles);
-    console.log("owner role==>",roles);
-    UserRoles.create({userId:user.userId,roleId:roles.id});
-    const message = mailToUser(req.body.email,ownerId);
+  // user.setRoles(roles);
+  console.log("owner role==>",roles);
+  UserRoles.create({userId:user.userId,roleId:roles.id});
+  const message = mailToUser(req.body.email,ownerId);
     return res.status(httpStatus.CREATED).json({
       message: "Owner successfully created. please activate your account. click on the link delievered to your given email"
     });
@@ -463,11 +459,86 @@ exports.get1 = async (req, res, next) => {
       owner.picture = decrypt(key, owner.picture);
       // owner.picture = owner.picture.replace('../', '');
       // owner.picture = owner.picture.replace('../', '');
-      owner.bankName = decrypt(key, owner.bankName);
-      owner.accountHolderName = decrypt(key, owner.accountHolderName);
+      if(owner.bankName){
+        owner.bankName = decrypt(key, owner.bankName);
+      }
+      if(owner.accountHolderName){
+
+        owner.accountHolderName = decrypt(key, owner.accountHolderName);
+      }
+     if(owner.accountNumber){
       owner.accountNumber = decrypt(key, owner.accountNumber);
+     }
+     if(owner.panCardNumber){
       owner.panCardNumber = decrypt(key, owner.panCardNumber);
-      owner.IFSCCode = decrypt(key, owner.IFSCCode);
+     }
+      if(owner.IFSCCode){
+        owner.IFSCCode = decrypt(key, owner.IFSCCode);
+      } 
+      owner.adhaarCardNo = decrypt(key,owner.adhaarCardNo);
+      owner.owner_members_detail_masters.forEach(x => {
+        x.memberName = decrypt(key, x.memberName);
+        x.gender = decrypt(key, x.gender);
+      });
+      owner.society_master.societyName = decrypt1(key, owner.society_master.societyName);
+      owner.society_master.societyAddress = decrypt1(key, owner.society_master.societyAddress);
+      owner.society_master.contactNumber = decrypt1(key, owner.society_master.contactNumber);
+      owner.society_master.registrationNumber = decrypt1(key, owner.society_master.registrationNumber);
+      owner.society_master.totalBoardMembers = decrypt1(key, owner.society_master.totalBoardMembers);
+      owner.society_master.bankName = decrypt1(key, owner.society_master.bankName);
+      owner.society_master.accountHolderName = decrypt1(key, owner.society_master.accountHolderName);
+      owner.society_master.accountNumber = decrypt1(key, owner.society_master.accountNumber);
+      owner.society_master.email = decrypt1(key, owner.society_master.email);
+      owner.society_master.IFSCCode = decrypt1(key, owner.society_master.IFSCCode);
+      getOwners.push(owner);
+    });
+    // console.log(getOwners);
+    if (owners) {
+      return res.status(httpStatus.CREATED).json({
+        message: "Owner Content Page",
+        getOwners
+      });
+    }
+  } catch (error) {
+    console.log("error==>", error);
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+  }
+};
+
+
+
+
+exports.get2 = async (req, res, next) => {
+  let getOwners = [];
+  try {
+    const owners = await Owner.findAll({
+      where: { isActive: true },
+      order: [["createdAt", "DESC"]],
+
+      include: [
+        {
+          model: OwnerMembersDetail
+        },
+        { model: FlatDetail },
+        { model: Society },
+        { model: Tower }
+      ]
+    });
+
+    // console.log(owners);
+
+    owners.map(owner => {
+      owner.firstName = decrypt(key, owner.firstName);
+      owner.lastName = decrypt(key, owner.lastName);
+      owner.userName = decrypt(key, owner.userName);
+      owner.email = decrypt(key, owner.email);
+      owner.contact = decrypt(key, owner.contact);
+      owner.gender = decrypt(key, owner.gender);
+      owner.permanentAddress = decrypt(key, owner.permanentAddress);
+      owner.correspondenceAddress = decrypt(key, owner.correspondenceAddress);
+      owner.picture = decrypt(key, owner.picture);
+      // owner.picture = owner.picture.replace('../', '');
+      // owner.picture = owner.picture.replace('../', '');
       owner.adhaarCardNo = decrypt(key,owner.adhaarCardNo);
       owner.owner_members_detail_masters.forEach(x => {
         x.memberName = decrypt(key, x.memberName);
@@ -686,7 +757,163 @@ exports.update1 = async (req, res, next) => {
     ) {
       let fileName = req.body.fileName.split(".")[0];
       let fileExt = req.body.fileName.split(".")[1];
-      deletePhoto(updatedOwner);
+      // deletePhoto(updatedOwner);
+      saveToDisc(
+        fileName,
+        fileExt,
+        req.body.profilePicture,
+        async (err, resp) => {
+          if (err) {
+            console.log(err);
+          }
+          console.log(resp);
+          // }
+          const updatedImage = {
+            picture: encrypt(key, resp)
+          };
+          await Owner.update(updatedImage, { where: { ownerId: id } });
+        }
+      );
+    }
+    console.log("updated attributes,", updAttr);
+    let updatedOwner1 = await updatedOwner.updateAttributes(updAttr);
+
+    if (updatedOwner1) {
+      // updatedOwner1.userName = decrypt(key, updatedOwner1.userName);
+      updatedOwner1.firstName = decrypt(key, updatedOwner1.firstName);
+      updatedOwner1.lastName = decrypt(key, updatedOwner1.lastName);
+      updatedOwner1.picture = decrypt(key, updatedOwner1.picture);
+      updatedOwner1.email = decrypt(key, updatedOwner1.email);
+      updatedOwner1.permanentAddress = decrypt(
+        key,
+        updatedOwner1.permanentAddress
+      );
+      updatedOwner1.correspondenceAddress = decrypt(
+        key,
+        updatedOwner1.correspondenceAddress
+      );
+      updatedOwner1.contact = decrypt(key, updatedOwner1.contact);
+      updatedOwner1.gender = decrypt(key, updatedOwner1.gender);
+
+      if (req.body.memberId !== undefined && req.body.memberId !== null) {
+        await OwnerMembersDetail.find({
+          where: {
+            ownerId: id,
+            memberId: req.body.memberId
+          }
+        });
+        OwnerMembersDetail.updateAttributes({});
+      }
+      return res.status(httpStatus.OK).json({
+        message: "Owner Updated Page",
+        owner: updatedOwner1
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+  }
+};
+
+
+exports.update2 = async (req, res, next) => {
+  console.log(req.body);
+  if (req.body.email !== undefined && req.body.contact !== null) {
+    let existingOwner = await Owner.find({
+      where: { [Op.and]: [{ email: encrypt(key, req.body.email) }, { ownerId: { [Op.ne]: req.params.id } }] }
+    });
+    if (existingOwner) {
+      return res
+        .status(httpStatus.UNPROCESSABLE_ENTITY)
+        .json({ message: "email already exist" });
+    }
+  }
+
+  if (req.body.contact !== undefined && req.body.contact !== null) {
+    let existingOwner1 = await Owner.find({
+      where: { [Op.and]: [{ contact: encrypt(key, req.body.contact) }, { ownerId: { [Op.ne]: req.params.id } }] }
+    });
+    if (existingOwner1) {
+      return res
+        .status(httpStatus.UNPROCESSABLE_ENTITY)
+        .json({ message: "contact already exist" });
+    }
+  }
+  let updAttr = {};
+  let attrArr = [
+    "firstName",
+    "lastName",
+    "email",
+    "contact",
+    "gender",
+    "permanentAddress",
+    "correspondenceAddress",
+    "adhaarCardNo",
+    "currentAddress",
+    "contact",
+    "adhaarCardNo"
+  ];
+  let ids = ["flatDetailId", "societyId", "towerId","floorId"];
+  let others = ["dob", "noOfMembers"];
+  try {
+    const id = req.params.id;
+    if (!id) {
+      return res
+        .status(httpStatus.UNPROCESSABLE_ENTITY)
+        .json({ message: "Id is missing" });
+    }
+    const update = req.body;
+    // const empty = isEmpty(update)
+    // console.log(empty)
+
+    if (!update) {
+      return res
+        .status(httpStatus.UNPROCESSABLE_ENTITY)
+        .json({ message: "Please try again " });
+    }
+    const updatedOwner = await Owner.find({
+      where: { ownerId: id, isActive: true }
+    });
+    attrArr.forEach(attr => {
+      if (
+        attr in req.body &&
+        req.body[attr] !== undefined &&
+        req.body[attr] !== null && 
+        req.body[attr] !== ""
+      ) {
+        updAttr[attr] = encrypt(key, req.body[attr]);
+      }
+    });
+    others.forEach(attr => {
+      if (
+        attr in req.body &&
+        req.body[attr] !== undefined &&
+        req.body[attr] !== null &&
+        req.body[attr] !== ""
+      ) {
+        updAttr[attr] = req.body[attr];
+      }
+    });
+    ids.forEach(attr => {
+      if (
+        attr in req.body &&
+        req.body[attr] !== undefined &&
+        req.body[attr] !== null &&
+        req.body[attr] !== ""
+      ) {
+        updAttr[attr] = req.body[attr];
+      }
+    });
+    if (
+      req.body.profilePicture !== undefined &&
+      req.body.profilePicture !== null &&
+      req.body.fileName !== undefined &&
+      req.body.fileName !== null
+    ) {
+      req.body.profilePicture = req.body.profilePicture.split(",")[1]
+      let fileName = req.body.fileName.split(".")[0];
+      let fileExt = req.body.fileName.split(".")[1];
+      // deletePhoto(updatedOwner);
       saveToDisc(
         fileName,
         fileExt,
@@ -748,6 +975,7 @@ exports.update1 = async (req, res, next) => {
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
 };
+
 
 exports.delete = async (req, res, next) => {
   try {

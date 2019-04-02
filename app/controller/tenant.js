@@ -28,6 +28,7 @@ const Country = db.country;
 const User = db.user;
 const Otp = db.otp;
 const Role = db.role;
+const UserRoles = db.userRole;
 
 setInterval(async function () {
     // console.log("atin")
@@ -429,15 +430,9 @@ exports.createEncrypted = async (req, res, next) => {
                     })
                         .then(user => {
                             // user.setRoles(roles);
-                            let roleId;
-                            // user.setRoles(roles);
-                            roles.map(role=>{
-                                roleId = role.id;
-                            });
-                            UserRoles.create({userId:user.userId,roleId:roleId});
+                            UserRoles.create({userId:user.userId,roleId:roles.id});
                         })
                     if (tenant.profilePicture) {
-
                         await saveToDisc(tenant.fileName, tenant.fileExt, tenant.profilePicture, (err, res) => {
                             if (err) {
                                 console.log(err);
@@ -511,27 +506,27 @@ exports.createEncrypted = async (req, res, next) => {
                         }
                     })
                         .then(tenantSend => {
-                            tenantSend.firstName = decrypt(tenantSend.firstName);
-                            tenantSend.lastName = decrypt(tenantSend.lastName);
-                            tenantSend.userName = decrypt(tenantSend.userName);
-                            tenantSend.email = decrypt(tenantSend.email);
-                            tenantSend.contact = decrypt(tenantSend.contact);
-                            tenantSend.picture = decrypt(tenantSend.picture);
-                            tenantSend.aadhaarNumber = decrypt(tenantSend.aadhaarNumber);
-                            tenantSend.permanentAddress = decrypt(tenantSend.permanentAddress);
-                            tenantSend.correspondenceAddress = decrypt(tenantSend.correspondenceAddress);
-                            tenantSend.bankName = decrypt(tenantSend.bankName);
-                            tenantSend.accountHolderName = decrypt(tenantSend.accountHolderName);
-                            tenantSend.accountNumber = decrypt(tenantSend.accountNumber);
-                            tenantSend.gender = decrypt(tenantSend.gender);
-                            tenantSend.panCardNumber = decrypt(tenantSend.panCardNumber);
-                            tenantSend.IFSCCode = decrypt(tenantSend.IFSCCode);
+                            // tenantSend.firstName = decrypt(tenantSend.firstName);
+                            // tenantSend.lastName = decrypt(tenantSend.lastName);
+                            // tenantSend.userName = decrypt(tenantSend.userName);
+                            // tenantSend.email = decrypt(tenantSend.email);
+                            // tenantSend.contact = decrypt(tenantSend.contact);
+                            // tenantSend.picture = decrypt(tenantSend.picture);
+                            // tenantSend.aadhaarNumber = decrypt(tenantSend.aadhaarNumber);
+                            // tenantSend.permanentAddress = decrypt(tenantSend.permanentAddress);
+                            // tenantSend.correspondenceAddress = decrypt(tenantSend.correspondenceAddress);
+                            // tenantSend.bankName = decrypt(tenantSend.bankName);
+                            // tenantSend.accountHolderName = decrypt(tenantSend.accountHolderName);
+                            // tenantSend.accountNumber = decrypt(tenantSend.accountNumber);
+                            // tenantSend.gender = decrypt(tenantSend.gender);
+                            // tenantSend.panCardNumber = decrypt(tenantSend.panCardNumber);
+                            // tenantSend.IFSCCode = decrypt(tenantSend.IFSCCode);
 
                             const message = mailToUser(req.body.email, tenantSend.tenantId);
                             mailToOwner(tenantSend.ownerId1, tenantSend);
                             return res.status(httpStatus.CREATED).json({
                                 message: "Tenant successfully created. please activate your account. click on the link delievered to your given email",
-                                tenant: tenantSend
+                                // tenant: tenantSend
                             });
                         })
                         .catch(err => console.log(err))

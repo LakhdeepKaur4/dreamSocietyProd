@@ -263,9 +263,9 @@ module.exports = function (app) {
 
 	// app.post('/api/vendor', [authJwt.verifyToken] ,vendorController.create);
 
-	app.post('/api/vendor/', [authJwt.verifyToken], fileUploadConfig.fields([{ name: 'profilePicture', maxCount: 1 }, { name: 'documentOne', maxCount: 1 }, { name: 'documentTwo', maxCount: 1 }]), vendorController.create1);
+	app.post('/api/vendor', [authJwt.verifyToken], fileUploadConfig.fields([{ name: 'profilePicture', maxCount: 1 }, { name: 'documentOne', maxCount: 1 }, { name: 'documentTwo', maxCount: 1 }]), vendorController.create1);
 
-	app.get('/api/vendor/', [authJwt.verifyToken], vendorController.get1);
+	app.get('/api/vendor', [authJwt.verifyToken], vendorController.get1);
 
 	app.put('/api/vendor/:id', [authJwt.verifyToken], fileUploadConfig.fields([{ name: 'profilePicture', maxCount: 1 }, { name: 'documentOne', maxCount: 1 }, { name: 'documentTwo', maxCount: 1 }]), vendorController.update1);
 
@@ -437,9 +437,9 @@ module.exports = function (app) {
 
 	app.post('/api/owner/ownerMember/:id', [authJwt.verifyToken], owner.addMember);
 
-	app.get('/api/owner', [authJwt.verifyToken], owner.get1);
+	app.get('/api/owner', [authJwt.verifyToken], owner.get2);
 
-	app.put('/api/owner/:id', [authJwt.verifyToken], owner.update1);
+	app.put('/api/owner/:id', [authJwt.verifyToken], owner.update2);
 
 	app.get('/api/owner/:id', [authJwt.verifyToken], owner.getFlatNo);
 
@@ -518,5 +518,9 @@ module.exports = function (app) {
 	app.get('/api/getEventBookings', [authJwt.verifyToken], eventBooking.get);
 
 	app.put('/api/updateEventBookings/:id', [authJwt.verifyToken], eventBooking.update);
+
+	app.put('/api/deleteEventBooking/deleteSelected', [authJwt.verifyToken], eventBooking.deleteSelected);
+
+	app.put('/api/deleteEventBooking/:id', [authJwt.verifyToken], eventBooking.delete);
 
 }

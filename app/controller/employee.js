@@ -330,14 +330,14 @@ exports.createEncrypt = async (req, res, next) => {
                     employeeDetailId: body.employeeDetailId,
                     // // endDate: encrypt(body.endDate),
                     userId: body.userId,
-                    countryId1: body.countryId1,
-                    stateId1: body.stateId1,
-                    cityId1: body.cityId1,
-                    locationId1: body.locationId1,
-                    countryId2: body.countryId2,
-                    stateId2: body.stateId2,
-                    cityId2: body.cityId2,
-                    locationId2: body.locationId2
+                    // countryId1: body.countryId1,
+                    // stateId1: body.stateId1,
+                    // cityId1: body.cityId1,
+                    // locationId1: body.locationId1,
+                    // countryId2: body.countryId2,
+                    // stateId2: body.stateId2,
+                    // cityId2: body.cityId2,
+                    // locationId2: body.locationId2
                 })
                 .then(emp => {
                     // console.log(emp);
@@ -349,6 +349,7 @@ exports.createEncrypt = async (req, res, next) => {
                 .catch(err => console.log('Creation Error ===>', err))
 
             if (req.files) {
+
                 let profileImage;
                 // console.log(req.files.profilePicture[0].path);
                 profileImage = req.files.profilePicture[0].path;
@@ -465,14 +466,6 @@ exports.getDecrypt = async (req, res, next) => {
             },
             order: [['createdAt', 'DESC']],
             include: [
-                { model: City, as: 'City1' },
-                { model: State, as: 'State1' },
-                { model: Location, as: 'Location1' },
-                { model: Country, as: 'Country1' },
-                { model: City, as: 'City2' },
-                { model: State, as: 'State2' },
-                { model: Location, as: 'Location2' },
-                { model: Country, as: 'Country2' },
                 {
                     model: EmployeeDetail,
                     include: [
@@ -639,14 +632,14 @@ exports.updateEncrypt = async (req, res, next) => {
             startDateCheck = constraintCheck('startDate', update);
             employeeDetailIdCheck = constraintCheck('employeeDetailId', update);
             // // endDateCheck = constraintCheck('endDate', update);
-            countryId1Check = constraintCheck('countryId1', update);
-            stateId1Check = constraintCheck('stateId1', update);
-            cityId1Check = constraintCheck('cityId1', update);
-            locationId1Check = constraintCheck('locationId1', update);
-            countryId2Check = constraintCheck('countryId2', update);
-            stateId2Check = constraintCheck('stateId2', update);
-            cityId2Check = constraintCheck('cityId2', update);
-            locationId2Check = constraintCheck('locationId2', update);
+            // countryId1Check = constraintCheck('countryId1', update);
+            // stateId1Check = constraintCheck('stateId1', update);
+            // cityId1Check = constraintCheck('cityId1', update);
+            // locationId1Check = constraintCheck('locationId1', update);
+            // countryId2Check = constraintCheck('countryId2', update);
+            // stateId2Check = constraintCheck('stateId2', update);
+            // cityId2Check = constraintCheck('cityId2', update);
+            // locationId2Check = constraintCheck('locationId2', update);
 
             firstName = constraintReturn(firstNameCheck, update, 'firstName', employee);
             middleName = constraintReturn(middleNameCheck, update, 'middleName', employee);
@@ -659,14 +652,14 @@ exports.updateEncrypt = async (req, res, next) => {
             startDate = constraintReturn(startDateCheck, update, 'startDate', employee);
             employeeDetailId = referenceConstraintReturn(employeeDetailIdCheck, update, 'employeeDetailId', employee);
             // // // endDate = constraintReturn(endDateCheck, update, 'endDate', employee);
-            countryId1 = referenceConstraintReturn(countryId1Check, update, 'countryId1', employee);
-            stateId1 = referenceConstraintReturn(stateId1Check, update, 'stateId1', employee);
-            cityId1 = referenceConstraintReturn(cityId1Check, update, 'cityId1', employee);
-            locationId1 = referenceConstraintReturn(locationId1Check, update, 'locationId1', employee);
-            countryId2 = referenceConstraintReturn(countryId2Check, update, 'countryId2', employee);
-            stateId2 = referenceConstraintReturn(stateId2Check, update, 'stateId2', employee);
-            cityId2 = referenceConstraintReturn(cityId2Check, update, 'cityId2', employee);
-            locationId2 = referenceConstraintReturn(locationId2Check, update, 'locationId2', employee);
+            // countryId1 = referenceConstraintReturn(countryId1Check, update, 'countryId1', employee);
+            // stateId1 = referenceConstraintReturn(stateId1Check, update, 'stateId1', employee);
+            // cityId1 = referenceConstraintReturn(cityId1Check, update, 'cityId1', employee);
+            // locationId1 = referenceConstraintReturn(locationId1Check, update, 'locationId1', employee);
+            // countryId2 = referenceConstraintReturn(countryId2Check, update, 'countryId2', employee);
+            // stateId2 = referenceConstraintReturn(stateId2Check, update, 'stateId2', employee);
+            // cityId2 = referenceConstraintReturn(cityId2Check, update, 'cityId2', employee);
+            // locationId2 = referenceConstraintReturn(locationId2Check, update, 'locationId2', employee);
 
             const toBeUpdated = {
                 firstName: firstName,
@@ -681,14 +674,14 @@ exports.updateEncrypt = async (req, res, next) => {
                 employeeDetailId: employeeDetailId,
                 // // endDate: endDate,
                 userId: update.userId,
-                countryId1: countryId1,
-                stateId1: stateId1,
-                cityId1: cityId1,
-                locationId1: locationId1,
-                countryId2: countryId2,
-                stateId2: stateId2,
-                cityId2: cityId2,
-                locationId2: locationId2,
+                // countryId1: countryId1,
+                // stateId1: stateId1,
+                // cityId1: cityId1,
+                // locationId1: locationId1,
+                // countryId2: countryId2,
+                // stateId2: stateId2,
+                // cityId2: cityId2,
+                // locationId2: locationId2,
                 picture: profileImage,
                 documentOne: documentOne,
                 documentTwo: documentTwo

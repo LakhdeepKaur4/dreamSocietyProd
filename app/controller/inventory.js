@@ -55,17 +55,16 @@ exports.get = async (req, res, next) => {
         const assetsId = [];
         const assetTypesId = [];
         const inventory = await Inventory.findAll({
-            where:{isActive:true},
-            attributes: ['inventoryId','dateOfPurchase', [sequelize.fn('count', sequelize.col('serialNumber')), 'count'], [sequelize.fn('AVG', sequelize.col('rate')),'avgRate'],[sequelize.fn('SUM', sequelize.col('rate')),'sum']],
-            include: [{ model: Assets, attributes: ['assetId','assetName'] },
+            where: { isActive: true },
+            attributes: ['inventoryId', 'dateOfPurchase', [sequelize.fn('count', sequelize.col('serialNumber')), 'count'], [sequelize.fn('AVG', sequelize.col('rate')), 'avgRate'], [sequelize.fn('SUM', sequelize.col('rate')), 'sum']],
+            include: [{ model: Assets, attributes: ['assetId', 'assetName'] },
             { model: AssetsType, attributes: ['assetTypeId', 'assetType'] },
             ],
-            group: ['inventory_master.assetId'],
+            group: ['inventory_master.dateOfPurchase','inventory_master.assetId'],
             order: [['createdAt', 'DESC']],
-            // raw: false,
-            order: sequelize.literal('count DESC')
+            raw: false,
+            // order: sequelize.literal('count DESC')
         });
-        
         if (inventory) {
             return res.status(httpStatus.OK).json({
                 message: "Inventory Content Page",
@@ -111,6 +110,7 @@ exports.update = async (req, res, next) => {
         const updatedInventory = await Inventory.find({ where: { inventoryId: id } }).then(inventory => {
             return inventory.updateAttributes(update)
         })
+        console.log(updatedInventory);
         if (updatedInventory) {
             return res.status(httpStatus.OK).json({
                 message: "Inventory Updated Page",
