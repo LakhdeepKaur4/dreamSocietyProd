@@ -1995,19 +1995,18 @@ exports.deactiveUsersByRole = async (req, res, next) => {
 					let lastName = decrypt1(key,owner.lastName);
 					let fullName = firstName + " " + lastName;
 					ownersArr['fullName'] = fullName;
-					ownersArr['type'] = 'Owner',
 						ownersArr.push({ fullName: fullName, userId: owner.ownerId, type: 'DeactiveOwner' });
 				})
 				res.status(httpStatus.OK).json({ users: ownersArr });
 				break;
 			case "4":
-				const tenants = await Tenant.findAll({ where: { isActive: false }, attributes: ['tenantId', 'firstName'] });
+				const tenants = await Tenant.findAll({ where: { isActive: false }, attributes: ['tenantId', 'firstName','lastName'] });
 				// console.log(tenants)
 				tenants.map(tenant => {
 					let firstName = decrypt(tenant.firstName);
 					let lastName = decrypt(tenant.lastName);
 					let fullName = firstName + " " + lastName;
-					tenantArr['fullName'] = fullName;
+					tenantsArr['fullName'] = fullName;
 					tenantsArr.push({ fullName: fullName, userId: tenant.tenantId, type: 'DeactiveTenant' });
 				})
 				res.status(httpStatus.OK).json({ users: tenantsArr });
