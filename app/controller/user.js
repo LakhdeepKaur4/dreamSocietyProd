@@ -1926,8 +1926,7 @@ exports.activeUsersByRole = async (req, res, next) => {
 					let firstName = decrypt(tenant.firstName);
 					let lastName = decrypt(tenant.lastName);
 					let fullName = firstName + " " + lastName;
-					tenantArr['fullName'] = fullName;
-					tenantsArr['type'] = 'Tenant',
+					tenantsArr['fullName'] = fullName;
 						tenantsArr.push({ fullName: fullName, userId: tenant.tenantId, type: 'ActiveTenant' });
 				})
 				res.status(httpStatus.OK).json({ users: tenantsArr });
