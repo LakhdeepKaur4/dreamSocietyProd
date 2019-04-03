@@ -43,6 +43,7 @@ module.exports = function (app) {
 	const otpChecker = require('../controller/otpchecker');
 	const checkToken = require('../controller/checktoken');
 	const eventBooking = require('../controller/eventBooking');
+	const individualVendorController = require('../controller/individualVendor');
 
 
 	app.get('/', userController.start);
