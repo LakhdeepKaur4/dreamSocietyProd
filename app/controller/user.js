@@ -1909,8 +1909,8 @@ exports.activeUsersByRole = async (req, res, next) => {
 			case "3":
 				const owners = await Owner.findAll({ where: { isActive: true }, attributes: ['ownerId', 'firstName', 'lastName'] });
 				owners.map(owner => {
-					let firstName = decrypt1(key,owner.firstName);
-					let lastName = decrypt1(key,owner.lastName);
+					let firstName = decrypt(owner.firstName);
+					let lastName = decrypt(owner.lastName);
 					let fullName = firstName + " " + lastName;
 					console.log(fullName)
 					ownersArr['fullName'] = fullName;
@@ -1934,8 +1934,8 @@ exports.activeUsersByRole = async (req, res, next) => {
 			case "5":
 				const vendors = await Vendor.findAll({ where: { isActive: true }, attributes: ['vendorId', 'firstName', 'lastName','email'] });
 				vendors.map(vendor => {
-					let firstName = decrypt1(key, vendor.firstName);
-					let lastName = decrypt1(key, vendor.lastName);
+					let firstName = decrypt( vendor.firstName);
+					let lastName = decrypt( vendor.lastName);
 					let fullName = firstName + " " + lastName;
 					vendorsArr['fullName'] = fullName;
 					vendorsArr.push({ fullName: fullName, userId: vendor.vendorId, type: 'ActiveVendor' });
