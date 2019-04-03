@@ -730,13 +730,13 @@ exports.updateVendorService = async (req, res, next) => {
         if (!update) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
-        // if (req.body.rateId && req.body.serviceId) {
-            let ups = await VendorService.findAll({ where: { isActive:true,serviceId: req.body.serviceId, rateId: req.body.rateId, vendorId: req.body.vendorId } });
-            if (ups > 0) {
-                console.log(ups);
+            let ups = await VendorService.findOne({ where:{ isActive:true,serviceId: req.body.serviceId, rateId: req.body.rateId, vendorId: req.body.vendorId }});
+            if (ups) {
+                console.log("inside ups");
                 return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "This service already exist" });
             }
-        // }
+
+            // let test = VendorService.findAll({where:{vendorId:req.body.vendorId}});
         const updatedVendorService = await VendorService.find({ where: { vendorServiceId: id } }).then(vendorService => {
 
             attrArr.forEach(attr => {
@@ -756,3 +756,17 @@ exports.updateVendorService = async (req, res, next) => {
 }
 
 
+exports.test = async(req,res,next) =>{
+    try{
+        //    let vendorService = await VendorService.findAll({ where:{[Op.and]:{ isActive:true,serviceId: req.body.serviceId, rateId: req.body.rateId, vendorId: req.body.vendorId }} });
+        const vendorService = await VendorService.findAll({where:{isActive:true,vendorId:req.body.vendorId}});
+            // console.log("ups==>",ups)
+            console.log(vendorService)
+            if (vendorService > 0) {
+                console.log("inside ups");
+                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "This service already exist" });
+            }
+    }catch(error){
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
