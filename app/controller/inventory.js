@@ -56,7 +56,7 @@ exports.get = async (req, res, next) => {
         const assetTypesId = [];
         const inventory = await Inventory.findAll({
             where: { isActive: true },
-            attributes: ['inventoryId', 'dateOfPurchase', [sequelize.fn('count', sequelize.col('serialNumber')), 'count'], [sequelize.fn('AVG', sequelize.col('rate')), 'avgRate'], [sequelize.fn('SUM', sequelize.col('rate')), 'sum']],
+            attributes: ['inventoryId', 'rate','dateOfPurchase', [sequelize.fn('count', sequelize.col('serialNumber')), 'count'], [sequelize.fn('AVG', sequelize.col('rate')), 'avgRate'], [sequelize.fn('SUM', sequelize.col('rate')), 'sum']],
             include: [{ model: Assets, attributes: ['assetId', 'assetName'] },
             { model: AssetsType, attributes: ['assetTypeId', 'assetType'] },
             ],
