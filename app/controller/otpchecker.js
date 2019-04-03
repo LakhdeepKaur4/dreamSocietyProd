@@ -453,7 +453,7 @@ if(req.query.employeeId){
         let updatedTenant = await tenant.updateAttributes({isActive:true});
         console.log(updatedTenant);
         if(updatedTenant){
-             mailToTenant(updatedTenant);
+             mailToTenantOrEmployee(updatedTenant);
 
             // set user
             let userName = decrypt1(key,updatedTenant.userName);
