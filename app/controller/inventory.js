@@ -84,7 +84,7 @@ exports.get = async (req, res, next) => {
 exports.getInventoryByAssetId = async (req, res, next) => {
     try {
         const assetId = req.params.id;
-        const inventories = await Inventory.findAll({ where: { isActive: true, assetId: assetId }, include: [Assets, AssetsType], group: ['inventory_master.assetId'],})
+        const inventories = await Inventory.findAll({ where: { isActive: true, assetId: assetId }, include: [Assets, AssetsType],})
         if (inventories) {
             return res.status(httpStatus.OK).json({
                 message: "Inventory Content Page",

@@ -465,13 +465,13 @@ if(req.query.employeeId){
          
             console.log("user===>======>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",user);
             if(user){
-                user.updateAttributes({isActive:true});
                 let roles = await Role.findOne({
                     where: { id: 6 }
                 });
                 console.log("employee role",roles)
                 // user.setRoles(roles);
                 UserRoles.create({userId:user.userId,roleId:roles.id});
+                user.updateAttributes({isActive:true});
             }
            
             // set roles
