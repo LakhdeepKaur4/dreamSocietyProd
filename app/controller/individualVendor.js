@@ -4,6 +4,7 @@ const httpStatus = require('http-status');
 const crypto = require('crypto');
 const passwordGenerator = require('generate-password');
 const shortId = require('short-id');
+const config = require('../config/config.js');
 
 
 const IndividualVendor = db.individualVendor;
