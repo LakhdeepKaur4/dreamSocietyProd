@@ -730,13 +730,13 @@ exports.updateVendorService = async (req, res, next) => {
         if (!update) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
-        if (req.body.rateId && req.body.serviceId) {
-            let ups = await VendorService.findOne({ where: { serviceId: req.body.serviceId, rateId: req.body.rateId, vendorId: req.body.vendorId } });
-            if (ups) {
+        // if (req.body.rateId && req.body.serviceId) {
+            let ups = await VendorService.findAll({ where: { isActive:true,serviceId: req.body.serviceId, rateId: req.body.rateId, vendorId: req.body.vendorId } });
+            if (ups > 0) {
                 console.log(ups);
-                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "this service already exist" });
+                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "This service already exist" });
             }
-        }
+        // }
         const updatedVendorService = await VendorService.find({ where: { vendorServiceId: id } }).then(vendorService => {
 
             attrArr.forEach(attr => {
