@@ -10,6 +10,10 @@ const shortId = require('short-id');
 
 exports.create = async (req, res, next) => {
     try {
+        const serialNumberExists = await Inventory.findAll({where:{isActive:true,serialNumber:req.body.serialNumber}});
+        if(serialNumberExists > 0){
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({message:'Serial Number already exists'});
+        }
         console.log("creating inventory");
         console.log("userId==>", req.userId);
         let body = req.body;
@@ -80,7 +84,7 @@ exports.get = async (req, res, next) => {
 exports.getInventoryByAssetId = async (req, res, next) => {
     try {
         const assetId = req.params.id;
-        const inventories = await Inventory.findAll({ where: { isActive: true, assetId: assetId }, include: [Assets, AssetsType] })
+        const inventories = await Inventory.findAll({ where: { isActive: true, assetId: assetId }, include: [Assets, AssetsType], group: ['inventory_master.assetId'],})
         if (inventories) {
             return res.status(httpStatus.OK).json({
                 message: "Inventory Content Page",
@@ -95,6 +99,10 @@ exports.getInventoryByAssetId = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
     try {
+        const serialNumberExists = await Inventory.findAll({where:{isActive:true,serialNumber:req.body.serialNumber}});
+        if(serialNumberExists > 0){
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({message:'Serial Number already exists'});
+        }
         const id = req.params.id;
         console.log("id==>", id)
         if (!id) {
