@@ -185,7 +185,7 @@ const UserRoles = db.userRole;
 
 function decrypt(key, data) {
     console.log(data);
-    var decipher = crypto.createDecipher("aes-256-cbc", key);
+    var decipher = crypto.createDecipher("aes-128-cbc", key);
     var decrypted = decipher.update(data, "hex", "utf-8");
     decrypted += decipher.final("utf-8");
   
