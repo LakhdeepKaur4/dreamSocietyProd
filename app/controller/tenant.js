@@ -395,10 +395,7 @@ exports.createEncrypted = async (req, res, next) => {
                 // ownerId1: tenant.ownerId1,
                 // ownerId2: tenant.ownerId2,
                 // ownerId3: tenant.ownerId3,
-                locationId: tenant.locationId,
-                cityId: tenant.cityId,
-                stateId: tenant.stateId,
-                countryId: tenant.countryId,
+    
                 userId: tenant.userId,
                 floorId: tenant.floorId,
                 societyId: tenant.societyId,
@@ -557,10 +554,6 @@ exports.getDecrypted = async (req, res, next) => {
                 { model: Tower },
                 { model: FlatDetail },
                 { model: Floor },
-                { model: Location },
-                { model: State },
-                { model: City },
-                { model: Country },
                 { model: Owner, as: 'Owner1' },
                 { model: Owner, as: 'Owner2' },
                 { model: Owner, as: 'Owner3' }
@@ -680,10 +673,7 @@ exports.updateEncrypted = async (req, res, next) => {
         towerIdCheck = constraintCheck('towerId', update);
         flatDetailIdCheck = constraintCheck('flatDetailId', update);
         floorIdCheck = constraintCheck('floorId', update);
-        locationIdCheck = constraintCheck('locationId', update);
-        cityIdCheck = constraintCheck('cityId', update);
-        stateIdCheck = constraintCheck('stateId', update);
-        countryIdCheck = constraintCheck('countryId', update);
+     
 
         firstName = constraintReturn(firstNameCheck, update, 'firstName', tenant);
         lastName = constraintReturn(lastNameCheck, update, 'lastName', tenant);
@@ -703,10 +693,7 @@ exports.updateEncrypted = async (req, res, next) => {
         towerId = referenceConstraintReturn(towerIdCheck, update, 'towerId', tenant);
         flatDetailId = referenceConstraintReturn(flatDetailIdCheck, update, 'flatDetailId', tenant);
         floorId = referenceConstraintReturn(floorIdCheck, update, 'floorId', tenant);
-        locationId = referenceConstraintReturn(locationIdCheck, update, 'locationId', tenant);
-        cityId = referenceConstraintReturn(cityIdCheck, update, 'cityId', tenant);
-        stateId = referenceConstraintReturn(stateIdCheck, update, 'stateId', tenant);
-        countryId = referenceConstraintReturn(countryIdCheck, update, 'countryId', tenant);
+
 
         await Owner.findAll({
             attributes: ['ownerId'],
@@ -784,10 +771,6 @@ exports.updateEncrypted = async (req, res, next) => {
             gender: gender,
             panCardNumber: panCardNumber,
             IFSCCode: IFSCCode,
-            locationId: locationId,
-            stateId: stateId,
-            cityId: cityId,
-            countryId: countryId,
             floorId: floorId,
             userId: req.userId,
             societyId: societyId,
