@@ -49,7 +49,7 @@ setInterval(async function () {
 }, 1000);
 
 function encrypt(key, data) {
-    var cipher = crypto.createCipher('aes-256-cbc', key);
+    var cipher = crypto.createCipher('aes-128-cbc', key);
     var crypted = cipher.update(data, 'utf-8', 'hex');
     crypted += cipher.final('hex');
 
@@ -73,7 +73,7 @@ function decrypt1(key, data) {
 }
 
 function decrypt(key, data) {
-    var decipher = crypto.createDecipher('aes-256-cbc', key);
+    var decipher = crypto.createDecipher('aes-128-cbc', key);
     var decrypted = decipher.update(data, 'hex', 'utf-8');
     decrypted += decipher.final('utf-8');
 
@@ -292,8 +292,8 @@ exports.deleteSelected = async (req, res, next) => {
 
 
 let mailToUser = (email, vendorId) => {
-    console.log("email=>",email);
-    console.log("vendor=>",vendorId);
+    console.log("email=>", email);
+    console.log("vendor=>", vendorId);
     const token = jwt.sign(
         { data: 'foo' },
         'secret', { expiresIn: '1h' });
@@ -454,9 +454,9 @@ exports.create1 = async (req, res, next) => {
         });
 
         // user.setRoles(roles);
-        UserRoles.create({userId:user.userId,roleId:roles.id});
-        console.log("in api email",email);
-        console.log("in api vendor id-->",vendorId)
+        UserRoles.create({ userId: user.userId, roleId: roles.id });
+        console.log("in api email", email);
+        console.log("in api vendor id-->", vendorId)
         const message = mailToUser(req.body.email, vendorId);
         return res.status(httpStatus.CREATED).json({
             message: "Vendor successfully created. please activate your account. click on the link delievered to your given email"
@@ -560,12 +560,12 @@ exports.update1 = async (req, res, next) => {
     try {
         let existingContact = await Vendor.findOne({
             where: {
-                isActive: true, 
-                [Op.or]:{          
-                contact: encrypt(key, req.body.contact),
-                email:encrypt(key,req.body.email)
+                isActive: true,
+                [Op.or]: {
+                    contact: encrypt(key, req.body.contact),
+                    email: encrypt(key, req.body.email)
                 },
-                vendorId:{[Op.ne]: req.params.id}    
+                vendorId: { [Op.ne]: req.params.id }
             }
         })
         if (existingContact) {
@@ -730,13 +730,13 @@ exports.updateVendorService = async (req, res, next) => {
         if (!update) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
-            let ups = await VendorService.findOne({ where:{ isActive:true,serviceId: req.body.serviceId, rateId: req.body.rateId, vendorId: req.body.vendorId }});
-            if (ups) {
-                console.log("inside ups");
-                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "This service already exist" });
-            }
+        let ups = await VendorService.findOne({ where: { isActive: true, serviceId: req.body.serviceId, rateId: req.body.rateId, vendorId: req.body.vendorId } });
+        if (ups) {
+            console.log("inside ups");
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "This service already exist" });
+        }
 
-            // let test = VendorService.findAll({where:{vendorId:req.body.vendorId}});
+        // let test = VendorService.findAll({where:{vendorId:req.body.vendorId}});
         const updatedVendorService = await VendorService.find({ where: { vendorServiceId: id } }).then(vendorService => {
 
             attrArr.forEach(attr => {
@@ -755,18 +755,3 @@ exports.updateVendorService = async (req, res, next) => {
     }
 }
 
-
-exports.test = async(req,res,next) =>{
-    try{
-        //    let vendorService = await VendorService.findAll({ where:{[Op.and]:{ isActive:true,serviceId: req.body.serviceId, rateId: req.body.rateId, vendorId: req.body.vendorId }} });
-        const vendorService = await VendorService.findAll({where:{isActive:true,vendorId:req.body.vendorId}});
-            // console.log("ups==>",ups)
-            console.log(vendorService)
-            if (vendorService > 0) {
-                console.log("inside ups");
-                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "This service already exist" });
-            }
-    }catch(error){
-        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
-    }
-}
