@@ -523,4 +523,14 @@ module.exports = function (app) {
 
 	app.put('/api/deleteEventBooking/:id', [authJwt.verifyToken], eventBooking.delete);
 
+	app.post('/api/individualVendor', [authJwt.verifyToken], individualVendorController.create);
+
+	app.get('/api/individualVendor', [authJwt.verifyToken], individualVendorController.get);
+
+	app.put('/api/individualVendor/:id', [authJwt.verifyToken], individualVendorController.update);
+
+	app.put('/api/individualVendor/delete/deleteSelected', [authJwt.verifyToken], individualVendorController.deleteSelected);
+
+	app.put('/api/individualVendor/delete/:id', [authJwt.verifyToken], individualVendorController.delete);
+
 }

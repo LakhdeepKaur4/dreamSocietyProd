@@ -66,7 +66,7 @@ db.otpUserVerify = require('../model/otpUserModel')(sequelize, Sequelize);
 db.tokenVerify = require('../model/tokenModel')(sequelize, Sequelize);
 db.userRole = require('../model/userRoles.model')(sequelize, Sequelize);
 db.eventBooking = require('../model/eventBooking.model')(sequelize, Sequelize);
-
+db.individualVendor=require('../model/individualVendor.model')(sequelize,Sequelize);
 
 db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
 db.otp.belongsTo(db.tenant, { foreignKey: 'tenantId' });
@@ -172,6 +172,13 @@ db.employee.belongsTo(db.employeeDetail,{foreignKey:'employeeDetailId'});
 db.eventBooking.belongsTo(db.user, { foreignKey: 'eventOrganiser'});
 db.eventBooking.belongsTo(db.event, { foreignKey: 'eventId' });
 db.eventBooking.belongsTo(db.user, { foreignKey: 'eventOrganiser' });
+db.individualVendor.belongsTo(db.user,{foreignKey:'userId'});
+db.individualVendor.belongsTo(db.country,{foreignKey:'countryId'});
+db.individualVendor.belongsTo(db.state,{foreignKey:'stateId'});
+db.individualVendor.belongsTo(db.city,{foreignKey:'cityId'});
+db.individualVendor.belongsTo(db.location,{foreignKey:'locationId'});
+db.individualVendor.belongsTo(db.service,{foreignKey:'serviceId'});
+db.individualVendor.belongsTo(db.rate,{foreignKey:'rateId'});
 
 
 module.exports = db;
