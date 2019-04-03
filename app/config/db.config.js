@@ -129,10 +129,6 @@ db.designation.belongsTo(db.user, { foreignKey: 'userId' });
 db.societyBoardMember.belongsTo(db.user, { foreignKey: 'userId' });
 db.societyBoardMember.belongsTo(db.society, { foreignKey: 'societyId' });
 db.societyBoardMember.belongsTo(db.designation, { foreignKey: 'designationId' });
-db.societyBoardMember.belongsTo(db.country, { foreignKey: 'countryId' });
-db.societyBoardMember.belongsTo(db.state, { foreignKey: 'stateId' });
-db.societyBoardMember.belongsTo(db.city, { foreignKey: 'cityId' });
-db.societyBoardMember.belongsTo(db.location, { foreignKey: 'locationId' });
 db.relation.belongsTo(db.user, { foreignKey: 'userId' });
 db.societyMemberEvent.belongsTo(db.user, { foreignKey: 'userId' });
 db.inventory.belongsTo(db.assets, { foreignKey: 'assetId' });
@@ -176,14 +172,6 @@ db.floor.belongsToMany(db.tower, { as: 'Towers', through: 'tower_floor_master', 
 db.role.belongsToMany(db.user, { through: 'user_role_master', foreignKey: 'roleId' ,otherKey:'userId',unique:false});
 db.user.belongsToMany(db.role, { through: 'user_role_master', foreignKey: 'userId' ,otherKey:'roleId',unique:false});
 
-db.employee.belongsTo(db.country,{as:'Country1',foreignKey:'countryId1'});
-db.employee.belongsTo(db.state,{as:'State1',foreignKey:'stateId1'});
-db.employee.belongsTo(db.city,{as:'City1',foreignKey:'cityId1'});
-db.employee.belongsTo(db.location,{as:'Location1',foreignKey:'locationId1'});
-db.employee.belongsTo(db.country,{as:'Country2',foreignKey:'countryId2'});
-db.employee.belongsTo(db.state,{as:'State2',foreignKey:'stateId2'});
-db.employee.belongsTo(db.city,{as:'City2',foreignKey:'cityId2'});
-db.employee.belongsTo(db.location,{as:'Location2',foreignKey:'locationId2'});
 db.employee.belongsTo(db.employeeDetail,{foreignKey:'employeeDetailId'});
 db.eventBooking.belongsTo(db.user, { foreignKey: 'eventOrganiser'});
 db.eventBooking.belongsTo(db.event, { foreignKey: 'eventId' });
