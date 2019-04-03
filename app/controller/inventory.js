@@ -60,7 +60,7 @@ exports.get = async (req, res, next) => {
             include: [{ model: Assets, attributes: ['assetId', 'assetName'] },
             { model: AssetsType, attributes: ['assetTypeId', 'assetType'] },
             ],
-            group: ['inventory_master.dateOfPurchase','inventory_master.assetId'],
+            group: ['inventory_master.assetId'],
             order: [['createdAt', 'DESC']],
             raw: false,
             // order: sequelize.literal('count DESC')
