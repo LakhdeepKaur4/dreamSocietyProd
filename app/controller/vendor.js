@@ -558,6 +558,17 @@ exports.update1 = async (req, res, next) => {
     let attrArr = ['userName', 'firstName', 'lastName', 'permanentAddress', 'currentAddress', 'contact', 'email'];
     let attrFiles = ['profilePicture', 'documentOne', 'documentTwo'];
     try {
+        let existingContact = await Vendor.findOne({
+            where: {
+                isActive: true,           
+                contact: encrypt(key, req.body.contact),
+                email:encrypt(key,req.body.email),
+                vendorId:{[Op.ne]: req.params.id}    
+            }
+        })
+        if (existingContact) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'Email or Contact already exists' })
+        }
         console.log("updating vendor");
         console.log(":::::req.body==>", req.body)
         const id = req.params.id;

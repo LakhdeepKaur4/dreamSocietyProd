@@ -436,12 +436,12 @@ exports.createEncrypt = async (req, res, next) => {
                     // set roles
                     console.log(employee.password);
                     console.log(employee.password);
-                    let roles = await Role.findOne({
-                        where: { id: 6 }
-                    });
-                    console.log("employee role",roles)
-                    // user.setRoles(roles);
-                    UserRoles.create({userId:user.userId,roleId:roles.id});
+                    // let roles = await Role.findOne({
+                    //     where: { id: 6 }
+                    // });
+                    // console.log("employee role",roles)
+                    // // user.setRoles(roles);
+                    // UserRoles.create({userId:user.userId,roleId:roles.id});
                     const message = mailToUser(req.body.email, employeeId);
                     return res.status(httpStatus.CREATED).json({
                         message: "Employee successfully created. please activate your account. click on the link delievered to your given email"

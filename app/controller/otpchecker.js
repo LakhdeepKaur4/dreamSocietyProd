@@ -180,6 +180,8 @@ const Society = db.society;
 const User = db.user;
 const Relation = db.relation;
 const Otp = db.otp;
+const Role = db.role;
+const UserRoles = db.userRole;
 
 function decrypt(key, data) {
     console.log(data);
@@ -277,7 +279,6 @@ function decrypt(key, data) {
   
 
 exports.checkOtp = async (req,res,next) => {
-
     console.log("my name is atin===>", req.query);
         if(req.query.ownerId){
             let ownerId = decrypt(key,req.query.ownerId);
@@ -300,7 +301,7 @@ exports.checkOtp = async (req,res,next) => {
                 return res.status(200).json(
                     {
                     otpVerified: false,    
-                    message: 'otp is invalid'
+                    message: 'otp is invalid.Contact admin'
                 });
                 
             }
@@ -315,6 +316,7 @@ exports.checkOtp = async (req,res,next) => {
                     isActive:false
                     }
                 });
+                
                 console.log("user==>",user);
                 if(user){
                     user.updateAttributes({isActive:true});
@@ -322,7 +324,7 @@ exports.checkOtp = async (req,res,next) => {
                  return res.status(200).json(
                     {
                     otpVerified: true, 
-                    message: 'owner Successfully Activated'
+                    message: 'owner Successfully Activated. check your email for username and password'
                 });
             }
         }
@@ -350,7 +352,7 @@ if(req.query.vendorId){
         return res.status(200).json(
             {
             otpVerified: false,    
-            message: 'otp is invalid'
+            message: 'otp is invalid or expired.Contact admin'
         });
         
     }
@@ -372,7 +374,7 @@ if(req.query.vendorId){
          return res.status(200).json(
             {
             otpVerified: true, 
-            message: 'vendor Successfully Activated'
+            message: 'vendor Successfully Activated.check your email for username and password'
         });
     }
 }
@@ -398,14 +400,13 @@ if(req.query.employeeId){
          return res.status(200).json(
                 {
                 otpVerified: false,    
-                message: 'otp is invalid or expired'
+                message: 'otp is invalid or expired.Contact admin'
             });
     }
     let updatedEmployee = await employee.updateAttributes({isActive:true});
     console.log(updatedEmployee);
     if(updatedEmployee){
          mailToTenantOrEmployee(updatedEmployee);
-
         // set user
         let userName = decrypt1(key,updatedEmployee.userName);
         // set users
@@ -422,7 +423,7 @@ if(req.query.employeeId){
          return res.status(200).json(
             {
             otpVerified: false,    
-            message: 'employee successfully activated'
+            message: 'employee successfully activated.check your email for your username and password'
         });
     }
     }
@@ -447,7 +448,7 @@ if(req.query.employeeId){
              return res.status(200).json(
                     {
                     otpVerified: false,    
-                    message: 'otp is invalid or expired'
+                    message: 'otp is invalid or expired.Contact admin'
                 });
         }
         let updatedTenant = await tenant.updateAttributes({isActive:true});
@@ -461,9 +462,16 @@ if(req.query.employeeId){
             let user = await User.findOne({
                 where:{userName:encrypt1(key,userName)}
             });
+         
             console.log("user===>======>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",user);
             if(user){
                 user.updateAttributes({isActive:true});
+                let roles = await Role.findOne({
+                    where: { id: 6 }
+                });
+                console.log("employee role",roles)
+                // user.setRoles(roles);
+                UserRoles.create({userId:user.userId,roleId:roles.id});
             }
            
             // set roles
@@ -471,7 +479,7 @@ if(req.query.employeeId){
              return res.status(200).json(
                 {
                 otpVerified: false,    
-                message: 'tenant successfully activated'
+                message: 'tenant successfully activated.Check your email for your username and password'
             });
         }
         }
