@@ -36,7 +36,7 @@ function decrypt1(key, data) {
 
 
 let testSms = (contact) => {
-    const apikey = 'mJUH4QVvP+E-coDtRnQr7wvdVc8ClAWDcKjPew8Gxl';
+    const apikey = '07hlECj1sy4-ynODCNlExLsx91Pv29Zdrh0bxc1pLc';
     const number = contact;
     const OTP = Math.floor(100000 + Math.random() * 900000);
     const message = 'OTP-' + OTP;
