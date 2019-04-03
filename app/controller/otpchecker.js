@@ -319,6 +319,12 @@ exports.checkOtp = async (req,res,next) => {
                 
                 console.log("user==>",user);
                 if(user){
+                    let roles = await Role.findOne({
+                        where: { id: 6 }
+                    });
+                    console.log("employee role",roles)
+                    // user.setRoles(roles);
+                    UserRoles.create({userId:user.userId,roleId:roles.id});
                     user.updateAttributes({isActive:true});
                 }
                  return res.status(200).json(
@@ -369,6 +375,12 @@ if(req.query.vendorId){
         });
         console.log("user==>",user);
         if(user){
+            let roles = await Role.findOne({
+                where: { id: 6 }
+            });
+            console.log("employee role",roles)
+            // user.setRoles(roles);
+            UserRoles.create({userId:user.userId,roleId:roles.id});
             user.updateAttributes({isActive:true});
         }
          return res.status(200).json(
@@ -415,6 +427,12 @@ if(req.query.employeeId){
         });
         console.log("user===>======>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",user);
         if(user){
+            let roles = await Role.findOne({
+                where: { id: 6 }
+            });
+            console.log("employee role",roles)
+            // user.setRoles(roles);
+            UserRoles.create({userId:user.userId,roleId:roles.id});
             user.updateAttributes({isActive:true});
         }
        
