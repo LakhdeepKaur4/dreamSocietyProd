@@ -64,10 +64,10 @@ function saveToDisc(name, fileExt, base64String, callback) {
 exports.create = async (req, res, next) => {
   try {
     console.log("user is =====>", req.userId);
-    const eventExists = await SocietyEventBook.findAll({where:{isActive:true,eventId:req.body.eventId,startDate:req.body.startDate}});
+    const eventExists = await SocietyEventBook.findAll({ where: { isActive: true, eventId: req.body.eventId, startDate: req.body.startDate } });
     // console.log(eventExists.length + "length")
-    if(eventExists.length > 0){
-      return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({message:'Event has been already registered.Please try again with different time or date'})
+    if (eventExists.length > 0) {
+      return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'Event has been already registered.Please try again with different time or date' })
     }
 
     let createAttr = {};
@@ -162,9 +162,9 @@ exports.get = async (req, res, next) => {
 exports.update = async (req, res, next) => {
   try {
     console.log("req----------->", req.body);
-    const eventExists = await SocietyEventBook.findAll({where:{isActive:true,eventId:req.body.eventId,startDate:req.body.startDate}});
-    if(eventExists.length > 0){
-      return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({message:'Event has been already registered.Please try again with different time or date'})
+    const eventExists = await SocietyEventBook.findOne({ where: { isActive: true, eventId: req.body.eventId, startDate: req.body.startDate,societyEventBookId:{[Op.ne]:req.params.id } }});
+    if (eventExists) {
+      return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'Event has been already registered.Please try again with different time or date' })
     }
 
     let updateAttr = {};
@@ -212,6 +212,7 @@ exports.update = async (req, res, next) => {
 
   }
   catch (error) {
+    console.log(error)
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
 }

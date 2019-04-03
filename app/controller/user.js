@@ -307,7 +307,6 @@ exports.signin = async (req, res) => {
 				isActive: true
 			}
 			]
-
 		},
 		include: [{
 			model: Role,
