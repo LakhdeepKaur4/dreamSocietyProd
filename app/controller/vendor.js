@@ -560,9 +560,11 @@ exports.update1 = async (req, res, next) => {
     try {
         let existingContact = await Vendor.findOne({
             where: {
-                isActive: true,           
+                isActive: true, 
+                [Op.or]:{          
                 contact: encrypt(key, req.body.contact),
-                email:encrypt(key,req.body.email),
+                email:encrypt(key,req.body.email)
+                },
                 vendorId:{[Op.ne]: req.params.id}    
             }
         })
