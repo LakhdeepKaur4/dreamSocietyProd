@@ -14,6 +14,7 @@ const Owner = db.owner;
 const Tenant = db.tenant;
 const Vendor = db.vendor;
 const Employee = db.employee;
+const IndividualVendor = db.individualVendor;
 
 const Otp = db.otp;
 
@@ -72,7 +73,7 @@ exports.checkToken = async (req, res, next) => {
                 {
                     alreadyActivated: true,
                     tokenVerified: false,
-                    message: 'you are already activated. check your email for userName and password.'
+                    message: 'You are already activated.Check your email for userName and password.'
                 });
         }
     }
@@ -85,7 +86,7 @@ exports.checkToken = async (req, res, next) => {
                 {
                     alreadyActivated: true,
                     tokenVerified: false,
-                    message: 'you are already activated. check your email for userName and password.'
+                    message: 'You are already activated. Check your email for userName and password.'
                 });
         }
     }
@@ -98,7 +99,20 @@ exports.checkToken = async (req, res, next) => {
                 {
                     alreadyActivated: true,
                     tokenVerified: false,
-                    message: 'you are already activated. check your email for userName and password.'
+                    message: 'You are already activated. Check your email for userName and password.'
+                });
+        }
+    }
+
+    if (req.query.individualVendorId) {
+        let individualVendorId = decrypt1(key, req.query.individualVendorId);
+        let individualVendor = await IndividualVendor.findOne({ where: { individualVendorId: individualVendorId, isActive: true } });
+        if (individualVendor) {
+            return res.status(200).json(
+                {
+                    alreadyActivated: true,
+                    tokenVerified: false,
+                    message: 'You are already activated.Check your email for userName and password.'
                 });
         }
     }
@@ -159,10 +173,22 @@ exports.checkToken = async (req, res, next) => {
                 })
 
             }
+
+            if (req.query.individualVendorId) {
+                let individualVendorId = decrypt1(key, req.query.individualVendorId);
+                let individualVendor = await IndividualVendor.findOne({ where: { individualVendorId: individualVendorId } });
+                let contact = decrypt1(key, individualVendor.contact);
+                let otp = testSms(contact);
+                let dbotp = await Otp.create({
+                    otpvalue: otp,
+                    individualVendorId: individualVendor.individualVendorId
+                })
+
+            }
             return res.status(200).json(
                 {
                     tokenVerified: true,
-                    message: 'your OTP has been delievered'
+                    message: 'Your OTP has been sent to your mobile number.'
                 });
         }
 

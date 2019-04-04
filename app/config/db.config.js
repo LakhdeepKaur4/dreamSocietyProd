@@ -72,6 +72,7 @@ db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
 db.otp.belongsTo(db.tenant, { foreignKey: 'tenantId' });
 db.otp.belongsTo(db.employee, { foreignKey: 'employeeId' });
 db.otp.belongsTo(db.vendor, { foreignKey: 'vendorId' });
+db.otp.belongsTo(db.individualVendor, { foreignKey: 'individualVendorId' });
 // db.role.belongsToMany(db.user, { through: 'user_roles', foreignKey: 'roleId', otherKey: 'userId' });
 // db.user.belongsToMany(db.role, { through: 'user_roles', foreignKey: 'userId', otherKey: 'roleId' });
 db.society.belongsTo(db.city, { foreignKey: 'cityId' });
