@@ -50,7 +50,7 @@ module.exports = (sequelize, Sequelize) => {
         },
         isActive: {
             type: Sequelize.BOOLEAN,
-            defaultValue: true
+            defaultValue: false
         },
         startTime: {
             type: Sequelize.TIME,
