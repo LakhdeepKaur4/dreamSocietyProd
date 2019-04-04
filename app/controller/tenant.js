@@ -374,11 +374,6 @@ exports.createEncrypted = async (req, res, next) => {
             tenant.countryId = null;
         }
 
-        if (condition) {
-            
-        } else {
-            
-        }
 
         if (user === null) {
             if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
