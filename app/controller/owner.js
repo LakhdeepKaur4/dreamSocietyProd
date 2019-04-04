@@ -253,7 +253,7 @@ exports.create1 = async (req, res, next) => {
       where: { isActive:true,contact: encrypt(key, req.body.contact) }
     });
     let existingContact = await User.find({
-      where:{isActive:true,conatct:encrypt(key,req.body.contact)}
+      where:{isActive:true,contact:encrypt(key,req.body.contact)}
     })
     if (existingOwner1 || existingContact) {
       return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "contact already exist" });
