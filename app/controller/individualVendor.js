@@ -7,6 +7,9 @@ const shortId = require('short-id');
 const fs = require('fs');
 const path = require('path');
 const config = require('../config/config.js');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
 
 
 const IndividualVendor = db.individualVendor;
@@ -18,6 +21,9 @@ const Location = db.location;
 const Country = db.country;
 const State = db.state;
 const Op = db.Sequelize.Op;
+const Otp = db.otp;
+const Role = db.role;
+const UserRoles = db.userRole;
 
 encrypt = (text) => {
     let key = config.secret;
@@ -97,6 +103,42 @@ saveToDiscDoc = (name, fileExt, base64String, callback) => {
         }
     });
 }
+
+let mailToUser = (email, vendorId) => {
+    console.log("email=>", email);
+    console.log("vendor=>", vendorId);
+    const token = jwt.sign(
+        { data: 'foo' },
+        'secret', { expiresIn: '1h' });
+    vendorId = encrypt(key, vendorId.toString());
+    const request = mailjet.post("send", { 'version': 'v3.1' })
+        .request({
+            "Messages": [
+                {
+                    "From": {
+                        "Email": "rohit.khandelwal@greatwits.com",
+                        "Name": "Greatwits"
+                    },
+                    "To": [
+                        {
+                            "Email": email,
+                            "Name": 'Atin' + ' ' + 'Tanwar'
+                        }
+                    ],
+                    "Subject": "Activation link",
+                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?vendorId=${vendorId}&token=${token}">click here</a>`
+                }
+            ]
+        })
+    request.then((result) => {
+        console.log(result.body)
+        // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
+    })
+        .catch((err) => {
+            console.log(err.statusCode)
+        })
+}
+
 
 exports.create = async (req, res, next) => {
     const vendor = req.body;
@@ -260,7 +302,8 @@ exports.create = async (req, res, next) => {
                                 }
                             })
                         }
-
+                        console.log("individual vendor created ....",vendorCreated)
+                        const message = mailToUser(req.body.email, vendorCreated.individualVendorId); 
                         res.status(httpStatus.CREATED).json({
                             message: 'Vendor created successfully'
                         })
