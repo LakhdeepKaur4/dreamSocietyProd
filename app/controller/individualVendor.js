@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const passwordGenerator = require('generate-password');
 const shortId = require('short-id');
 const fs = require('fs');
+const path = require('path');
 const config = require('../config/config.js');
 
 
@@ -157,6 +158,17 @@ exports.create = async (req, res, next) => {
         messageContactErr: messageContactErr
     };
 
+    if ((vendor.startTime1 === '') && (vendor.startTime1 === undefined) && (vendor.startTime1 === null)) {
+        vendor.startTime1 = null;
+        vendor.endTime1 = null;
+    }
+    
+
+    if ((vendor.startTime2 === '') && (vendor.startTime2 === undefined) && (vendor.startTime2 === null)) {
+        vendor.startTime2 = null;
+        vendor.endTime2 = null;
+    }
+
     if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
         IndividualVendor.create({
             firstName: encrypt(vendor.firstName),
@@ -234,6 +246,7 @@ exports.create = async (req, res, next) => {
                 }
             })
             .catch(err => {
+                console.log(err);
                 res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
             })
     } else {
