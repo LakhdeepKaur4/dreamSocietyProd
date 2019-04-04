@@ -76,6 +76,7 @@ exports.getById = (req, res) => {
 }
 
 exports.update =async (req, res) => {
+  console.log(req.body);
   const id = req.params.id;
   const updates = req.body;
   if (!id) {
