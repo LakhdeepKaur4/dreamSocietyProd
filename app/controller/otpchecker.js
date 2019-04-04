@@ -311,8 +311,8 @@ exports.checkOtp = async (req, res, next) => {
         let individualVendorId = decrypt(key, req.query.individualVendorId);
         console.log(individualVendorId);
         let individualVendor = await IndividualVendor.findOne({ where: { individualVendorId: individualVendorId, isActive: false } });
-        console.log("owner====>", individualVendor);
-        if (!owner) {
+        console.log("====>", individualVendor);
+        if (!individualVendor) {
             return res.status(403).json(
                 {
                     otpVerified: false,
