@@ -234,6 +234,7 @@ exports.create = async (req, res, next) => {
                 }
             })
             .catch(err => {
+                console.log(err);
                 res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
             })
     } else {
