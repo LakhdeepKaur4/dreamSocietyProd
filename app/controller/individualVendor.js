@@ -104,13 +104,13 @@ saveToDiscDoc = (name, fileExt, base64String, callback) => {
     });
 }
 
-let mailToUser = (email, vendorId) => {
+let mailToUser = (email, individualVendorId) => {
     console.log("email=>", email);
-    console.log("vendor=>", vendorId);
+    console.log("vendor=>", individualVendorId);
     const token = jwt.sign(
         { data: 'foo' },
         'secret', { expiresIn: '1h' });
-    vendorId = encrypt( vendorId.toString());
+    individualVendorId = encrypt(individualVendorId.toString());
     const request = mailjet.post("send", { 'version': 'v3.1' })
         .request({
             "Messages": [
@@ -126,7 +126,7 @@ let mailToUser = (email, vendorId) => {
                         }
                     ],
                     "Subject": "Activation link",
-                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?vendorId=${vendorId}&token=${token}">click here</a>`
+                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?individualVendorId=${individualVendorId}&token=${token}">click here</a>`
                 }
             ]
         })
@@ -206,7 +206,7 @@ exports.create = async (req, res, next) => {
         vendor.startTime1 = null;
         vendor.endTime1 = null;
     }
-    
+
 
     if ((vendor.startTime2 === '') && (vendor.startTime2 === undefined) && (vendor.startTime2 === null)) {
         vendor.startTime2 = null;
@@ -302,8 +302,8 @@ exports.create = async (req, res, next) => {
                                 }
                             })
                         }
-                        console.log("individual vendor created ....",vendorCreated)
-                        const message = mailToUser(req.body.email, vendorCreated.individualVendorId); 
+                        console.log("individual vendor created ....", vendorCreated)
+                        const message = mailToUser(req.body.email, vendorCreated.individualVendorId);
                         res.status(httpStatus.CREATED).json({
                             message: 'Vendor created successfully'
                         })
@@ -391,7 +391,7 @@ exports.get = (req, res, next) => {
 exports.update = async (req, res, next) => {
     try {
         const id = req.params.id;
-        console.log('Body ===>',req.body)
+        console.log('Body ===>', req.body)
         if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
         }
@@ -580,17 +580,17 @@ exports.update = async (req, res, next) => {
                     individualVendorId: id
                 }
             })
-            .then(vendor => {
-                return vendor.updateAttributes(updates);
-            })
-            .then(vendor => {
-                return res.status(httpStatus.CREATED).json({
-                    message: "Vendor successfully updated",
-                });
-            })
-            .catch(err => {
-                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-            })
+                .then(vendor => {
+                    return vendor.updateAttributes(updates);
+                })
+                .then(vendor => {
+                    return res.status(httpStatus.CREATED).json({
+                        message: "Vendor successfully updated",
+                    });
+                })
+                .catch(err => {
+                    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+                })
         } else {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
         }
