@@ -171,7 +171,8 @@ exports.create = async (req, res, next) => {
     vendor.userName = userName;
     vendor.password = password;
 
-    user = await User.findOne({ where: { [Op.and]: [{ email: encrypt(vendor.email) }, { contact: encrypt(vendor.contact) }, { isActive: true }] } });
+    user1 = await User.findOne({ where: { [Op.and]: [{ email: encrypt(vendor.email) }, { isActive: true }] } });
+    user2 = await User.findOne({ where: { [Op.and]: [{ contact: encrypt(vendor.contact) }, { isActive: true }] } });
 
     if (vendor['email'] !== undefined) {
         vendorEmailErr = await IndividualVendor.findOne({ where: { email: encrypt(vendor.email), isActive: true } });
@@ -213,7 +214,7 @@ exports.create = async (req, res, next) => {
         vendor.endTime2 = null;
     }
 
-    if (user === null) {
+    if (user1 === null && user2 === null) {
         if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
             IndividualVendor.create({
                 firstName: encrypt(vendor.firstName),
