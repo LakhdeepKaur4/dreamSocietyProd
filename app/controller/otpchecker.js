@@ -212,7 +212,7 @@ function decrypt(key, data) {
     const apikey = '07hlECj1sy4-ynODCNlExLsx91Pv29Zdrh0bxc1pLc';
     const number = contact;
     // const OTP = Math.floor(100000 + Math.random() * 900000);
-    const message = 'Please login with this.Your userName' + userName + "and password is" + password + ":)";
+    const message = 'Please login with this.Your userName is ' + userName + " and password is " + password + " :)";
 
     http.get(`http://api.textlocal.in/send/?apiKey=${apikey}&numbers=${number}&message=${message}`, function (err, data) {
         console.log('messageSend');
