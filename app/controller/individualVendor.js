@@ -110,7 +110,7 @@ let mailToUser = (email, vendorId) => {
     const token = jwt.sign(
         { data: 'foo' },
         'secret', { expiresIn: '1h' });
-    vendorId = encrypt(key, vendorId.toString());
+    vendorId = encrypt( vendorId.toString());
     const request = mailjet.post("send", { 'version': 'v3.1' })
         .request({
             "Messages": [
