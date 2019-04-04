@@ -4,6 +4,7 @@ const httpStatus = require('http-status');
 const crypto = require('crypto');
 const passwordGenerator = require('generate-password');
 const shortId = require('short-id');
+const fs = require('fs');
 const config = require('../config/config.js');
 
 
@@ -182,7 +183,7 @@ exports.create = async (req, res, next) => {
             rateId: vendor.rateId
         })
             .then(async vendorCreated => {
-                if (vendor !== null) {
+                if (vendorCreated !== null) {
                     if (vendor.profilePicture) {
                         await saveToDisc(vendor.fileName1, vendor.fileExt1, vendor.profilePicture, (err, res) => {
                             if (err) {
