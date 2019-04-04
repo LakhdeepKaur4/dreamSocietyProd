@@ -181,7 +181,7 @@ exports.create = async (req, res, next) => {
             serviceId: vendor.serviceId,
             rateId: vendor.rateId
         })
-            .then(async vendor => {
+            .then(async vendorCreated => {
                 if (vendor !== null) {
                     if (vendor.profilePicture) {
                         await saveToDisc(vendor.fileName1, vendor.fileExt1, vendor.profilePicture, (err, res) => {
@@ -192,12 +192,12 @@ exports.create = async (req, res, next) => {
                                 const updatedImage = {
                                     profilePicture: encrypt(res)
                                 };
-                                IndividualVendor.update(updatedImage, { where: { tenantId: entry.tenantId } });
+                                IndividualVendor.update(updatedImage, { where: { individualVendorId: vendorCreated.individualVendorId } });
                             }
                         })
                     }
                     if (vendor.documentOne) {
-                        await saveToDiscDoc(vendor.fileName2, vendor.fileExt2, vendor.profilePicture, (err, res) => {
+                        await saveToDiscDoc(vendor.fileName2, vendor.fileExt2, vendor.documentOne, (err, res) => {
                             if (err) {
                                 console.log(err);
                             } else {
@@ -205,12 +205,12 @@ exports.create = async (req, res, next) => {
                                 const updatedImage = {
                                     documentOne: encrypt(res)
                                 };
-                                IndividualVendor.update(updatedImage, { where: { tenantId: entry.tenantId } });
+                                IndividualVendor.update(updatedImage, { where: { individualVendorId: vendorCreated.individualVendorId } });
                             }
                         })
                     }
                     if (vendor.documentTwo) {
-                        await saveToDiscDoc(vendor.fileName3, vendor.fileExt3, vendor.profilePicture, (err, res) => {
+                        await saveToDiscDoc(vendor.fileName3, vendor.fileExt3, vendor.documentTwo, (err, res) => {
                             if (err) {
                                 console.log(err);
                             } else {
@@ -218,7 +218,7 @@ exports.create = async (req, res, next) => {
                                 const updatedImage = {
                                     documentTwo: encrypt(res)
                                 };
-                                IndividualVendor.update(updatedImage, { where: { tenantId: entry.tenantId } });
+                                IndividualVendor.update(updatedImage, { where: { individualVendorId: vendorCreated.individualVendorId } });
                             }
                         })
                     }
