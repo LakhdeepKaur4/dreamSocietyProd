@@ -374,6 +374,12 @@ exports.createEncrypted = async (req, res, next) => {
             tenant.countryId = null;
         }
 
+        if (condition) {
+            
+        } else {
+            
+        }
+
         if (user === null) {
             if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
                 Tenant.create({
@@ -387,12 +393,12 @@ exports.createEncrypted = async (req, res, next) => {
                     permanentAddress: encrypt(tenant.permanentAddress),
                     correspondenceAddress: encrypt(tenant.correspondenceAddress),
                     aadhaarNumber: encrypt(tenant.aadhaarNumber),
-                    bankName: encrypt(tenant.bankName),
-                    accountHolderName: encrypt(tenant.accountHolderName),
-                    accountNumber: encrypt(tenant.accountNumber),
+                    // bankName: encrypt(tenant.bankName),
+                    // accountHolderName: encrypt(tenant.accountHolderName),
+                    // accountNumber: encrypt(tenant.accountNumber),
                     gender: encrypt(tenant.gender),
                     panCardNumber: encrypt(tenant.panCardNumber),
-                    IFSCCode: encrypt(tenant.IFSCCode),
+                    // IFSCCode: encrypt(tenant.IFSCCode),
                     noOfMembers: tenant.noOfMembers,
                     // ownerId: tenant.ownerId1,
                     // ownerId1: tenant.ownerId1,
