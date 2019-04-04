@@ -132,6 +132,7 @@ if(service.serviceName === updates.serviceName){
 }
 
 exports.delete = (req, res) => {
+  console.log("req------>",req);
   const id = req.params.id;
   if (!id) {
     res.json("Please enter id");
