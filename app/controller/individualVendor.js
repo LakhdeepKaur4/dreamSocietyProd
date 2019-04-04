@@ -237,6 +237,7 @@ exports.create = async (req, res, next) => {
                 res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
             })
     } else {
+        
         return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
     }
 }

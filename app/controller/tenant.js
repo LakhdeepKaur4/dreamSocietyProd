@@ -524,6 +524,7 @@ exports.createEncrypted = async (req, res, next) => {
                                 // tenantSend.IFSCCode = decrypt(tenantSend.IFSCCode);
 
                                 const message = mailToUser(req.body.email, tenantSend.tenantId);
+                                console.log("ownerID1====?",tenantSend.owner,"87389547374 ",tenantSend)
                                 mailToOwner(tenantSend.ownerId1, tenantSend);
                                 return res.status(httpStatus.CREATED).json({
                                     message: "Tenant successfully created. please activate your account. click on the link delievered to your given email",

@@ -39,7 +39,7 @@ let testSms = (contact) => {
     const apikey = '07hlECj1sy4-ynODCNlExLsx91Pv29Zdrh0bxc1pLc';
     const number = contact;
     const OTP = Math.floor(100000 + Math.random() * 900000);
-    const message = 'OTP-' + OTP;
+    const message = 'Your one time password is ' + OTP + ".Please enter this otp to verify,it will valid for 5 minutes. Don't share with anyone ";
 
     http.get(`http://api.textlocal.in/send/?apiKey=${apikey}&numbers=${number}&message=${message}`, function (err, data) {
         console.log('messageSend');
