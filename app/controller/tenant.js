@@ -336,7 +336,8 @@ exports.createEncrypted = async (req, res, next) => {
         tenant.password = password;
         console.log(tenant);
 
-        user = await User.findOne({ where: { [Op.and]: [{ email: encrypt(tenant.email) }, { contact: encrypt(tenant.contact) }, { isActive: true }] } });
+        user1 = await User.findOne({ where: { [Op.and]: [{ email: encrypt(tenant.email) }, { isActive: true }] } });
+        user2 = await User.findOne({ where: { [Op.and]: [{ contact: encrypt(tenant.contact) }, { isActive: true }] } });
 
         if (tenant['email'] !== undefined) {
             tenantEmailErr = await Tenant.findOne({ where: { email: encrypt(tenant.email), isActive: true } });
@@ -375,7 +376,7 @@ exports.createEncrypted = async (req, res, next) => {
         }
 
 
-        if (user === null) {
+        if (user1 === null && user2 === null) {
             if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
                 Tenant.create({
                     firstName: encrypt(tenant.firstName),
@@ -524,7 +525,7 @@ exports.createEncrypted = async (req, res, next) => {
                                 // tenantSend.IFSCCode = decrypt(tenantSend.IFSCCode);
 
                                 const message = mailToUser(req.body.email, tenantSend.tenantId);
-                                console.log("ownerID1====?",tenantSend.owner,"87389547374 ",tenantSend)
+                                console.log("ownerID1====?", tenantSend.owner, "87389547374 ", tenantSend)
                                 mailToOwner(tenantSend.ownerId1, tenantSend);
                                 return res.status(httpStatus.CREATED).json({
                                     message: "Tenant successfully created. please activate your account. click on the link delievered to your given email",

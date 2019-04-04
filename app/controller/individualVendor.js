@@ -171,7 +171,8 @@ exports.create = async (req, res, next) => {
     vendor.userName = userName;
     vendor.password = password;
 
-    user = await User.findOne({ where: { [Op.and]: [{ email: encrypt(vendor.email) }, { contact: encrypt(vendor.contact) }, { isActive: true }] } });
+    user1 = await User.findOne({ where: { [Op.and]: [{ email: encrypt(vendor.email) }, { isActive: true }] } });
+    user2 = await User.findOne({ where: { [Op.and]: [{ contact: encrypt(vendor.contact) }, { isActive: true }] } });
 
     if (vendor['email'] !== undefined) {
         vendorEmailErr = await IndividualVendor.findOne({ where: { email: encrypt(vendor.email), isActive: true } });
@@ -206,14 +207,14 @@ exports.create = async (req, res, next) => {
         vendor.startTime1 = null;
         vendor.endTime1 = null;
     }
-    
+
 
     if ((vendor.startTime2 === '') && (vendor.startTime2 === undefined) && (vendor.startTime2 === null)) {
         vendor.startTime2 = null;
         vendor.endTime2 = null;
     }
 
-    if (user === null) {
+    if (user1 === null && user2 === null) {
         if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
             IndividualVendor.create({
                 firstName: encrypt(vendor.firstName),
@@ -391,7 +392,7 @@ exports.get = (req, res, next) => {
 exports.update = async (req, res, next) => {
     try {
         const id = req.params.id;
-        console.log('Body ===>',req.body)
+        console.log('Body ===>', req.body)
         if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
         }
@@ -580,17 +581,17 @@ exports.update = async (req, res, next) => {
                     individualVendorId: id
                 }
             })
-            .then(vendor => {
-                return vendor.updateAttributes(updates);
-            })
-            .then(vendor => {
-                return res.status(httpStatus.CREATED).json({
-                    message: "Vendor successfully updated",
-                });
-            })
-            .catch(err => {
-                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-            })
+                .then(vendor => {
+                    return vendor.updateAttributes(updates);
+                })
+                .then(vendor => {
+                    return res.status(httpStatus.CREATED).json({
+                        message: "Vendor successfully updated",
+                    });
+                })
+                .catch(err => {
+                    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+                })
         } else {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
         }

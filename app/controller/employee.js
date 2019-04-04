@@ -29,7 +29,7 @@ const UserRoles = db.userRole;
 let mailToUser = (email, employeeId) => {
     const token = jwt.sign(
         { data: 'foo' },
-        'secret', { expiresIn: '1h'});
+        'secret', { expiresIn: '1h' });
     employeeId = encrypt(employeeId.toString());
     const request = mailjet.post("send", { 'version': 'v3.1' })
         .request({
@@ -277,7 +277,8 @@ exports.createEncrypt = async (req, res, next) => {
             numbers: true
         });
 
-        user = await User.findOne({ where: { [Op.and]: [{ email: encrypt(body.email) }, { contact: encrypt(body.contact) }, { isActive: true }] } });
+        user1 = await User.findOne({ where: { [Op.and]: [{ email: encrypt(body.email) }, { isActive: true }] } });
+        user2 = await User.findOne({ where: { [Op.and]: [{ contact: encrypt(body.contact) }, { isActive: true }] } });
 
         if (body['email'] !== undefined) {
             bodyEmailErr = await Employee.findOne({ where: { email: encrypt(body.email), isActive: true } });
@@ -314,7 +315,7 @@ exports.createEncrypt = async (req, res, next) => {
         userName = body.firstName + body.uniqueId.toString(36);
         console.log("atin------>", body.userName);
 
-        if (user === null) {
+        if (user1 === null && user2 === null) {
             if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
                 await Employee
                     .create({
@@ -453,12 +454,12 @@ exports.createEncrypt = async (req, res, next) => {
                     .catch(err => console.log(err))
             } else {
                 return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
-            } 
+            }
         } else {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
                 message: 'User already exist for same email and contact'
             });
-        } 
+        }
     } catch (error) {
         console.log(error);
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
