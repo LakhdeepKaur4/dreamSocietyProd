@@ -277,6 +277,8 @@ exports.createEncrypt = async (req, res, next) => {
             numbers: true
         });
 
+        user = await User.findOne({ where: { [Op.and]: [{ email: encrypt(body.email) }, { contact: encrypt(body.contact) }, { isActive: true }] } });
+
         if (body['email'] !== undefined) {
             bodyEmailErr = await Employee.findOne({ where: { email: encrypt(body.email), isActive: true } });
         } else {
@@ -312,145 +314,151 @@ exports.createEncrypt = async (req, res, next) => {
         userName = body.firstName + body.uniqueId.toString(36);
         console.log("atin------>", body.userName);
 
-        if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
-            await Employee
-                .create({
-                    uniqueId: uniqueId,
-                    userName: encrypt(userName),
-                    firstName: encrypt(body.firstName),
-                    middleName: encrypt(body.middleName),
-                    email: encrypt(body.email),
-                    password: password,
-                    contact: encrypt(body.contact),
-                    lastName: encrypt(body.lastName),
-                    salary: encrypt(body.salary),
-                    permanentAddress: encrypt(body.permanentAddress),
-                    currentAddress: encrypt(body.currentAddress),
-                    startDate: encrypt(body.startDate),
-                    employeeDetailId: body.employeeDetailId,
-                    // // endDate: encrypt(body.endDate),
-                    userId: body.userId,
-                    // countryId1: body.countryId1,
-                    // stateId1: body.stateId1,
-                    // cityId1: body.cityId1,
-                    // locationId1: body.locationId1,
-                    // countryId2: body.countryId2,
-                    // stateId2: body.stateId2,
-                    // cityId2: body.cityId2,
-                    // locationId2: body.locationId2
-                })
-                .then(emp => {
-                    // console.log(emp);
-                    employee = emp;
-                    // console.log(emp.employeeId);
-                    employeeId = emp.employeeId;
+        if (user === null) {
+            if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
+                await Employee
+                    .create({
+                        uniqueId: uniqueId,
+                        userName: encrypt(userName),
+                        firstName: encrypt(body.firstName),
+                        middleName: encrypt(body.middleName),
+                        email: encrypt(body.email),
+                        password: password,
+                        contact: encrypt(body.contact),
+                        lastName: encrypt(body.lastName),
+                        salary: encrypt(body.salary),
+                        permanentAddress: encrypt(body.permanentAddress),
+                        currentAddress: encrypt(body.currentAddress),
+                        startDate: encrypt(body.startDate),
+                        employeeDetailId: body.employeeDetailId,
+                        // // endDate: encrypt(body.endDate),
+                        userId: body.userId,
+                        // countryId1: body.countryId1,
+                        // stateId1: body.stateId1,
+                        // cityId1: body.cityId1,
+                        // locationId1: body.locationId1,
+                        // countryId2: body.countryId2,
+                        // stateId2: body.stateId2,
+                        // cityId2: body.cityId2,
+                        // locationId2: body.locationId2
+                    })
+                    .then(emp => {
+                        // console.log(emp);
+                        employee = emp;
+                        // console.log(emp.employeeId);
+                        employeeId = emp.employeeId;
+                        // console.log(employeeId);
+                    })
+                    .catch(err => console.log('Creation Error ===>', err))
+
+                if (req.files) {
+
+                    let profileImage;
+                    // console.log(req.files.profilePicture[0].path);
+                    profileImage = req.files.profilePicture[0].path;
+
+                    const updateImage = {
+                        picture: encrypt(profileImage)
+                    };
                     // console.log(employeeId);
-                })
-                .catch(err => console.log('Creation Error ===>', err))
-
-            if (req.files) {
-
-                let profileImage;
-                // console.log(req.files.profilePicture[0].path);
-                profileImage = req.files.profilePicture[0].path;
-
-                const updateImage = {
-                    picture: encrypt(profileImage)
-                };
-                // console.log(employeeId);
-                await Employee.find(
-                    {
+                    await Employee.find(
+                        {
+                            where: {
+                                employeeId: employeeId
+                            }
+                        })
+                        .then(employee => {
+                            // console.log(employeeId);
+                            employee.updateAttributes(updateImage);
+                        })
+                        .catch(err => console.log(err))
+                    documentOne = req.files.documentOne[0].path;
+                    documentTwo = req.files.documentTwo[0].path;
+                    const updateDocument = {
+                        documentOne: encrypt(documentOne),
+                        documentTwo: encrypt(documentTwo)
+                    }
+                    await Employee.find({
                         where: {
                             employeeId: employeeId
                         }
                     })
-                    .then(employee => {
-                        // console.log(employeeId);
-                        employee.updateAttributes(updateImage);
-                    })
-                    .catch(err => console.log(err))
-                documentOne = req.files.documentOne[0].path;
-                documentTwo = req.files.documentTwo[0].path;
-                const updateDocument = {
-                    documentOne: encrypt(documentOne),
-                    documentTwo: encrypt(documentTwo)
+                        .then(employee => {
+                            employee.updateAttributes(updateDocument);
+                        })
+                        .catch(err => console.log(err))
+
                 }
-                await Employee.find({
+
+                Employee.find({
                     where: {
                         employeeId: employeeId
                     }
                 })
-                    .then(employee => {
-                        employee.updateAttributes(updateDocument);
+                    .then(async employee => {
+                        console.log(employee);
+                        employee.userName = decrypt(employee.userName);
+                        employee.firstName = decrypt(employee.firstName);
+                        employee.middleName = decrypt(employee.middleName);
+                        employee.lastName = decrypt(employee.lastName);
+                        employee.email = decrypt(employee.email);
+                        employee.contact = decrypt(employee.contact);
+                        employee.salary = decrypt(employee.salary);
+                        employee.permanentAddress = decrypt(employee.permanentAddress);
+                        employee.currentAddress = decrypt(employee.currentAddress);
+                        employee.startDate = decrypt(employee.startDate);
+                        // employee.serviceType = decrypt(employee.serviceType);
+                        // // employee.endDate = decrypt(employee.endDate);
+                        // employee.picture = decrypt(employee.picture);
+                        // employee.documentOne = decrypt(employee.documentOne);
+                        // employee.documentTwo = decrypt(employee.documentTwo);
+
+
+                        if (employee.firstName && employee.lastName !== '') {
+                            firstName = employee.firstName;
+                            lastName = employee.lastName;
+                        }
+                        else if (employee.firstName && employee.lastName === '') {
+                            firstName = employee.firstName;
+                            lastName = '...';
+                        }
+
+
+                        let employeeUserName = employee.userName;
+                        // let email =  employee.email;
+                        // set users
+                        let user = await User.create({
+                            firstName: encrypt(firstName),
+                            lastName: encrypt(lastName),
+                            userName: encrypt(employeeUserName),
+                            password: bcrypt.hashSync(employee.password, 8),
+                            contact: encrypt(employee.contact),
+                            email: encrypt(employee.email),
+                            isActive: false
+                        });
+                        // set roles
+                        console.log(employee.password);
+                        console.log(employee.password);
+                        // let roles = await Role.findOne({
+                        //     where: { id: 6 }
+                        // });
+                        // console.log("employee role",roles)
+                        // // user.setRoles(roles);
+                        // UserRoles.create({userId:user.userId,roleId:roles.id});
+                        const message = mailToUser(req.body.email, employeeId);
+                        return res.status(httpStatus.CREATED).json({
+                            message: "Employee successfully created. please activate your account. click on the link delievered to your given email"
+                        });
                     })
                     .catch(err => console.log(err))
-
-            }
-
-            Employee.find({
-                where: {
-                    employeeId: employeeId
-                }
-            })
-                .then(async employee => {
-                    console.log(employee);
-                    employee.userName = decrypt(employee.userName);
-                    employee.firstName = decrypt(employee.firstName);
-                    employee.middleName = decrypt(employee.middleName);
-                    employee.lastName = decrypt(employee.lastName);
-                    employee.email = decrypt(employee.email);
-                    employee.contact = decrypt(employee.contact);
-                    employee.salary = decrypt(employee.salary);
-                    employee.permanentAddress = decrypt(employee.permanentAddress);
-                    employee.currentAddress = decrypt(employee.currentAddress);
-                    employee.startDate = decrypt(employee.startDate);
-                    // employee.serviceType = decrypt(employee.serviceType);
-                    // // employee.endDate = decrypt(employee.endDate);
-                    // employee.picture = decrypt(employee.picture);
-                    // employee.documentOne = decrypt(employee.documentOne);
-                    // employee.documentTwo = decrypt(employee.documentTwo);
-
-
-                    if (employee.firstName && employee.lastName !== '') {
-                        firstName = employee.firstName;
-                        lastName = employee.lastName;
-                    }
-                    else if (employee.firstName && employee.lastName === '') {
-                        firstName = employee.firstName;
-                        lastName = '...';
-                    }
-
-
-                    let employeeUserName = employee.userName;
-                    // let email =  employee.email;
-                    // set users
-                    let user = await User.create({
-                        firstName: encrypt(firstName),
-                        lastName: encrypt(lastName),
-                        userName: encrypt(employeeUserName),
-                        password: bcrypt.hashSync(employee.password, 8),
-                        contact: encrypt(employee.contact),
-                        email: encrypt(employee.email),
-                        isActive: false
-                    });
-                    // set roles
-                    console.log(employee.password);
-                    console.log(employee.password);
-                    // let roles = await Role.findOne({
-                    //     where: { id: 6 }
-                    // });
-                    // console.log("employee role",roles)
-                    // // user.setRoles(roles);
-                    // UserRoles.create({userId:user.userId,roleId:roles.id});
-                    const message = mailToUser(req.body.email, employeeId);
-                    return res.status(httpStatus.CREATED).json({
-                        message: "Employee successfully created. please activate your account. click on the link delievered to your given email"
-                    });
-                })
-                .catch(err => console.log(err))
+            } else {
+                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
+            } 
         } else {
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
-        }
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                message: 'User already exist for same email and contact'
+            });
+        } 
     } catch (error) {
         console.log(error);
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
