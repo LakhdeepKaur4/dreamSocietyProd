@@ -48,15 +48,15 @@ module.exports = (sequelize, Sequelize) => {
             },
             bankName: {
                   type: Sequelize.STRING,
-                  allowNull: false
+                  // allowNull: false
             },
             accountHolderName: {
                   type: Sequelize.STRING,
-                  allowNull: false
+                  // allowNull: false
             },
             accountNumber: {
                   type: Sequelize.STRING,
-                  allowNull: false
+                  // allowNull: false
             },
             gender: {
                   type: Sequelize.STRING,
@@ -68,7 +68,7 @@ module.exports = (sequelize, Sequelize) => {
             },
             IFSCCode: {
                   type: Sequelize.STRING,
-                  allowNull: false
+                  // allowNull: false
             },
             noOfMembers: {
                   type: Sequelize.INTEGER,
