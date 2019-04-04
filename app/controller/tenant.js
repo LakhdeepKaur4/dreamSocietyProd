@@ -583,12 +583,12 @@ exports.getDecrypted = async (req, res, next) => {
                     item.picture = decrypt(item.picture);
                     item.permanentAddress = decrypt(item.permanentAddress);
                     item.correspondenceAddress = decrypt(item.correspondenceAddress);
-                    // item.bankName = decrypt(item.bankName);
-                    // item.accountHolderName = decrypt(item.accountHolderName);
-                    // item.accountNumber = decrypt(item.accountNumber);
+                    item.bankName = decrypt(item.bankName);
+                    item.accountHolderName = decrypt(item.accountHolderName);
+                    item.accountNumber = decrypt(item.accountNumber);
                     item.gender = decrypt(item.gender);
                     item.panCardNumber = decrypt(item.panCardNumber);
-                    // item.IFSCCode = decrypt(item.IFSCCode);
+                    item.IFSCCode = decrypt(item.IFSCCode);
                     tenantsArr.push(item);
                     // console.log(tenantsArr);
                 })
