@@ -388,18 +388,18 @@ exports.update = async (req, res, next) => {
             email = constraintReturn(emailCheck, update, 'email', vendor);
             permanentAddress = constraintReturn(permanentAddressCheck, update, 'permanentAddress', vendor);
             currentAddress = constraintReturn(currentAddressCheck, update, 'currentAddress', vendor);
-            startTime = constraintReturn(startTimeCheck, update, 'startTime', vendor);
-            startTime1 = constraintReturn(startTime1Check, update, 'startTime1', vendor);
-            startTime2 = constraintReturn(startTime2Check, update, 'startTime2', vendor);
-            endTime = constraintReturn(endTimeCheck, update, 'endTime', vendor);
-            endTime1 = constraintReturn(endTime1Check, update, 'endTime1', vendor);
-            endTime2 = constraintReturn(endTime2Check, update, 'endTime2', vendor);
-            serviceId = constraintReturn(serviceIdCheck, update, 'serviceId', vendor);
-            locationId = constraintReturn(locationIdCheck, update, 'locationId', vendor);
-            stateId = constraintReturn(stateIdCheck, update, 'stateId', vendor);
-            cityId = constraintReturn(cityIdCheck, update, 'cityId', vendor);
-            countryId = constraintReturn(countryIdCheck, update, 'countryId', vendor);
-            rateId = constraintReturn(rateIdCheck, update, 'rateId', vendor);
+            startTime = referenceConstraintReturn(startTimeCheck, update, 'startTime', vendor);
+            startTime1 = referenceConstraintReturn(startTime1Check, update, 'startTime1', vendor);
+            startTime2 = referenceConstraintReturn(startTime2Check, update, 'startTime2', vendor);
+            endTime = referenceConstraintReturn(endTimeCheck, update, 'endTime', vendor);
+            endTime1 = referenceConstraintReturn(endTime1Check, update, 'endTime1', vendor);
+            endTime2 = referenceConstraintReturn(endTime2Check, update, 'endTime2', vendor);
+            serviceId = referenceConstraintReturn(serviceIdCheck, update, 'serviceId', vendor);
+            locationId = referenceConstraintReturn(locationIdCheck, update, 'locationId', vendor);
+            stateId = referenceConstraintReturn(stateIdCheck, update, 'stateId', vendor);
+            cityId = referenceConstraintReturn(cityIdCheck, update, 'cityId', vendor);
+            countryId = referenceConstraintReturn(countryIdCheck, update, 'countryId', vendor);
+            rateId = referenceConstraintReturn(rateIdCheck, update, 'rateId', vendor);
 
             if ((update.profilePicture !== '') && (update.profilePicture !== null) && (update.profilePicture !== undefined)) {
                 vendorImage = await IndividualVendor.find({ where: { individualVendorId: id }, attributes: ['profilePicture'] });
