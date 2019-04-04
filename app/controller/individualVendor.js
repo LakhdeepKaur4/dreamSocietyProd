@@ -129,6 +129,8 @@ exports.create = async (req, res, next) => {
     vendor.userName = userName;
     vendor.password = password;
 
+    user = await User.findOne({ where: { [Op.and]: [{ email: encrypt(vendor.email) }, { contact: encrypt(vendor.contact) }, { isActive: true }] } });
+
     if (vendor['email'] !== undefined) {
         vendorEmailErr = await IndividualVendor.findOne({ where: { email: encrypt(vendor.email), isActive: true } });
     } else {
@@ -169,89 +171,116 @@ exports.create = async (req, res, next) => {
         vendor.endTime2 = null;
     }
 
-    if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
-        IndividualVendor.create({
-            firstName: encrypt(vendor.firstName),
-            lastName: encrypt(vendor.lastName),
-            userName: encrypt(vendor.userName),
-            contact: encrypt(vendor.contact),
-            email: encrypt(vendor.email),
-            password: vendor.password,
-            permanentAddress: encrypt(vendor.permanentAddress),
-            currentAddress: encrypt(vendor.currentAddress),
-            rate: encrypt(vendor.rate),
-            startTime: vendor.startTime,
-            endTime: vendor.endTime,
-            startTime1: vendor.startTime1,
-            endTime1: vendor.endTime1,
-            startTime2: vendor.startTime2,
-            endTime2: vendor.endTime2,
-            userId: vendor.userId,
-            cityId: vendor.cityId,
-            stateId: vendor.stateId,
-            countryId: vendor.countryId,
-            locationId: vendor.locationId,
-            serviceId: vendor.serviceId,
-            rateId: vendor.rateId
-        })
-            .then(async vendorCreated => {
-                if (vendorCreated !== null) {
-                    if (vendor.profilePicture) {
-                        await saveToDisc(vendor.fileName1, vendor.fileExt1, vendor.profilePicture, (err, res) => {
-                            if (err) {
-                                console.log(err);
-                            } else {
-                                console.log(res);
-                                const updatedImage = {
-                                    profilePicture: encrypt(res)
-                                };
-                                IndividualVendor.update(updatedImage, { where: { individualVendorId: vendorCreated.individualVendorId } });
-                            }
-                        })
-                    }
-                    if (vendor.documentOne) {
-                        await saveToDiscDoc(vendor.fileName2, vendor.fileExt2, vendor.documentOne, (err, res) => {
-                            if (err) {
-                                console.log(err);
-                            } else {
-                                console.log(res);
-                                const updatedImage = {
-                                    documentOne: encrypt(res)
-                                };
-                                IndividualVendor.update(updatedImage, { where: { individualVendorId: vendorCreated.individualVendorId } });
-                            }
-                        })
-                    }
-                    if (vendor.documentTwo) {
-                        await saveToDiscDoc(vendor.fileName3, vendor.fileExt3, vendor.documentTwo, (err, res) => {
-                            if (err) {
-                                console.log(err);
-                            } else {
-                                console.log(res);
-                                const updatedImage = {
-                                    documentTwo: encrypt(res)
-                                };
-                                IndividualVendor.update(updatedImage, { where: { individualVendorId: vendorCreated.individualVendorId } });
-                            }
-                        })
-                    }
+    if (user === null) {
+        if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
+            IndividualVendor.create({
+                firstName: encrypt(vendor.firstName),
+                lastName: encrypt(vendor.lastName),
+                userName: encrypt(vendor.userName),
+                contact: encrypt(vendor.contact),
+                email: encrypt(vendor.email),
+                password: vendor.password,
+                permanentAddress: encrypt(vendor.permanentAddress),
+                currentAddress: encrypt(vendor.currentAddress),
+                rate: encrypt(vendor.rate),
+                startTime: vendor.startTime,
+                endTime: vendor.endTime,
+                startTime1: vendor.startTime1,
+                endTime1: vendor.endTime1,
+                startTime2: vendor.startTime2,
+                endTime2: vendor.endTime2,
+                userId: vendor.userId,
+                cityId: vendor.cityId,
+                stateId: vendor.stateId,
+                countryId: vendor.countryId,
+                locationId: vendor.locationId,
+                serviceId: vendor.serviceId,
+                rateId: vendor.rateId
+            })
+                .then(async vendorCreated => {
+                    if (vendorCreated !== null) {
 
-                    res.status(httpStatus.CREATED).json({
-                        message: 'Vendor created successfully'
-                    })
-                } else {
-                    return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                        message: 'Vendor not created'
-                    });
-                }
-            })
-            .catch(err => {
-                console.log(err);
-                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-            })
+                        const roles = await Role.findOne({
+                            where: {
+                                id: 5
+                            }
+                        })
+
+                        User.create({
+                            firstName: encrypt(vendor.firstName),
+                            lastName: encrypt(vendor.lastName),
+                            userName: encrypt(vendor.userName),
+                            contact: encrypt(vendor.contact),
+                            email: encrypt(vendor.email),
+                            password: bcrypt.hashSync(vendor.password, 8),
+                            // familyMember: encrypt(tenant.noOfMembers.toString()),
+                            // parking: encrypt('...'),
+                            isActive: false
+                        })
+                            .then(user => {
+                                // user.setRoles(roles);
+                                UserRoles.create({ userId: user.userId, roleId: roles.id });
+                            })
+                        if (vendor.profilePicture) {
+                            await saveToDisc(vendor.fileName1, vendor.fileExt1, vendor.profilePicture, (err, res) => {
+                                if (err) {
+                                    console.log(err);
+                                } else {
+                                    console.log(res);
+                                    const updatedImage = {
+                                        profilePicture: encrypt(res)
+                                    };
+                                    IndividualVendor.update(updatedImage, { where: { individualVendorId: vendorCreated.individualVendorId } });
+                                }
+                            })
+                        }
+                        if (vendor.documentOne) {
+                            await saveToDiscDoc(vendor.fileName2, vendor.fileExt2, vendor.documentOne, (err, res) => {
+                                if (err) {
+                                    console.log(err);
+                                } else {
+                                    console.log(res);
+                                    const updatedImage = {
+                                        documentOne: encrypt(res)
+                                    };
+                                    IndividualVendor.update(updatedImage, { where: { individualVendorId: vendorCreated.individualVendorId } });
+                                }
+                            })
+                        }
+                        if (vendor.documentTwo) {
+                            await saveToDiscDoc(vendor.fileName3, vendor.fileExt3, vendor.documentTwo, (err, res) => {
+                                if (err) {
+                                    console.log(err);
+                                } else {
+                                    console.log(res);
+                                    const updatedImage = {
+                                        documentTwo: encrypt(res)
+                                    };
+                                    IndividualVendor.update(updatedImage, { where: { individualVendorId: vendorCreated.individualVendorId } });
+                                }
+                            })
+                        }
+
+                        res.status(httpStatus.CREATED).json({
+                            message: 'Vendor created successfully'
+                        })
+                    } else {
+                        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                            message: 'Vendor not created'
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.log(err);
+                    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+                })
+        } else {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
+        }
     } else {
-        
-        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
+        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+            message: 'User already exist for same email and contact'
+        });
     }
 }
 
@@ -298,6 +327,9 @@ exports.get = (req, res, next) => {
                 item.permanentAddress = decrypt(item.permanentAddress);
                 item.currentAddress = decrypt(item.currentAddress);
                 item.rate = decrypt(item.rate);
+                item.profilePicture = decrypt(item.profilePicture);
+                item.documentOne = decrypt(item.documentOne);
+                item.documentTwo = decrypt(item.documentTwo);
                 vendorArr.push(item);
             })
             return vendorArr;
