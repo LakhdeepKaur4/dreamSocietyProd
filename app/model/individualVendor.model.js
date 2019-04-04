@@ -21,7 +21,7 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.STRING,
             allowNull: false
         },
-        picture: {
+        profilePicture: {
             type: Sequelize.STRING
         },
         documentOne: {

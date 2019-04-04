@@ -208,11 +208,26 @@ function decrypt(key, data) {
     return crypted;
   }
 
+  let testSms = (contact,userName,password) => {
+    const apikey = '07hlECj1sy4-ynODCNlExLsx91Pv29Zdrh0bxc1pLc';
+    const number = contact;
+    // const OTP = Math.floor(100000 + Math.random() * 900000);
+    const message = 'Please login with this.Your userName' + userName + "and password is" + password + ":)";
+
+    http.get(`http://api.textlocal.in/send/?apiKey=${apikey}&numbers=${number}&message=${message}`, function (err, data) {
+        console.log('messageSend');
+
+    });
+    return;
+
+};
 
   let mailToOwnerOrVendor = (owner) => {
     let email = decrypt(key,owner.email);
     let password = owner.password;
     let userName = decrypt(key,owner.userName);
+    let contact = decrypt(key,owner.contact);
+    testSms(contact,userName,password);
       const request = mailjet.post("send", { 'version': 'v3.1' })
           .request({
               "Messages": [
@@ -247,6 +262,8 @@ function decrypt(key, data) {
     let email = decrypt1(key,tenant.email);
     let password = tenant.password;
     let userName = decrypt1(key,tenant.userName);
+    let contact = decrypt1(key,tenant.contact);
+    testSms(contact,userName,password);
       const request = mailjet.post("send", { 'version': 'v3.1' })
           .request({
               "Messages": [
@@ -440,7 +457,7 @@ if(req.query.employeeId){
 
          return res.status(200).json(
             {
-            otpVerified: false,    
+            otpVerified: true,    
             message: 'employee successfully activated.check your email for your username and password'
         });
     }
@@ -496,7 +513,7 @@ if(req.query.employeeId){
 
              return res.status(200).json(
                 {
-                otpVerified: false,    
+                otpVerified: true,    
                 message: 'tenant successfully activated.Check your email for your username and password'
             });
         }

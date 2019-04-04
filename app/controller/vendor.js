@@ -332,13 +332,28 @@ exports.create1 = async (req, res, next) => {
     try {
         let body = req.body;
         console.log("body===>", req.body);
+        let existingEmail = await Vendor.findOne({
+            where: {
+                isActive: true,
+                email: encrypt(key, req.body.email)
+            }
+        })
+        let existingUserEmail = await User.find({
+            where: { isActive: true, email: encrypt(key, req.body.email) }
+        })
+        if (existingEmail || existingUserEmail) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'Email already exists' });
+        }
         let existingContact = await Vendor.findOne({
             where: {
                 isActive: true,
                 contact: encrypt(key, req.body.contact)
             }
         })
-        if (existingContact) {
+        let existingUserContact = await User.find({
+            where: { isActive: true, contact: encrypt(key, req.body.contact) }
+        })
+        if (existingContact || existingUserContact) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'Contact already exists' })
         }
         let customVendorName = body.firstName + body.lastName;

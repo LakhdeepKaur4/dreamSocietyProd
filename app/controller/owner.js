@@ -241,15 +241,21 @@ exports.create1 = async (req, res, next) => {
     console.log("creating owner");
     console.log(req.body);
     let existingOwner = await Owner.find({
-      where: { email: encrypt(key, req.body.email) }
+      where: {isActive:true, email: encrypt(key, req.body.email) }
     });
-    if (existingOwner) {
+    let existingUser = await User.find({
+      where:{isActive:true,email:encrypt(key,req.body.email)}
+    })
+    if (existingOwner || existingUser ) {
       return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "email already exist" });
     }
     let existingOwner1 = await Owner.find({
-      where: { contact: encrypt(key, req.body.contact) }
+      where: { isActive:true,contact: encrypt(key, req.body.contact) }
     });
-    if (existingOwner1) {
+    let existingContact = await User.find({
+      where:{isActive:true,conatct:encrypt(key,req.body.contact)}
+    })
+    if (existingOwner1 || existingContact) {
       return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "contact already exist" });
     }
     let ownerBody = req.body;
