@@ -304,7 +304,7 @@ exports.checkOtp = async (req,res,next) => {
                 return res.status(403).json(
                     {
                     otpVerified: false,    
-                    message: 'owner does not exist or have already been activated'
+                    message: 'Owner does not exist or have already been activated.'
                 });
                 // return console.log("owner does not exist or have already been activated");
             }
@@ -316,7 +316,7 @@ exports.checkOtp = async (req,res,next) => {
                 return res.status(200).json(
                     {
                     otpVerified: false,    
-                    message: 'otp is invalid.Contact admin'
+                    message: 'Otp is invalid.Please contact admin.'
                 });
                 
             }
@@ -345,7 +345,7 @@ exports.checkOtp = async (req,res,next) => {
                  return res.status(200).json(
                     {
                     otpVerified: true, 
-                    message: 'owner Successfully Activated. check your email for username and password'
+                    message: 'Owner successfully activated. Check your email for username and password.'
                 });
             }
         }
@@ -361,7 +361,7 @@ if(req.query.vendorId){
         return res.status(403).json(
             {
             otpVerified: false,    
-            message: 'vendor does not exist or have already been activated'
+            message: 'Vendor does not exist or have already been activated.'
         });
         // return console.log("owner does not exist or have already been activated");
     }
@@ -373,7 +373,7 @@ if(req.query.vendorId){
         return res.status(200).json(
             {
             otpVerified: false,    
-            message: 'otp is invalid or expired.Contact admin'
+            message: 'Otp is invalid or expired.Please contact admin.'
         });
         
     }
@@ -401,7 +401,7 @@ if(req.query.vendorId){
          return res.status(200).json(
             {
             otpVerified: true, 
-            message: 'vendor Successfully Activated.check your email for username and password'
+            message: 'Vendor successfully sctivated.Check your email for username and password.'
         });
     }
 }
@@ -417,7 +417,7 @@ if(req.query.employeeId){
         return res.status(403).json(
             {
             otpVerified: false,    
-            message: 'employee does not exist or have already been activated'
+            message: 'Employee does not exist or have already been activated.'
         });
     }
     let otpToCheck = parseInt(req.body.otp);
@@ -427,7 +427,7 @@ if(req.query.employeeId){
          return res.status(200).json(
                 {
                 otpVerified: false,    
-                message: 'otp is invalid or expired.Contact admin'
+                message: 'Otp is invalid or expired.Please contact admin.'
             });
     }
     let updatedEmployee = await employee.updateAttributes({isActive:true});
@@ -440,7 +440,7 @@ if(req.query.employeeId){
         let user = await User.findOne({
             where:{userName:encrypt1(key,userName)}
         });
-        console.log("user===>======>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",user);
+   
         if(user){
             let roles = await Role.findOne({
                 where: { id: 6 }
@@ -456,7 +456,7 @@ if(req.query.employeeId){
          return res.status(200).json(
             {
             otpVerified: true,    
-            message: 'employee successfully activated.check your email for your username and password'
+            message: 'Employee successfully activated.Check your email for your username and password.'
         });
     }
     }
@@ -471,7 +471,7 @@ if(req.query.employeeId){
             return res.status(403).json(
                 {
                 otpVerified: false,    
-                message: 'tenant does not exist or have already been activated'
+                message: 'Tenant does not exist or have already been activated.'
             });
         }
         let otpToCheck = parseInt(req.body.otp);
@@ -481,7 +481,7 @@ if(req.query.employeeId){
              return res.status(200).json(
                     {
                     otpVerified: false,    
-                    message: 'otp is invalid or expired.Contact admin'
+                    message: 'Otp is invalid or expired.Please contact admin.'
                 });
         }
         let updatedTenant = await tenant.updateAttributes({isActive:true});
@@ -496,7 +496,6 @@ if(req.query.employeeId){
                 where:{userName:encrypt1(key,userName)}
             });
          
-            console.log("user===>======>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",user);
             if(user){
                 let roles = await Role.findOne({
                     where: { id: 6 }
@@ -512,7 +511,7 @@ if(req.query.employeeId){
              return res.status(200).json(
                 {
                 otpVerified: true,    
-                message: 'tenant successfully activated.Check your email for your username and password'
+                message: 'Tenant successfully activated.Check your email for your username and password'
             });
         }
         }
