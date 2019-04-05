@@ -82,6 +82,12 @@ exports.update =async (req, res) => {
   if (!id) {
     res.json("Please enter id");
   }
+
+  let ups = await Service.findOne({ where: { isActive: true, serviceId: {[Op.ne]:id}, serviceName: req.body.serviceName, serviceDetailId: req.body.serviceDetailId } });
+  if (ups) {
+      console.log("inside ups");
+      return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "This service already exist" });
+  }
   const service = await Service.findOne({
     where: {
       isActive:true
