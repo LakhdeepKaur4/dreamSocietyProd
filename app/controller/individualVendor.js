@@ -490,7 +490,7 @@ exports.update = async (req, res, next) => {
             vendorEmailErr = null;
         }
         if (update['contact'] !== undefined) {
-            vendorContactErr = await Tenant.findOne({ where: { contact: encrypt(update.contact), individualVendorId: { [Op.ne]: id } } });
+            vendorContactErr = await IndividualVendor.findOne({ where: { contact: encrypt(update.contact), individualVendorId: { [Op.ne]: id } } });
         } else {
             vendorContactErr = null;
         }
