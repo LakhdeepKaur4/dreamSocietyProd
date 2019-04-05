@@ -131,18 +131,20 @@ if(service.serviceName === updates.serviceName){
   }
 }
 
-exports.delete = (req, res) => {
+exports.delete = async (req, res) => {
   console.log("req------>",req);
   const id = req.params.id;
+  const update = {isActive:false}
   if (!id) {
     res.json("Please enter id");
   }
-  Service.destroy({
-    where: { serviceId: id }
-  })
-    .then(deletedService => {
-      res.json({ message: "Service deleted successfully!", deletedService: deletedService });
-    });
+  let service = await Service.update(update,{where:{serviceId:id}});
+  if(service){
+    return res.status(httpStatus.OK).json({
+          message: "Service deleted successfully",
+        });
+
+  }
 }
 
 exports.deleteSelected = async (req, res, next) => {

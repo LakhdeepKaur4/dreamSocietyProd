@@ -218,7 +218,7 @@ module.exports = function (app) {
 
 	app.put('/api/service/delete/deleteSelected', [authJwt.verifyToken], serviceController.deleteSelected);
 
-	app.put('/api/service/:id', [authJwt.verifyToken], serviceController.delete);
+	app.put('/api/service/delete/:id', [authJwt.verifyToken], serviceController.delete);
 
 	app.post('/api/size', [authJwt.verifyToken], sizeController.create);
 
