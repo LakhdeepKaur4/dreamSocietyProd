@@ -485,7 +485,7 @@ exports.update = async (req, res, next) => {
         const vendor = await IndividualVendor.find({ where: { individualVendorId: id } });
 
         if (update['email'] !== undefined) {
-            vendorEmailErr = await Tenant.findOne({ where: { email: encrypt(update.email), individualVendorId: { [Op.ne]: id } } });
+            vendorEmailErr = await IndividualVendor.findOne({ where: { email: encrypt(update.email), individualVendorId: { [Op.ne]: id } } });
         } else {
             vendorEmailErr = null;
         }
