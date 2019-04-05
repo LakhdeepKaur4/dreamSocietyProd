@@ -461,7 +461,7 @@ exports.update = async (req, res, next) => {
         if (!update) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
-        update.userId = req.userId;
+        // update.userId = req.userId;
 
         if ((update['fileName1'] !== '' && update['fileName1'] !== null && update['fileName1'] !== undefined) && (update['profilePicture'] !== '' && update['profilePicture'] !== null && update['profilePicture'] !== undefined)) {
             index = update.fileName1.lastIndexOf('.');
@@ -629,7 +629,6 @@ exports.update = async (req, res, next) => {
                 endTime1: endTime1,
                 startTime2: startTime2,
                 endTime2: endTime2,
-                userId: userId,
                 cityId: cityId,
                 stateId: stateId,
                 countryId: countryId,
