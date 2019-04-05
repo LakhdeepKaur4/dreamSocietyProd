@@ -84,10 +84,11 @@ exports.update =async (req, res) => {
   }
   const service = await Service.findOne({
     where: {
-        [Op.and]:[
-            {isActive: true},
-            {serviceDetailId:req.body.serviceDetailId}
-        ]
+      isActive:true
+        // [Op.and]:[
+        //     {isActive: true},
+        //     // {serviceDetailId:req.body.serviceDetailId}
+        // ]
     }
 })
 console.log("service------------->",service);
