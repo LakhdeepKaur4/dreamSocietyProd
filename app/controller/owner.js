@@ -29,23 +29,6 @@ const Role = db.role;
 const UserRoles = db.userRole;
 
 
-// setInterval(async function(){
-//   let ndate = new Date();
-//   let otps = await Otp.findAll();
-//   if(otps){
-//     otps.map( async otp => {
-//       let timeStr = otp.createdAt.toString();
-//       let diff =  Math.abs(ndate - new Date(timeStr.replace(/-/g,'/')));
-//       console.log(diff);
-//       if(Math.abs(Math.floor((diff / (1000 * 60)) % 60)>=50)){
-//         // await Owner.destroy({where:{[Op.and]:[{ownerId:otp.ownerId},{isActive:false}]}});
-//         await otp.destroy();
-//         console.log("otp destroyed");
-//       }
-//     })
-//   }
-// },10000000);
-
 
 function encrypt(key, data) {
   var cipher = crypto.createCipher("aes-128-cbc", key);
