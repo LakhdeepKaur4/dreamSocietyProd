@@ -519,6 +519,7 @@ exports.update = async (req, res, next) => {
             emailCheck = constraintCheck('email', update);
             contactCheck = constraintCheck('contact', update);
             permanentAddressCheck = constraintCheck('permanentAddress', update);
+            rateCheck = constraintCheck('rate', update);
             currentAddressCheck = constraintCheck('currentAddress', update);
             serviceIdCheck = constraintCheck('serviceId', update);
             startTimeCheck = constraintCheck('startTime', update);
@@ -538,6 +539,7 @@ exports.update = async (req, res, next) => {
             contact = constraintReturn(contactCheck, update, 'contact', vendor);
             email = constraintReturn(emailCheck, update, 'email', vendor);
             permanentAddress = constraintReturn(permanentAddressCheck, update, 'permanentAddress', vendor);
+            rate = constraintReturn(rateCheck, update, 'rate', vendor);
             currentAddress = constraintReturn(currentAddressCheck, update, 'currentAddress', vendor);
             startTime = referenceConstraintReturn(startTimeCheck, update, 'startTime', vendor);
             startTime1 = referenceConstraintReturn(startTime1Check, update, 'startTime1', vendor);
