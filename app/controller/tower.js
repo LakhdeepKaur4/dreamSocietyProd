@@ -190,11 +190,11 @@ exports.getFloorByTowerIdForTenant = async (req, res) => {
         owner.map(flat => {
             flatDetailId = flat.flatDetailId;
         })
-        const flatExists = await Tenant.findAll({where:{isActive:true,flatDetailId:{[Op.in]:flatIds}}});
+        // const flatExists = await Tenant.findAll({where:{isActive:true,flatDetailId:{[Op.in]:flatIds}}});
 
         const flat = await FlatDetail.findAll({ where: { isActive: true, flatDetailId: flatDetailId } })
-        if (tower && flatDetail && !flatExists) {
-            return res.status(httpStatus.OK).json({ message: 'Tower Floor Page', tower: tower,floor: floors, flatDetail: flat })
+        if (tower && flatDetail && flat) {
+            return res.status(httpStatus.OK).json({ message: 'Tower Floor Page', tower: tower, flatDetail: flat })
         } else {
             return res.status(httpStatus.OK).json({ message: 'No Flats Found' })
         }
