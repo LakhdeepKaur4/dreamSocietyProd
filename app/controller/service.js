@@ -90,6 +90,7 @@ exports.update =async (req, res) => {
         ]
     }
 })
+console.log("service------------->",service);
 
 if(service.serviceName === updates.serviceName){
     const updatedService = await Service.find({ where: { serviceId: id } }).then(service => {
