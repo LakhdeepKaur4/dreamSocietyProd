@@ -86,7 +86,7 @@ exports.update =async (req, res) => {
     where: {
         [Op.and]:[
             {isActive: true},
-            {serviceDetailId:req.body.serviceDetailId}
+            {serviceId:req.body.serviceId}
         ]
     }
 })
