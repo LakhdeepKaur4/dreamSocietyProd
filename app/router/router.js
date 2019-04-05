@@ -528,6 +528,8 @@ module.exports = function (app) {
 
 	app.get('/api/individualVendor', [authJwt.verifyToken], individualVendorController.get);
 
+	app.get('/api/individualVendor/:id', [authJwt.verifyToken], individualVendorController.getById);
+
 	app.put('/api/individualVendor/:id', [authJwt.verifyToken], individualVendorController.update);
 
 	app.put('/api/individualVendor/delete/deleteSelected', [authJwt.verifyToken], individualVendorController.deleteSelected);

@@ -388,6 +388,66 @@ exports.get = (req, res, next) => {
         })
 }
 
+exports.getById = (req, res, next) => {
+    const id = req.params.id;
+    console.log('Id ===>', id);
+
+    IndividualVendor.findOne(
+        {
+            where: { [Op.and]: [{ individualVendorId: id }, { isActive: true }] },
+            order: [['createdAt', 'DESC']],
+            include: [
+                {
+                    model: City,
+                    attributes: ['cityId', 'cityName']
+                },
+                {
+                    model: Country,
+                    attributes: ['countryId', 'countryName']
+                },
+                {
+                    model: State,
+                    attributes: ['stateId', 'stateName']
+                },
+                {
+                    model: Location,
+                    attributes: ['locationId', 'locationName']
+                },
+                {
+                    model: Service,
+                    attributes: ['serviceId', 'serviceName']
+                },
+                {
+                    model: RateType,
+                    attributes: ['rateId', 'rateType']
+                },
+            ]
+        })
+        .then(vendor => {
+            vendor.firstName = decrypt(vendor.firstName);
+            vendor.lastName = decrypt(vendor.lastName);
+            vendor.userName = decrypt(vendor.userName);
+            vendor.contact = decrypt(vendor.contact);
+            vendor.email = decrypt(vendor.email);
+            vendor.permanentAddress = decrypt(vendor.permanentAddress);
+            vendor.currentAddress = decrypt(vendor.currentAddress);
+            vendor.rate = decrypt(vendor.rate);
+            vendor.profilePicture = decrypt(vendor.profilePicture);
+            vendor.documentOne = decrypt(vendor.documentOne);
+            vendor.documentTwo = decrypt(vendor.documentTwo);
+
+            return vendor;
+        })
+        .then(vendors => {
+            res.status(httpStatus.OK).json({
+                vendor: vendors
+            })
+        })
+        .catch(err => {
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
+}
+
 
 exports.update = async (req, res, next) => {
     try {
