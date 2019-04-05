@@ -92,7 +92,7 @@ referenceConstraintReturn = (checkConstraint, object, property, entry) => {
 
 
 function decrypt1(key, data) {
-    var decipher = crypto.createDecipher("aes-256-cbc", key);
+    var decipher = crypto.createDecipher("aes-128-cbc", key);
     var decrypted = decipher.update(data, "hex", "utf-8");
     decrypted += decipher.final("utf-8");
 
