@@ -53,30 +53,30 @@ module.exports = (sequelize, Sequelize) => {
             defaultValue: false
         },
         startTime: {
-            type: Sequelize.TIME,
+            type: Sequelize.STRING,
             allowNull: false
         },
 
         endTime: {
-            type: Sequelize.TIME,
+            type: Sequelize.STRING,
             allowNull: false
         },
         startTime1: {
-            type: Sequelize.TIME,
+            type: Sequelize.STRING,
 
         },
 
         endTime1: {
-            type: Sequelize.TIME,
+            type: Sequelize.STRING,
 
         },
         startTime2: {
-            type: Sequelize.TIME,
+            type: Sequelize.STRING,
 
         },
 
         endTime2: {
-            type: Sequelize.TIME,
+            type: Sequelize.STRING,
 
         },
 
