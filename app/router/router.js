@@ -256,7 +256,7 @@ module.exports = function (app) {
 
 	app.post('/api/slot', [authJwt.verifyToken], slotController.create);
 
-	app.get('/api/slot', slotController.get);
+	app.get('/api/slot/:parkingId', slotController.get);
 
 	// app.get('/api/getSlot',slotController.getslots);
 

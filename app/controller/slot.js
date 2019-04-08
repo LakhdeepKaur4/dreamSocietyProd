@@ -33,7 +33,7 @@ exports.create = async (req, res, next) => {
 
 exports.get = async (req, res, next) => {
     try {
-        console.log("req",req.body);
+        console.log("req",req.params);
         console.log("slots is running");
         // const slot = await Slots.findAll({
         //     attributes: ['slots', [sequelize.fn('count', sequelize.col('slots')), 'count']],
@@ -46,7 +46,7 @@ exports.get = async (req, res, next) => {
             where: {
                 isActive: true,
                 isAllocated: false,
-                parkingId: req.body.parkingId
+                parkingId: req.params.parkingId
             }
         });
         console.log("atin");
