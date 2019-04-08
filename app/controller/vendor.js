@@ -745,48 +745,38 @@ exports.updateVendorService = async (req, res, next) => {
         if (!update) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
-        let rateNotExists = await VendorService.findOne({
+        let ups = await VendorService.findOne({
             where: {
                 [Op.and]: [
                     { isActive: true },
-                    { vendorServiceId:{ [Op.ne]:id }},
                     { serviceId: req.body.serviceId },
                     { rateId: req.body.rateId },
-                    { vendorId: { [Op.ne]: req.body.vendorId } },
+                    { vendorId: { [Op.eq]: req.body.vendorId } },
+                    { vendorServiceId: { [Op.ne]: id } },
                     { rate: { [Op.ne]: req.body.rate } }
                 ]
             }
-        });
-        if (rateNotExists) {
-            const updatedVendorService = await VendorService.find({ where: { vendorServiceId: id } }).then(vendorService => {
-                // attrArr.forEach(attr => {
-                //     if (attr in req.body && req.body[attr] !== undefined && req.body[attr] !== null) {
-                //         updAttr[attr] = req.body[attr];
-                //     }
-                // })
-                return vendorService.updateAttributes({ rate: req.body.rate });
-            });
-            return res.status(httpStatus.OK).json({
-                message: "VendorService Updated Page",
-                vendor: updatedVendorService
-            });
-        } else {
-            // let rateExists = await VendorService.findOne({
-            //     where: {
-            //         [Op.and]: [
-            //             { isActive: true },
-            //             { serviceId: req.body.serviceId },
-            //             { rateId: req.body.rateId },
-            //             { vendorId: { [Op.ne]: req.body.vendorId } },
-            //         ]
-            //     }
-            // });
-
-            // if (rateExists) {
+        }
+        );
+        if (ups) {
             console.log("inside ups");
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "This service already exist" });
         }
-        // }
+
+        // let test = VendorService.findAll({where:{vendorId:req.body.vendorId}});
+        const updatedVendorService = await VendorService.find({ where: { vendorServiceId: id } }).then(vendorService => {
+
+            attrArr.forEach(attr => {
+                if (attr in req.body && req.body[attr] !== undefined && req.body[attr] !== null) {
+                    updAttr[attr] = req.body[attr];
+                }
+            })
+            return vendorService.updateAttributes(updAttr);
+        });
+        return res.status(httpStatus.OK).json({
+            message: "VendorService Updated Page",
+            vendor: updatedVendorService
+        });
     } catch (error) {
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
