@@ -126,7 +126,7 @@ let mailToUser = (email, individualVendorId) => {
                         }
                     ],
                     "Subject": "Activation link",
-                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://192.168.1.107:3000/login/tokenVerification?individualVendorId=${individualVendorId}&token=${token}">click here</a>`
+                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?individualVendorId=${individualVendorId}&token=${token}">click here</a>`
                 }
             ]
         })
