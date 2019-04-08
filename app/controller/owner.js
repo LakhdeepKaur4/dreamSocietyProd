@@ -446,7 +446,7 @@ exports.get1 = async (req, res, next) => {
       owner.permanentAddress = decrypt(key, owner.permanentAddress);
       owner.correspondenceAddress = decrypt(key, owner.correspondenceAddress);
       owner.picture = decrypt(key, owner.picture);
-      // owner.picture = owner.picture.replace('../', '');
+      // owner.picture = owner.picture.replace('../../', '');
       // owner.picture = owner.picture.replace('../', '');
       if(owner.bankName){
         owner.bankName = decrypt(key, owner.bankName);

@@ -373,7 +373,10 @@ exports.get = (req, res, next) => {
                 item.rate = decrypt(item.rate);
                 item.profilePicture = decrypt(item.profilePicture);
                 item.documentOne = decrypt(item.documentOne);
+                item.documentOne = item.documentOne.replace('../../','');
                 item.documentTwo = decrypt(item.documentTwo);
+                item.documentTwo = item.documentTwo.replace('../../','');
+
                 vendorArr.push(item);
             })
             return vendorArr;
