@@ -49,7 +49,7 @@ exports.get = async (req, res, next) => {
             }
         });
         console.log("atin");
-        if (slots.length > 0) {
+        if (slots) {
             return res.status(httpStatus.OK).json({
                 message: "Slot Content Page",
                 slot: slots
