@@ -752,7 +752,7 @@ exports.updateVendorService = async (req, res, next) => {
                     { vendorServiceId:{ [Op.ne]:id }},
                     { serviceId: req.body.serviceId },
                     { rateId: req.body.rateId },
-                    { vendorId: { [Op.eq]: req.body.vendorId } },
+                    { vendorId: { [Op.ne]: req.body.vendorId } },
                     { rate: { [Op.ne]: req.body.rate } }
                 ]
             }
