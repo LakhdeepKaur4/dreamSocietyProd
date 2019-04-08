@@ -16,7 +16,7 @@ exports.create = async (req, res, next) => {
         const parkingId = body.parkingId;
         for (let slots = 1; slots <= start; slots++) {
             slot = await Slots.create({
-                slots: slots,
+                slots: 'Slot ' + slots,
                 parkingId: parkingId
             });
         }
