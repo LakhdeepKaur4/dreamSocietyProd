@@ -33,6 +33,7 @@ exports.create = async (req, res, next) => {
 
 exports.get = async (req, res, next) => {
     try {
+        console.log("req",req.body);
         console.log("slots is running");
         // const slot = await Slots.findAll({
         //     attributes: ['slots', [sequelize.fn('count', sequelize.col('slots')), 'count']],
