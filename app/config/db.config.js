@@ -104,6 +104,8 @@ db.flatDetail.belongsTo(db.tower, { foreignKey: 'towerId' });
 db.flatDetail.belongsTo(db.floor, { foreignKey: 'floorId' });
 db.flatDetail.belongsTo(db.flat, { foreignKey: 'flatId' });
 db.flatDetail.belongsTo(db.user, { foreignKey: 'userId' });
+db.flatDetail.belongsTo(db.parking, { foreignKey: 'parkingId'});
+db.flatDetail.belongsTo(db.slot ,{ foreignKey: 'slotId' })
 db.user.belongsTo(db.tower, { foreignKey: 'towerId' });
 db.maintenance.belongsTo(db.user, { foreignKey: 'userId' });
 db.maintenanceType.belongsTo(db.user, { foreignKey: 'userId' });

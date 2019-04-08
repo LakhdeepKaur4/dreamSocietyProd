@@ -373,7 +373,10 @@ exports.get = (req, res, next) => {
                 item.rate = decrypt(item.rate);
                 item.profilePicture = decrypt(item.profilePicture);
                 item.documentOne = decrypt(item.documentOne);
+                item.documentOne = item.documentOne.replace('../../','');
                 item.documentTwo = decrypt(item.documentTwo);
+                item.documentTwo = item.documentTwo.replace('../../','');
+
                 vendorArr.push(item);
             })
             return vendorArr;
@@ -381,6 +384,66 @@ exports.get = (req, res, next) => {
         .then(vendors => {
             res.status(httpStatus.OK).json({
                 vendors: vendors
+            })
+        })
+        .catch(err => {
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
+}
+
+exports.getById = (req, res, next) => {
+    const id = req.params.id;
+    console.log('Id ===>', id);
+
+    IndividualVendor.findOne(
+        {
+            where: { [Op.and]: [{ individualVendorId: id }, { isActive: true }] },
+            order: [['createdAt', 'DESC']],
+            include: [
+                {
+                    model: City,
+                    attributes: ['cityId', 'cityName']
+                },
+                {
+                    model: Country,
+                    attributes: ['countryId', 'countryName']
+                },
+                {
+                    model: State,
+                    attributes: ['stateId', 'stateName']
+                },
+                {
+                    model: Location,
+                    attributes: ['locationId', 'locationName']
+                },
+                {
+                    model: Service,
+                    attributes: ['serviceId', 'serviceName']
+                },
+                {
+                    model: RateType,
+                    attributes: ['rateId', 'rateType']
+                },
+            ]
+        })
+        .then(vendor => {
+            vendor.firstName = decrypt(vendor.firstName);
+            vendor.lastName = decrypt(vendor.lastName);
+            vendor.userName = decrypt(vendor.userName);
+            vendor.contact = decrypt(vendor.contact);
+            vendor.email = decrypt(vendor.email);
+            vendor.permanentAddress = decrypt(vendor.permanentAddress);
+            vendor.currentAddress = decrypt(vendor.currentAddress);
+            vendor.rate = decrypt(vendor.rate);
+            vendor.profilePicture = decrypt(vendor.profilePicture);
+            vendor.documentOne = decrypt(vendor.documentOne);
+            vendor.documentTwo = decrypt(vendor.documentTwo);
+
+            return vendor;
+        })
+        .then(vendors => {
+            res.status(httpStatus.OK).json({
+                vendor: vendors
             })
         })
         .catch(err => {
@@ -401,7 +464,7 @@ exports.update = async (req, res, next) => {
         if (!update) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
-        update.userId = req.userId;
+        // update.userId = req.userId;
 
         if ((update['fileName1'] !== '' && update['fileName1'] !== null && update['fileName1'] !== undefined) && (update['profilePicture'] !== '' && update['profilePicture'] !== null && update['profilePicture'] !== undefined)) {
             index = update.fileName1.lastIndexOf('.');
@@ -425,12 +488,12 @@ exports.update = async (req, res, next) => {
         const vendor = await IndividualVendor.find({ where: { individualVendorId: id } });
 
         if (update['email'] !== undefined) {
-            vendorEmailErr = await Tenant.findOne({ where: { email: encrypt(update.email), individualVendorId: { [Op.ne]: id } } });
+            vendorEmailErr = await IndividualVendor.findOne({ where: { email: encrypt(update.email), individualVendorId: { [Op.ne]: id } } });
         } else {
             vendorEmailErr = null;
         }
         if (update['contact'] !== undefined) {
-            vendorContactErr = await Tenant.findOne({ where: { contact: encrypt(update.contact), individualVendorId: { [Op.ne]: id } } });
+            vendorContactErr = await IndividualVendor.findOne({ where: { contact: encrypt(update.contact), individualVendorId: { [Op.ne]: id } } });
         } else {
             vendorContactErr = null;
         }
@@ -459,6 +522,7 @@ exports.update = async (req, res, next) => {
             emailCheck = constraintCheck('email', update);
             contactCheck = constraintCheck('contact', update);
             permanentAddressCheck = constraintCheck('permanentAddress', update);
+            rateCheck = constraintCheck('rate', update);
             currentAddressCheck = constraintCheck('currentAddress', update);
             serviceIdCheck = constraintCheck('serviceId', update);
             startTimeCheck = constraintCheck('startTime', update);
@@ -478,6 +542,7 @@ exports.update = async (req, res, next) => {
             contact = constraintReturn(contactCheck, update, 'contact', vendor);
             email = constraintReturn(emailCheck, update, 'email', vendor);
             permanentAddress = constraintReturn(permanentAddressCheck, update, 'permanentAddress', vendor);
+            rate = constraintReturn(rateCheck, update, 'rate', vendor);
             currentAddress = constraintReturn(currentAddressCheck, update, 'currentAddress', vendor);
             startTime = referenceConstraintReturn(startTimeCheck, update, 'startTime', vendor);
             startTime1 = referenceConstraintReturn(startTime1Check, update, 'startTime1', vendor);
@@ -567,7 +632,6 @@ exports.update = async (req, res, next) => {
                 endTime1: endTime1,
                 startTime2: startTime2,
                 endTime2: endTime2,
-                userId: userId,
                 cityId: cityId,
                 stateId: stateId,
                 countryId: countryId,

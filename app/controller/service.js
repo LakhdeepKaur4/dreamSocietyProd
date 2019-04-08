@@ -76,19 +76,28 @@ exports.getById = (req, res) => {
 }
 
 exports.update =async (req, res) => {
+  console.log(req.body);
   const id = req.params.id;
   const updates = req.body;
   if (!id) {
     res.json("Please enter id");
   }
+
+  let ups = await Service.findOne({ where: { isActive: true, serviceId: {[Op.ne]:id}, serviceName: req.body.serviceName, serviceDetailId: req.body.serviceDetailId } });
+  if (ups) {
+      console.log("inside ups");
+      return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "This service already exist" });
+  }
   const service = await Service.findOne({
     where: {
-        [Op.and]:[
-            {isActive: true},
-            {serviceDetailId:req.body.serviceDetailId}
-        ]
+      isActive:true
+        // [Op.and]:[
+        //     {isActive: true},
+        //     // {serviceDetailId:req.body.serviceDetailId}
+        // ]
     }
 })
+console.log("service------------->",service);
 
 if(service.serviceName === updates.serviceName){
     const updatedService = await Service.find({ where: { serviceId: id } }).then(service => {
@@ -130,17 +139,20 @@ if(service.serviceName === updates.serviceName){
   }
 }
 
-exports.delete = (req, res) => {
+exports.delete = async (req, res) => {
+  console.log("req------>",req);
   const id = req.params.id;
+  const update = {isActive:false}
   if (!id) {
     res.json("Please enter id");
   }
-  Service.destroy({
-    where: { serviceId: id }
-  })
-    .then(deletedService => {
-      res.json({ message: "Service deleted successfully!", deletedService: deletedService });
-    });
+  let service = await Service.update(update,{where:{serviceId:id}});
+  if(service){
+    return res.status(httpStatus.OK).json({
+          message: "Service deleted successfully",
+        });
+
+  }
 }
 
 exports.deleteSelected = async (req, res, next) => {

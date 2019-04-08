@@ -332,7 +332,7 @@ exports.checkOtp = async (req, res, next) => {
                 });
 
         }
-        let updatedIndividualVendor = await owner.updateAttributes({ isActive: true });
+        let updatedIndividualVendor = await individualVendor.updateAttributes({ isActive: true });
         if (updatedIndividualVendor) {
             //  console.log('owner Successfully activated');
             mailToUser(updatedIndividualVendor);

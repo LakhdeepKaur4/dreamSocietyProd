@@ -218,7 +218,7 @@ module.exports = function (app) {
 
 	app.put('/api/service/delete/deleteSelected', [authJwt.verifyToken], serviceController.deleteSelected);
 
-	app.put('/api/service/:id', [authJwt.verifyToken], serviceController.delete);
+	app.put('/api/service/delete/:id', [authJwt.verifyToken], serviceController.delete);
 
 	app.post('/api/size', [authJwt.verifyToken], sizeController.create);
 
@@ -256,7 +256,7 @@ module.exports = function (app) {
 
 	app.post('/api/slot', [authJwt.verifyToken], slotController.create);
 
-	app.get('/api/slot', slotController.get);
+	app.get('/api/slot/:parkingId', slotController.get);
 
 	// app.get('/api/getSlot',slotController.getslots);
 
@@ -527,6 +527,8 @@ module.exports = function (app) {
 	app.post('/api/individualVendor', [authJwt.verifyToken], individualVendorController.create);
 
 	app.get('/api/individualVendor', [authJwt.verifyToken], individualVendorController.get);
+
+	app.get('/api/individualVendor/:id', [authJwt.verifyToken], individualVendorController.getById);
 
 	app.put('/api/individualVendor/:id', [authJwt.verifyToken], individualVendorController.update);
 

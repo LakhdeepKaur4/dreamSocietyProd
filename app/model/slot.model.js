@@ -19,7 +19,11 @@ module.exports = (sequelize, Sequelize) => {
         updatedAt: {
             defaultValue: null,
             type: Sequelize.DATE
-        }
+		},
+		isAllocated: {
+			type:Sequelize.BOOLEAN,
+			defaultValue: false
+		}
 	},{
     freezeTableName: true
 });
