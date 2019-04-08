@@ -306,12 +306,11 @@ exports.checkOtp = async (req, res, next) => {
         }
     }
 
-
     if (req.query.individualVendorId) {
         let individualVendorId = decrypt(key, req.query.individualVendorId);
         console.log(individualVendorId);
         let individualVendor = await IndividualVendor.findOne({ where: { individualVendorId: individualVendorId, isActive: false } });
-        console.log("====>", individualVendor);
+        console.log("vendor====>", individualVendor);
         if (!individualVendor) {
             return res.status(403).json(
                 {
