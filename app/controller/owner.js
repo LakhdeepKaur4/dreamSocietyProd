@@ -27,6 +27,8 @@ const Relation = db.relation;
 const Otp = db.otp;
 const Role = db.role;
 const UserRoles = db.userRole;
+const Parking = db.parking;
+const Slot = db.slot;
 
 
 
@@ -428,7 +430,7 @@ exports.get1 = async (req, res, next) => {
         {
           model: OwnerMembersDetail
         },
-        { model: FlatDetail },
+        { model: FlatDetail,include:[{model:Parking},{model:Slot}]},
         { model: Society },
         { model: Tower }
       ]

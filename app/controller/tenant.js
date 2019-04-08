@@ -29,6 +29,8 @@ const User = db.user;
 const Otp = db.otp;
 const Role = db.role;
 const UserRoles = db.userRole;
+const Slot = db.slot;
+const Parking = db.parking;
 
 setInterval(async function () {
     // console.log("atin")
