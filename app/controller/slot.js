@@ -41,7 +41,14 @@ exports.get = async (req, res, next) => {
         //     order: [['createdAt', 'DESC']],
         //     raw: false,
         //     order: sequelize.literal('count DESC')
-       const slots =  await Slots.findAll({where:{isActive:true,isAllocated:false,parkingId:req.body.parkingId}});
+        const slots = await Slots.findAll({
+            where: {
+                isActive: true,
+                isAllocated: false,
+                parkingId: req.body.parkingId
+            }
+        });
+        console.log("atin");
         if (slots.length > 0) {
             return res.status(httpStatus.OK).json({
                 message: "Slot Content Page",
