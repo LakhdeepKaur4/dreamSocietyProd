@@ -33,18 +33,18 @@ exports.create = async (req, res, next) => {
 
 exports.get = async (req, res, next) => {
     try {
-        const slot = await Slots.findAll({
-            attributes: ['slots', [sequelize.fn('count', sequelize.col('slots')), 'count']],
-            include: [{ model: Parking, attributes: ['parkingName'] }],
-            group: ['slot_master.parkingId'],
-            order: [['createdAt', 'DESC']],
-            raw: false,
-            order: sequelize.literal('count DESC')
-        });
-        if (slot) {
+        // const slot = await Slots.findAll({
+        //     attributes: ['slots', [sequelize.fn('count', sequelize.col('slots')), 'count']],
+        //     include: [{ model: Parking, attributes: ['parkingName'] }],
+        //     group: ['slot_master.parkingId'],
+        //     order: [['createdAt', 'DESC']],
+        //     raw: false,
+        //     order: sequelize.literal('count DESC')
+       const slots =  await Slots.findAll({where:{isActive:true,isAllocated:false,parkingId:req.body.parkingId}});
+        if (slots.length > 0) {
             return res.status(httpStatus.OK).json({
                 message: "Slot Content Page",
-                slot: slot
+                slot: slots
             });
         }
     } catch (error) {
