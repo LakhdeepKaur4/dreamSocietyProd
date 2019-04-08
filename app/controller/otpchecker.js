@@ -306,7 +306,6 @@ exports.checkOtp = async (req, res, next) => {
         }
     }
 
-
     if (req.query.individualVendorId) {
         let individualVendorId = decrypt(key, req.query.individualVendorId);
         console.log(individualVendorId);
