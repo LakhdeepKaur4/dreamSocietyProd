@@ -7,6 +7,7 @@ const Tower = db.tower;
 const Floor = db.floor;
 const Slot = db.slot;
 const Op = db.Sequelize.Op;
+const Parking = db.parking;
 
 exports.create = async (req, res, next) => {
     try {
@@ -64,7 +65,14 @@ exports.get = async (req, res, next) => {
             {
                 model: Floor,
                 attributes: ['floorId', 'floorName'],
+            },
+            {
+                model: Parking
+            },
+            {
+                model: Slot
             }
+
         ]
         });
         if (flatDetail) {
