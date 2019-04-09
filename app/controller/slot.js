@@ -5,6 +5,7 @@ const sequelize = require('sequelize');
 const Slots = db.slot;
 const Parking = db.parking;
 const Op = db.Sequelize.Op;
+const Flat = db.flat;
 
 exports.create = async (req, res, next) => {
     try {
@@ -35,6 +36,9 @@ exports.get = async (req, res, next) => {
     try {
         console.log("req",req.params);
         console.log("slots is running");
+        let flat = await Flat.findOne({where:{flatId:req.params.flatId}});
+        let flatInteger = parseInt(flat.flatType.slice(0,1)) - 1;
+
         // const slot = await Slots.findAll({
         //     attributes: ['slots', [sequelize.fn('count', sequelize.col('slots')), 'count']],
         //     include: [{ model: Parking, attributes: ['parkingName'] }],
@@ -52,8 +56,10 @@ exports.get = async (req, res, next) => {
         console.log("atin");
         if (slots) {
             return res.status(httpStatus.OK).json({
-                message: "Slot Content Page",
-                slot: slots
+                message: "You can select " + flatInteger +  ' parking slots',
+                slot: slots,
+                slotNumbers: flatInteger
+
             });
         }
     } catch (error) {

@@ -67,6 +67,7 @@ db.tokenVerify = require('../model/tokenModel')(sequelize, Sequelize);
 db.userRole = require('../model/userRoles.model')(sequelize, Sequelize);
 db.eventBooking = require('../model/eventBooking.model')(sequelize, Sequelize);
 db.individualVendor=require('../model/individualVendor.model')(sequelize,Sequelize);
+db.flatParking = require('../model/flatParking.model')(sequelize,Sequelize);
 
 db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
 db.otp.belongsTo(db.tenant, { foreignKey: 'tenantId' });
@@ -104,8 +105,9 @@ db.flatDetail.belongsTo(db.tower, { foreignKey: 'towerId' });
 db.flatDetail.belongsTo(db.floor, { foreignKey: 'floorId' });
 db.flatDetail.belongsTo(db.flat, { foreignKey: 'flatId' });
 db.flatDetail.belongsTo(db.user, { foreignKey: 'userId' });
-db.flatDetail.belongsTo(db.parking, { foreignKey: 'parkingId'});
-db.flatDetail.belongsTo(db.slot ,{ foreignKey: 'slotId' })
+db.flatParking.belongsTo(db.parking , { foreignKey: 'parkingId'});
+db.flatParking.belongsTo(db.slot , { foreignKey: 'slotId'});
+db.flatParking.belongsTo(db.flatDetail , { foreignKey: 'flatDetailId'});
 db.user.belongsTo(db.tower, { foreignKey: 'towerId' });
 db.maintenance.belongsTo(db.user, { foreignKey: 'userId' });
 db.maintenanceType.belongsTo(db.user, { foreignKey: 'userId' });

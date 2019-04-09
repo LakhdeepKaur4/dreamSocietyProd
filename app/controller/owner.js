@@ -16,6 +16,7 @@ const jwt = require('jsonwebtoken');
 const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
 const bcrypt = require('bcryptjs');
 
+
 const Owner = db.owner;
 
 const OwnerMembersDetail = db.ownerMembersDetail;
@@ -29,6 +30,7 @@ const Role = db.role;
 const UserRoles = db.userRole;
 const Parking = db.parking;
 const Slot = db.slot;
+const User = db.user;
 
 
 
@@ -150,17 +152,6 @@ exports.create = async (req, res, next) => {
       const updatedMember = await OwnerMembersDetail.update(bodyToUpdate, {
         where: { memberId: { [Op.in]: memberId } }
       });
-      // const ownerMemberUpdate = await OwnerMembersDetail.find({ where: { memberId: ownerMember.memberId } }).then(ownerMember => {
-      //     return ownerMember.updateAttributes(bodyToUpdate);
-      // })
-      // }
-      // let encryptedMemberBody = {
-      //     memberName: encrypt(key, ownerBody.contact),
-      //     memberDob: encrypt(key, ownerBody.picture),
-      //     userId: req.userId,
-      // }
-      // const ownerMember = await OwnerMembersDetail.create(memberBody);
-      //    }
     }
     return res.status(httpStatus.CREATED).json({
       message: "Owner successfully created",
@@ -338,18 +329,7 @@ exports.create1 = async (req, res, next) => {
       const updatedMember = await OwnerMembersDetail.update(bodyToUpdate, {
         where: { memberId: { [Op.in]: ids } }
       });
-      // const ownerMemberUpdate = await OwnerMembersDetail.find({ where: { memberId: ownerMember.memberId } }).then(ownerMember => {
-      //     return ownerMember.updateAttributes(bodyToUpdate);
-      // })
-
-      // }
-      // let encryptedMemberBody = {
-      //     memberName: encrypt(key, ownerBody.contact),
-      //     memberDob: encrypt(key, ownerBody.picture),
-      //     userId: req.userId,
-      // }
-      // const ownerMember = await OwnerMembersDetail.create(memberBody);
-      //    }
+      
     }
     if(owner.firstName && owner.lastName!==''){
       firstName = decrypt(key,owner.firstName);
@@ -560,23 +540,7 @@ exports.get2 = async (req, res, next) => {
   }
 };
 
-// exports.testUpload = async(req,res,next) =>{
-//     try{
-//         res.send('hello');
-//         const file = req.files.file;
 
-//         // if (!req.files.file) return res.status(400).send("No files were uploaded.");
-
-//         file.mv(`./public/profilePictures/${req.files.file.name}`, err => {
-//             if (err) {
-//                 console.log(err);
-//             }
-//         });
-//     } catch (error) {
-//         console.log("error==>", error)
-//         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
-//     }
-// }
 
 exports.getFlatNo = async (req, res, next) => {
   try {
@@ -981,6 +945,9 @@ exports.delete = async (req, res, next) => {
     const updatedOwner = await Owner.find({ where: { ownerId: id } }).then(owner => {
       return owner.updateAttributes(update)
     })
+    const updatedUser = await User.find({ where: { email: updatedOwner.email }}).then(user => {
+      return user.updateAttributes(update);
+    })
 
     // const updatedVendorService = await VendorService.find({ where: { vendorId: id } }).then(vendorService => {
     //     return vendorService.updateAttributes(update)
@@ -1007,8 +974,15 @@ exports.deleteSelected = async (req, res, next) => {
       return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
     }
     const updatedOwners = await Owner.update(update, { where: { ownerId: { [Op.in]: deleteSelected } } })
-
+    // const updatedUsers = await User.findAll()
+    if(updatedOwners.length > 0){
+      updatedOwners.forEach((updatedOwner) => {
+         let user = await User.findOne({where: {email:updatedOwner.email}});
+         return user.updateAttributes(update);
+      })
+    }
     const updatedOwnersMembers = await OwnerMembersDetail.update(update, { where: { ownerId: { [Op.in]: deleteSelected } } });
+
     if (updatedOwners && updatedOwnersMembers) {
       return res.status(httpStatus.OK).json({
         message: "Owners deleted successfully",

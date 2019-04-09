@@ -8,11 +8,12 @@ const Floor = db.floor;
 const Slot = db.slot;
 const Op = db.Sequelize.Op;
 const Parking = db.parking;
+const FlatParking = db.flatParking;
 
 exports.create = async (req, res, next) => {
     try {
         let body = req.body;
-        console.log("body==>",body)
+        console.log("flat body==>",body)
         body.userId = req.userId;
         const flat = await FlatDetail.findOne({
             where: {
@@ -29,20 +30,12 @@ exports.create = async (req, res, next) => {
                 message: "Flat already exists",
             });
         }
-        // const towerId = await FlatDetail.findOne({
-        //     where: {
-        //         [Op.and]: [
-        //             { towerId: body.towerId },
-        //             { isActive: true }
-        //         ]
-        //     }
-        // })
-        // if (towerId) {
-        //     return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-        //         message: "Tower already exists",
-        //     });
-        // }
         const flatDetail = await FlatDetail.create(body);
+        req.body.parkingDetails.forEach((element)=>{
+            element.flatDetailId = flatDetail.flatDetailId;
+        })
+        const flatParkings = await FlatParking.bulkCreate(req.body.parkingDetails);
+
         return res.status(httpStatus.CREATED).json({
             message: "FlatDetail successfully created",
             flatDetail
@@ -54,6 +47,7 @@ exports.create = async (req, res, next) => {
 
 exports.get = async (req, res, next) => {
     try {
+        console.log("atin greatwits");
         const flatDetail = await FlatDetail.findAll({
             where: { isActive: true }, order: [['createdAt', 'DESC']], include: [{
                 model: Flat,
@@ -66,21 +60,27 @@ exports.get = async (req, res, next) => {
                 model: Floor,
                 attributes: ['floorId', 'floorName'],
             },
-            {
-                model: Parking
-            },
-            {
-                model: Slot
-            }
-
+            // {
+            //     model: FlatParking,
+            //     // include:[{model: Parking}]
+            // }
         ]
         });
-        if (flatDetail) {
+        if (flatDetail.length > 0) {
+            flatDetail
+            console.log("flatid",flatDetail.flatDetailId);
+            // flatDetail.parkingDetails =
+            const flatParking = await FlatParking.findAll({
+                where:{flatDetailId:flatDetail.flatDetailId},
+                include:[{model:Slot}]
+            })
+            console.log("Flat Parking",flatParking);
             return res.status(httpStatus.CREATED).json({
                 message: "FlatDetail Content Page",
                 flatDetail: flatDetail
             });
         }
+
     } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
