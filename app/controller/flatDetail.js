@@ -77,6 +77,7 @@ exports.get = async (req, res, next) => {
                 }
 
             ]
+            // ,   group: ['flat_parking_master.flatDetailId'],
         });
         // if (flatDetail.length > 0) {
         //     flatDetail
