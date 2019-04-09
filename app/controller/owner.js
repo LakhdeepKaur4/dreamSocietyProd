@@ -30,7 +30,6 @@ const Role = db.role;
 const UserRoles = db.userRole;
 const Parking = db.parking;
 const Slot = db.slot;
-const User = db.user;
 
 
 
@@ -976,7 +975,7 @@ exports.deleteSelected = async (req, res, next) => {
     const updatedOwners = await Owner.update(update, { where: { ownerId: { [Op.in]: deleteSelected } } })
     // const updatedUsers = await User.findAll()
     if(updatedOwners.length > 0){
-      updatedOwners.forEach((updatedOwner) => {
+      updatedOwners.forEach( async (updatedOwner) => {
          let user = await User.findOne({where: {email:updatedOwner.email}});
          return user.updateAttributes(update);
       })
