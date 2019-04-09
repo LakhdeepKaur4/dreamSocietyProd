@@ -1330,6 +1330,7 @@ exports.updateEncrypted = async (req, res, next) => {
 
 exports.signinDecrypted = async (req, res, next) => {
 	console.log("Sign-In 12121", req.body);
+	let flats;
 	let society = await Society.findOne({
 		where: {
 			isActive: true
@@ -1383,7 +1384,6 @@ exports.signinDecrypted = async (req, res, next) => {
 				isActive: true
 			}
 			]
-
 		},
 		include: [{
 			model: Role,
@@ -1394,40 +1394,40 @@ exports.signinDecrypted = async (req, res, next) => {
 		let roleId;
 		console.log("2");
 		console.log("user==>", user)
-		user.roles.map(function(roles){ roleId = roles.id });
-		if(roleId == 3){
+		user.roles.map(function (roles) { roleId = roles.id });
+		if (roleId == 3) {
 			Owner.findOne({
 				where: {
-					isActive:true,
+					isActive: true,
 					userName: user.userName
 				}
 			})
-			.then(owner => {
-				FlatDetail.findAll({
-					where:{isActive:true,flatDetailId: owner.flatDetailId}
+				.then(owner => {
+					FlatDetail.findAll({
+						where: { isActive: true, flatDetailId: owner.flatDetailId }
+					})
+						.then(flats => {
+							flats = flats;
+						})
 				})
-				.then(flats => {
-				   flats=flats;
-				})
-			})
 		}
-		if(roleId == 4){
+		if (roleId == 4) {
 			Tenant.findOne({
 				where: {
-					isActive:true,
+					isActive: true,
 					userName: user.userName
 				}
 			})
-			.then(tenant => {
-				FlatDetail.findAll({
-					where:{isActive:true,flatDetailId: tenant.flatDetailId}
+				.then(tenant => {
+					FlatDetail.findAll({
+						where: { isActive: true, flatDetailId: tenant.flatDetailId }
+					})
+						.then(flats => {
+							flats = flats;
+						})
 				})
-				.then(flats => {
-				   flats=flats;
-				})
-			})
 		}
-		
+
 		if (!user) {
 			console.log("------user-------");
 			return res.status(httpStatus.OK).send({
@@ -1483,7 +1483,7 @@ exports.signinDecrypted = async (req, res, next) => {
 			user: user,
 			society: society,
 			message: "Successfully Logged In",
-			// flats:flats
+			flats: flats
 		});
 
 	}).catch(err => {
@@ -1916,7 +1916,7 @@ exports.assignRoles = async (req, res, next) => {
 
 exports.getRolesForActivation = async (req, res, next) => {
 	try {
-		const role = await Role.findAll({ where: { id: { [Op.notIn]: [1, 2] } } });
+		const role = await Role.findAll({ where: { id: { [Op.notIn]: [1, 2, 5, 6] } } });
 		console.log(role);
 		return res.status(httpStatus.OK).json({ role: role });
 	} catch (error) {
@@ -2286,7 +2286,7 @@ exports.flatByUserId = (req, res, next) => {
 	User.findOne({
 		where: {
 			[Op.and]: [{
-				userId:userId
+				userId: userId
 			},
 			{
 				isActive: true
@@ -2297,31 +2297,32 @@ exports.flatByUserId = (req, res, next) => {
 		}]
 	}).then(user => {
 		if (user !== null) {
-			console.log("user==>",user)
+			console.log("user==>", user)
 			Tenant.findOne({
 				where: {
-					isActive:true,
+					isActive: true,
 					userName: user.userName
 				}
 			})
-			.then(tenant => {
-				FlatDetail.findAll({
-					where:{isActive:true,flatDetailId: tenant.flatDetailId}
-				})
-				.then(flats => {
-					res.status(httpStatus.OK).json({
-						flats: flats
+				.then(tenant => {
+					FlatDetail.findAll({
+						where: { isActive: true, flatDetailId: tenant.flatDetailId }
 					})
+						.then(flats => {
+							res.status(httpStatus.OK).json({
+								flats: flats
+							})
+						})
 				})
-			})
 		} else {
 			res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
 				message: 'User Not Found'
 			})
 		}
 	})
-	.catch(err => {
-		console.log(err);
-		res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-	})
+		.catch(err => {
+			console.log(err);
+			res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+		})
 }
+

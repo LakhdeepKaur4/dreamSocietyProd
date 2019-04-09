@@ -31,6 +31,7 @@ const Role = db.role;
 const UserRoles = db.userRole;
 const Slot = db.slot;
 const Parking = db.parking;
+const TenantFlatDetail = db.tenantFlatDetail;
 
 setInterval(async function () {
     // console.log("atin")
@@ -90,6 +91,11 @@ referenceConstraintReturn = (checkConstraint, object, property, entry) => {
     } else {
         return entry[property];
     }
+}
+
+generateRandomId = () => {
+    const id = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
+    return id;
 }
 
 
@@ -325,7 +331,8 @@ exports.createEncrypted = async (req, res, next) => {
         const ownersArr = [];
         let tenantCreated;
         tenant.userId = req.userId;
-        let userName = tenant.firstName.replace(/ /g, '') + 'T' + tenant.towerId + tenant.flatDetailId;
+        uniqueId = generateRandomId();
+        let userName = tenant.firstName.replace(/ /g, '') + 'T' + uniqueId.toString(36);
         tenant.userName = userName;
         index = tenant.fileName.lastIndexOf('.');
         tenant.fileExt = tenant.fileName.slice(index + 1);
@@ -407,12 +414,42 @@ exports.createEncrypted = async (req, res, next) => {
                     floorId: tenant.floorId,
                     societyId: tenant.societyId,
                     towerId: tenant.towerId,
-                    flatDetailId: tenant.flatDetailId
+                    // flatDetailId: tenant.flatDetailId
                 })
                     .then(async entry => {
                         console.log('Body ==>', entry);
                         tenantCreated = entry;
 
+                        if (tenant.flatDetailIds[0] !== null && tenant.flatDetailIds[0] !== undefined && tenant.flatDetailIds[0] !== '') {
+                            TenantFlatDetail.create({
+                                flatDetailId: tenant.flatDetailIds[0],
+                                tenantId: entry.tenantId
+                            })
+                        }
+                        if (tenant.flatDetailIds[1] !== null && tenant.flatDetailIds[1] !== undefined && tenant.flatDetailIds[1] !== '') {
+                            TenantFlatDetail.create({
+                                flatDetailId: tenant.flatDetailIds[1],
+                                tenantId: entry.tenantId
+                            })
+                        }
+                        if (tenant.flatDetailIds[2] !== null && tenant.flatDetailIds[2] !== undefined && tenant.flatDetailIds[2] !== '') {
+                            TenantFlatDetail.create({
+                                flatDetailId: tenant.flatDetailIds[2],
+                                tenantId: entry.tenantId
+                            })
+                        }
+                        if (tenant.flatDetailIds[3] !== null && tenant.flatDetailIds[3] !== undefined && tenant.flatDetailIds[3] !== '') {
+                            TenantFlatDetail.create({
+                                flatDetailId: tenant.flatDetailIds[3],
+                                tenantId: entry.tenantId
+                            })
+                        }
+                        if (tenant.flatDetailIds[4] !== null && tenant.flatDetailIds[4] !== undefined && tenant.flatDetailIds[4] !== '') {
+                            TenantFlatDetail.create({
+                                flatDetailId: tenant.flatDetailIds[4],
+                                tenantId: entry.tenantId
+                            })
+                        }
 
                         const roles = await Role.findOne({
                             where: {
@@ -462,46 +499,46 @@ exports.createEncrypted = async (req, res, next) => {
                             })
                         }
 
-                        await Owner.findAll({
-                            attributes: ['ownerId'],
-                            where: {
-                                flatDetailId: tenant.flatDetailId
-                            }
-                        })
-                            .then(owners => {
-                                owners.map(item => {
-                                    ownersArr.push(item.ownerId);
-                                })
-                                return ownersArr;
-                            })
-                            .then(owners => {
-                                if (ownersArr.length !== 0) {
-                                    if (ownersArr[0]) {
-                                        ownerId1 = ownersArr[0];
-                                    }
-                                    else {
-                                        ownerId1 = null;
-                                    }
-                                    if (ownersArr[1]) {
-                                        ownerId2 = ownersArr[1];
-                                    }
-                                    else {
-                                        ownerId2 = null;
-                                    }
-                                    if (ownersArr[2]) {
-                                        ownerId3 = ownersArr[2];
-                                    }
-                                    else {
-                                        ownerId3 = null;
-                                    }
-                                    const ownersIds = {
-                                        ownerId1: ownerId1,
-                                        ownerId2: ownerId2,
-                                        ownerId3: ownerId3
-                                    };
-                                    Tenant.update(ownersIds, { where: { tenantId: entry.tenantId } });
-                                }
-                            })
+                        // await Owner.findOne({
+                        //     attributes: ['ownerId'],
+                        //     where: {
+                        //         flatDetailId: tenant.flatDetailId
+                        //     }
+                        // })
+                        //     .then(owners => {
+                        //         owners.map(item => {
+                        //             ownersArr.push(item.ownerId);
+                        //         })
+                        //         return ownersArr;
+                        //     })
+                        //     .then(owners => {
+                        //         if (ownersArr.length !== 0) {
+                        //             if (ownersArr[0]) {
+                        //                 ownerId1 = ownersArr[0];
+                        //             }
+                        //             else {
+                        //                 ownerId1 = null;
+                        //             }
+                        //             if (ownersArr[1]) {
+                        //                 ownerId2 = ownersArr[1];
+                        //             }
+                        //             else {
+                        //                 ownerId2 = null;
+                        //             }
+                        //             if (ownersArr[2]) {
+                        //                 ownerId3 = ownersArr[2];
+                        //             }
+                        //             else {
+                        //                 ownerId3 = null;
+                        //             }
+                        //             const ownersIds = {
+                        //                 ownerId1: ownerId1,
+                        //                 ownerId2: ownerId2,
+                        //                 ownerId3: ownerId3
+                        //             };
+                        //             Tenant.update(ownersIds, { where: { tenantId: entry.tenantId } });
+                        //         }
+                        //     })
                     })
                     .then(() => {
                         Tenant.find({
@@ -509,7 +546,8 @@ exports.createEncrypted = async (req, res, next) => {
                                 tenantId: tenantCreated.tenantId
                             }
                         })
-                            .then(tenantSend => {
+                            .then(async tenantSend => {
+                                let ownerId;
                                 // tenantSend.firstName = decrypt(tenantSend.firstName);
                                 // tenantSend.lastName = decrypt(tenantSend.lastName);
                                 // tenantSend.userName = decrypt(tenantSend.userName);
@@ -526,9 +564,24 @@ exports.createEncrypted = async (req, res, next) => {
                                 // tenantSend.panCardNumber = decrypt(tenantSend.panCardNumber);
                                 // tenantSend.IFSCCode = decrypt(tenantSend.IFSCCode);
 
+                                const owners = await Owner.findAll({
+                                    where: {
+                                        isActive: true,
+                                        flatDetailId: {
+                                            [Op.in]: tenant.flatDetailIds
+                                        }
+                                    },
+                                    attributes: ['ownerId']
+                                })
+                                // ownerId = owners[0].ownerId;
+
                                 const message = mailToUser(req.body.email, tenantSend.tenantId);
                                 console.log("ownerID1====?", tenantSend.owner, "87389547374 ", tenantSend)
-                                mailToOwner(tenantSend.ownerId1, tenantSend);
+                                owners.map(item => {
+                                    ownerId = item.ownerId;
+                                    mailToOwner(ownerId, tenantSend);
+                                });
+                                // mailToOwner(ownerId, tenantSend);
                                 return res.status(httpStatus.CREATED).json({
                                     message: "Tenant successfully created. please activate your account. click on the link delievered to your given email",
                                     // tenant: tenantSend
@@ -565,9 +618,9 @@ exports.getDecrypted = async (req, res, next) => {
                 { model: Tower },
                 { model: FlatDetail },
                 { model: Floor },
-                { model: Owner, as: 'Owner1' },
-                { model: Owner, as: 'Owner2' },
-                { model: Owner, as: 'Owner3' }
+                // { model: Owner, as: 'Owner1' },
+                // { model: Owner, as: 'Owner2' },
+                // { model: Owner, as: 'Owner3' }
             ]
         })
             .then(tenants => {
@@ -682,7 +735,7 @@ exports.updateEncrypted = async (req, res, next) => {
         IFSCCodeCheck = constraintCheck('IFSCCode', update);
         societyIdCheck = constraintCheck('societyId', update);
         towerIdCheck = constraintCheck('towerId', update);
-        flatDetailIdCheck = constraintCheck('flatDetailId', update);
+        // flatDetailIdCheck = constraintCheck('flatDetailId', update);
         floorIdCheck = constraintCheck('floorId', update);
 
 
@@ -702,50 +755,50 @@ exports.updateEncrypted = async (req, res, next) => {
         IFSCCode = constraintReturn(IFSCCodeCheck, update, 'IFSCCode', tenant);
         societyId = referenceConstraintReturn(societyIdCheck, update, 'societyId', tenant);
         towerId = referenceConstraintReturn(towerIdCheck, update, 'towerId', tenant);
-        flatDetailId = referenceConstraintReturn(flatDetailIdCheck, update, 'flatDetailId', tenant);
+        // flatDetailId = referenceConstraintReturn(flatDetailIdCheck, update, 'flatDetailId', tenant);
         floorId = referenceConstraintReturn(floorIdCheck, update, 'floorId', tenant);
 
 
-        await Owner.findAll({
-            attributes: ['ownerId'],
-            where: {
-                flatDetailId: flatDetailId
-            }
-        })
-            .then(owners => {
-                owners.map(item => {
-                    ownersArr.push(item.ownerId);
-                })
-                return ownersArr;
-            })
-            .then(owners => {
-                if (ownersArr.length !== 0) {
-                    if (ownersArr[0]) {
-                        ownerId1 = ownersArr[0];
-                    }
-                    else {
-                        ownerId1 = null;
-                    }
-                    if (ownersArr[1]) {
-                        ownerId2 = ownersArr[1];
-                    }
-                    else {
-                        ownerId2 = null;
-                    }
-                    if (ownersArr[2]) {
-                        ownerId3 = ownersArr[2];
-                    }
-                    else {
-                        ownerId3 = null;
-                    }
-                    const ownersIds = {
-                        ownerId1: ownerId1,
-                        ownerId2: ownerId2,
-                        ownerId3: ownerId3
-                    };
-                    Tenant.update(ownersIds, { where: { tenantId: id } });
-                }
-            })
+        // await Owner.findAll({
+        //     attributes: ['ownerId'],
+        //     where: {
+        //         flatDetailId: flatDetailId
+        //     }
+        // })
+        //     .then(owners => {
+        //         owners.map(item => {
+        //             ownersArr.push(item.ownerId);
+        //         })
+        //         return ownersArr;
+        //     })
+        //     .then(owners => {
+        //         if (ownersArr.length !== 0) {
+        //             if (ownersArr[0]) {
+        //                 ownerId1 = ownersArr[0];
+        //             }
+        //             else {
+        //                 ownerId1 = null;
+        //             }
+        //             if (ownersArr[1]) {
+        //                 ownerId2 = ownersArr[1];
+        //             }
+        //             else {
+        //                 ownerId2 = null;
+        //             }
+        //             if (ownersArr[2]) {
+        //                 ownerId3 = ownersArr[2];
+        //             }
+        //             else {
+        //                 ownerId3 = null;
+        //             }
+        //             const ownersIds = {
+        //                 ownerId1: ownerId1,
+        //                 ownerId2: ownerId2,
+        //                 ownerId3: ownerId3
+        //             };
+        //             Tenant.update(ownersIds, { where: { tenantId: id } });
+        //         }
+        //     })
         if ((update.picture !== '') && (update.picture !== null) && (update.picture !== undefined)) {
             tenantImage = await Tenant.find({ where: { tenantId: id }, attributes: ['picture'] });
             fs.unlink((decrypt(tenantImage.picture)).replace('../../', ''), err => {
