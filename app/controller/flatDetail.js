@@ -13,15 +13,22 @@ const FlatParking = db.flatParking;
 exports.create = async (req, res, next) => {
     try {
         let body = req.body;
-        console.log("flat body==>",body)
+        console.log("flat body==>", body)
         body.userId = req.userId;
         const flat = await FlatDetail.findOne({
             where: {
-                [Op.and]: [
-                    { flatNo: body.flatNo },
-                    { towerId: body.towerId },
-                    { floorId: body.floorId },
-                    { isActive: true }
+                [Op.and]: [{
+                        flatNo: body.flatNo
+                    },
+                    {
+                        towerId: body.towerId
+                    },
+                    {
+                        floorId: body.floorId
+                    },
+                    {
+                        isActive: true
+                    }
                 ]
             }
         })
@@ -31,7 +38,7 @@ exports.create = async (req, res, next) => {
             });
         }
         const flatDetail = await FlatDetail.create(body);
-        req.body.parkingDetails.forEach((element)=>{
+        req.body.parkingDetails.forEach((element) => {
             element.flatDetailId = flatDetail.flatDetailId;
         })
         const flatParkings = await FlatParking.bulkCreate(req.body.parkingDetails);
@@ -48,38 +55,38 @@ exports.create = async (req, res, next) => {
 exports.get = async (req, res, next) => {
     try {
         console.log("atin greatwits");
-        const flatDetail = await FlatDetail.findAll({
-            where: { isActive: true }, order: [['createdAt', 'DESC']], include: [{
-                model: Flat,
-                attributes: ['flatId', 'flatType'],
-            }, {
-                model: Tower,
-                attributes: ['towerId', 'towerName'],
+        const flatDetail = await FlatParking.findAll({
+            where: {
+                isActive: true
             },
-            {
-                model: Floor,
-                attributes: ['floorId', 'floorName'],
-            },
-            // {
-            //     model: FlatParking,
-            //     // include:[{model: Parking}]
-            // }
-        ]
+            order: [
+                ['createdAt', 'DESC']
+            ],
+            include: [{
+                    model: FlatDetail
+                },
+                {
+                    model: Slot
+                }, {
+                    model: Parking
+                }
+
+            ]
         });
-        if (flatDetail.length > 0) {
-            flatDetail
-            console.log("flatid",flatDetail.flatDetailId);
-            // flatDetail.parkingDetails =
-            const flatParking = await FlatParking.findAll({
-                where:{flatDetailId:flatDetail.flatDetailId},
-                include:[{model:Slot}]
-            })
-            console.log("Flat Parking",flatParking);
-            return res.status(httpStatus.CREATED).json({
-                message: "FlatDetail Content Page",
-                flatDetail: flatDetail
-            });
-        }
+        // if (flatDetail.length > 0) {
+        //     flatDetail
+        //     console.log("flatid",flatDetail.flatDetailId);
+        //     // flatDetail.parkingDetails =
+        //     const flatParking = await FlatParking.findAll({
+        //         where:{flatDetailId:flatDetail.flatDetailId},
+        //         include:[{model:Slot}]
+        //     })
+        //     console.log("Flat Parking",flatParking);
+        return res.status(httpStatus.CREATED).json({
+            message: "FlatDetail Content Page",
+            flatDetail: flatDetail
+        });
+
 
     } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
@@ -91,21 +98,32 @@ exports.update = async (req, res, next) => {
         const id = req.params.id;
         console.log("id==>", id)
         if (!id) {
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                message: "Id is missing"
+            });
         }
         const update = req.body;
         console.log("update==>", update)
         if (!update) {
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                message: "Please try again "
+            });
         }
         const flatNo = await FlatDetail.findOne({
             where: {
-                [Op.and]: [
-                    { flatNo: req.body.flatNo },
+                [Op.and]: [{
+                        flatNo: req.body.flatNo
+                    },
                     // { flatId: req.body.flatId },
-                    { towerId: req.body.towerId },
-                    { floorId: req.body.floorId },
-                    { isActive: true }
+                    {
+                        towerId: req.body.towerId
+                    },
+                    {
+                        floorId: req.body.floorId
+                    },
+                    {
+                        isActive: true
+                    }
                 ]
             }
         })
@@ -116,7 +134,11 @@ exports.update = async (req, res, next) => {
                 message: "Flat number already exists",
             });
         }
-        const updatedFlatDetail = await FlatDetail.find({ where: { flatDetailId: id } }).then(flatDetail => {
+        const updatedFlatDetail = await FlatDetail.find({
+            where: {
+                flatDetailId: id
+            }
+        }).then(flatDetail => {
             return flatDetail.updateAttributes(update)
         })
         if (updatedFlatDetail) {
@@ -127,7 +149,9 @@ exports.update = async (req, res, next) => {
         }
     } catch (error) {
         console.log(error)
-        res.status(httpStatus.INTERNAL_SERVER_ERROR).json({message:error.message});
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            message: error.message
+        });
     }
 }
 
@@ -136,13 +160,21 @@ exports.delete = async (req, res, next) => {
         const id = req.params.id;
 
         if (!id) {
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                message: "Id is missing"
+            });
         }
         const update = req.body;
         if (!update) {
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                message: "Please try again "
+            });
         }
-        const updatedFlatDetail = await FlatDetail.find({ where: { flatDetailId: id } }).then(flatDetail => {
+        const updatedFlatDetail = await FlatDetail.find({
+            where: {
+                flatDetailId: id
+            }
+        }).then(flatDetail => {
             return flatDetail.updateAttributes(update)
         })
         if (updatedFlatDetail) {
@@ -160,11 +192,21 @@ exports.deleteSelected = async (req, res, next) => {
     try {
         const deleteSelected = req.body.ids;
         console.log("delete selected==>", deleteSelected);
-        const update = { isActive: false };
+        const update = {
+            isActive: false
+        };
         if (!deleteSelected) {
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                message: "No id Found"
+            });
         }
-        const updatedFlatDetail = await FlatDetail.update(update, { where: { flatDetailId: { [Op.in]: deleteSelected } } })
+        const updatedFlatDetail = await FlatDetail.update(update, {
+            where: {
+                flatDetailId: {
+                    [Op.in]: deleteSelected
+                }
+            }
+        })
         if (updatedFlatDetail) {
             return res.status(httpStatus.OK).json({
                 message: "Flat Details deleted successfully",
