@@ -1,5 +1,6 @@
 const db = require('../config/db.config.js');
-const httpStatus = require('http-status')
+const httpStatus = require('http-status');
+const sequelize = require('sequelize');
 
 const FlatDetail = db.flatDetail;
 const Flat = db.flat;
@@ -59,10 +60,12 @@ exports.create = async (req, res, next) => {
 exports.get = async (req, res, next) => {
     try {
         console.log("atin greatwits");
-        const flatDetail = await FlatParking.findAll({
+        const flatDetail = await FlatParking.findAndCountAll({
             where: {
                 isActive: true
             },
+            // attributes:[[sequelize.fn('count', sequelize.col('slotId')), 'countslot']],
+
             order: [
                 ['createdAt', 'DESC']
             ],
@@ -71,7 +74,7 @@ exports.get = async (req, res, next) => {
                     include:[{model:Floor},{model:Flat},{model:Tower}]
                 },
                 {
-                    model: Slot
+                    model: Slot,
                 }, {
                     model: Parking
                 }
@@ -79,15 +82,6 @@ exports.get = async (req, res, next) => {
             ]
             // ,   group: ['flat_parking_master.flatDetailId'],
         });
-        // if (flatDetail.length > 0) {
-        //     flatDetail
-        //     console.log("flatid",flatDetail.flatDetailId);
-        //     // flatDetail.parkingDetails =
-        //     const flatParking = await FlatParking.findAll({
-        //         where:{flatDetailId:flatDetail.flatDetailId},
-        //         include:[{model:Slot}]
-        //     })
-        //     console.log("Flat Parking",flatParking);
         return res.status(httpStatus.CREATED).json({
             message: "FlatDetail Content Page",
             flatDetail: flatDetail
@@ -95,6 +89,27 @@ exports.get = async (req, res, next) => {
 
 
     } catch (error) {
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
+
+exports.getSlots = async (req, res, next) => {
+    try {
+        let flatDetailId = req.params.id;
+        const slotDetail = await FlatParking.findAll({
+            where: {
+                isActive: true,
+                flatDetailId:flatDetailId
+            },
+            // attributes:[[sequelize.fn('count', sequelize.col('slotId')), 'countslot']],
+
+            include:[{model:Slot}]
+        })
+        return res.status(httpStatus.CREATED).json({
+            message: "SlotDetail Content Page",
+            slotDetail: slotDetail
+        });
+    } catch(error){
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

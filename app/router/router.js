@@ -316,6 +316,8 @@ module.exports = function (app) {
 
 	app.get('/api/flatDetail', [authJwt.verifyToken], flatDetailController.get);
 
+	app.get('/api/getSlots/:id',[authJwt.verifyToken],flatDetailController.getSlots);
+
 	app.put('/api/flatDetail/:id', [authJwt.verifyToken], flatDetailController.update);
 
 	app.put('/api/flatDetail/delete/deleteSelected', [authJwt.verifyToken], flatDetailController.deleteSelected);
