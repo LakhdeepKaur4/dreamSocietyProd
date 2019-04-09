@@ -243,7 +243,7 @@ exports.create1 = async (req, res, next) => {
      userName = userName.replace(/ /g,'').toLowerCase();
      console.log("my name is",userName);
     let existingOwner2 = await Owner.find({
-      where: { userName: encrypt(key, userName) }
+      where: { isActive:true,userName: encrypt(key, userName) }
     });
     if (existingOwner2) {
       return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "The specific owner already exist" });
