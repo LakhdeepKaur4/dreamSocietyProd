@@ -40,8 +40,12 @@ exports.create = async (req, res, next) => {
         const flatDetail = await FlatDetail.create(body);
         req.body.parkingDetails.forEach((element) => {
             element.flatDetailId = flatDetail.flatDetailId;
-        })
+        });
+
         const flatParkings = await FlatParking.bulkCreate(req.body.parkingDetails);
+        flatParkings.forEach( async element => {
+            let slot = await Slot.update({isAllocated:true},{where:{slotId:element.slotId}})
+        });
 
         return res.status(httpStatus.CREATED).json({
             message: "FlatDetail successfully created",
@@ -63,7 +67,8 @@ exports.get = async (req, res, next) => {
                 ['createdAt', 'DESC']
             ],
             include: [{
-                    model: FlatDetail
+                    model: FlatDetail,
+                    include:[{model:Floor},{model:Flat},{model:Tower}]
                 },
                 {
                     model: Slot

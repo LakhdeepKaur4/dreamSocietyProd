@@ -616,7 +616,7 @@ let deletePhoto = async function (owner) {
 exports.update1 = async (req, res, next) => {
   if (req.body.email !== undefined && req.body.contact !== null) {
     let existingOwner = await Owner.find({
-      where: { [Op.and]: [{ email: encrypt(key, req.body.email) }, { ownerId: { [Op.ne]: req.params.id } }] }
+      where: { [Op.and]: [{isActive:true},{ email: encrypt(key, req.body.email) }, { ownerId: { [Op.ne]: req.params.id } }] }
     });
     if (existingOwner) {
       return res
@@ -627,7 +627,7 @@ exports.update1 = async (req, res, next) => {
 
   if (req.body.contact !== undefined && req.body.contact !== null) {
     let existingOwner1 = await Owner.find({
-      where: { [Op.and]: [{ contact: encrypt(key, req.body.contact) }, { ownerId: { [Op.ne]: req.params.id } }] }
+      where: { [Op.and]: [{isActive:true},{ contact: encrypt(key, req.body.contact) }, { ownerId: { [Op.ne]: req.params.id } }] }
     });
     if (existingOwner1) {
       return res
@@ -772,7 +772,7 @@ exports.update2 = async (req, res, next) => {
   console.log(req.body);
   if (req.body.email !== undefined && req.body.contact !== null) {
     let existingOwner = await Owner.find({
-      where: { [Op.and]: [{ email: encrypt(key, req.body.email) }, { ownerId: { [Op.ne]: req.params.id } }] }
+      where: { [Op.and]: [{isActive:true},{ email: encrypt(key, req.body.email) }, { ownerId: { [Op.ne]: req.params.id } }] }
     });
     if (existingOwner) {
       return res
@@ -783,7 +783,7 @@ exports.update2 = async (req, res, next) => {
 
   if (req.body.contact !== undefined && req.body.contact !== null) {
     let existingOwner1 = await Owner.find({
-      where: { [Op.and]: [{ contact: encrypt(key, req.body.contact) }, { ownerId: { [Op.ne]: req.params.id } }] }
+      where: { [Op.and]: [{isActive:true},{ contact: encrypt(key, req.body.contact) }, { ownerId: { [Op.ne]: req.params.id } }] }
     });
     if (existingOwner1) {
       return res
