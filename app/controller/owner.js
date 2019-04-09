@@ -241,7 +241,7 @@ exports.create1 = async (req, res, next) => {
      userName = userName.replace(/ /g,'').toLowerCase();
      console.log("my name is",userName);
     let existingOwner2 = await Owner.find({
-      where: { userName: encrypt(key, userName) }
+      where: { isActive:true,userName: encrypt(key, userName) }
     });
     if (existingOwner2) {
       return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "The specific owner already exist" });
@@ -973,7 +973,7 @@ exports.deleteSelected = async (req, res, next) => {
     const updatedOwners = await Owner.update(update, { where: { ownerId: { [Op.in]: deleteSelected } } })
     // const updatedUsers = await User.findAll()
     if(updatedOwners.length > 0){
-      updatedOwners.forEach((updatedOwner) => {
+      updatedOwners.forEach( async (updatedOwner) => {
          let user = await User.findOne({where: {email:updatedOwner.email}});
          return user.updateAttributes(update);
       })
