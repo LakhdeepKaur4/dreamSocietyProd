@@ -30,9 +30,6 @@ const Role = db.role;
 const UserRoles = db.userRole;
 const Parking = db.parking;
 const Slot = db.slot;
-const User = db.user;
-
-
 
 function encrypt(key, data) {
   var cipher = crypto.createCipher("aes-128-cbc", key);

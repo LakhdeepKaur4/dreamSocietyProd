@@ -1099,6 +1099,7 @@ exports.updateEncrypted = async (req, res, next) => {
 	let userUserNameErr;
 	let userEmailErr;
 	let userContactErr;
+	let flats;
 	console.log("ID ===>", id);
 	if (!id) {
 		return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
@@ -1373,6 +1374,7 @@ exports.signinDecrypted = async (req, res, next) => {
 	}
 	console.log("1");
 	User.findOne({
+		nested: true,
 		where: {
 			[Op.and]: [{
 				userName: encrypt(req.body.userName)
@@ -1383,21 +1385,49 @@ exports.signinDecrypted = async (req, res, next) => {
 			]
 
 		},
-		// include: [{
-		// 	model: Role,
-		// 	attributes: ['id', 'roleName'],
-		// }]
 		include: [{
 			model: Role,
 			attributes: ['id', 'roleName'],
-			// through: {
-			// 	attributes: ['roleId', 'roleName'],
-			// }
 		}
 		]
 	}).then(user => {
+		let roleId;
 		console.log("2");
 		console.log("user==>", user)
+		user.roles.map(function(roles){ roleId = roles.id });
+		if(roleId == 3){
+			Owner.findOne({
+				where: {
+					isActive:true,
+					userName: user.userName
+				}
+			})
+			.then(owner => {
+				FlatDetail.findAll({
+					where:{isActive:true,flatDetailId: owner.flatDetailId}
+				})
+				.then(flats => {
+				   flats=flats;
+				})
+			})
+		}
+		if(roleId == 4){
+			Tenant.findOne({
+				where: {
+					isActive:true,
+					userName: user.userName
+				}
+			})
+			.then(tenant => {
+				FlatDetail.findAll({
+					where:{isActive:true,flatDetailId: tenant.flatDetailId}
+				})
+				.then(flats => {
+				   flats=flats;
+				})
+			})
+		}
+		
 		if (!user) {
 			console.log("------user-------");
 			return res.status(httpStatus.OK).send({
@@ -1452,7 +1482,8 @@ exports.signinDecrypted = async (req, res, next) => {
 			accessToken: token,
 			user: user,
 			society: society,
-			message: "Successfully Logged In"
+			message: "Successfully Logged In",
+			// flats:flats
 		});
 
 	}).catch(err => {
@@ -2251,17 +2282,31 @@ exports.multipleActivateUsers = async (req, res, next) => {
 
 exports.flatByUserId = (req, res, next) => {
 	userId = 35;
-	User.findOne({where:{userId:userId}})
-	.then(user => {
+	// User.findOne({where:{isActive:true,userId:userId},include:[{model:Role}]})
+	User.findOne({
+		where: {
+			[Op.and]: [{
+				userId:userId
+			},
+			{
+				isActive: true
+			}]
+		},
+		include: [{
+			model: Role,
+		}]
+	}).then(user => {
 		if (user !== null) {
+			console.log("user==>",user)
 			Tenant.findOne({
 				where: {
+					isActive:true,
 					userName: user.userName
 				}
 			})
 			.then(tenant => {
 				FlatDetail.findAll({
-					flatDetailId: tenant.flatDetailId
+					where:{isActive:true,flatDetailId: tenant.flatDetailId}
 				})
 				.then(flats => {
 					res.status(httpStatus.OK).json({
