@@ -93,6 +93,11 @@ referenceConstraintReturn = (checkConstraint, object, property, entry) => {
     }
 }
 
+generateRandomId = () => {
+    const id = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
+    return id;
+}
+
 
 function decrypt1(key, data) {
     var decipher = crypto.createDecipher("aes-128-cbc", key);
@@ -326,7 +331,8 @@ exports.createEncrypted = async (req, res, next) => {
         const ownersArr = [];
         let tenantCreated;
         tenant.userId = req.userId;
-        let userName = tenant.firstName.replace(/ /g, '') + 'T' + tenant.towerId + tenant.flatDetailId;
+        uniqueId = generateRandomId();
+        let userName = tenant.firstName.replace(/ /g, '') + 'T' + uniqueId.toString(36);
         tenant.userName = userName;
         index = tenant.fileName.lastIndexOf('.');
         tenant.fileExt = tenant.fileName.slice(index + 1);
@@ -540,7 +546,8 @@ exports.createEncrypted = async (req, res, next) => {
                                 tenantId: tenantCreated.tenantId
                             }
                         })
-                            .then(tenantSend => {
+                            .then(async tenantSend => {
+                                let ownerId;
                                 // tenantSend.firstName = decrypt(tenantSend.firstName);
                                 // tenantSend.lastName = decrypt(tenantSend.lastName);
                                 // tenantSend.userName = decrypt(tenantSend.userName);
@@ -557,9 +564,24 @@ exports.createEncrypted = async (req, res, next) => {
                                 // tenantSend.panCardNumber = decrypt(tenantSend.panCardNumber);
                                 // tenantSend.IFSCCode = decrypt(tenantSend.IFSCCode);
 
+                                const owners = await Owner.findAll({
+                                    where: {
+                                        isActive: true,
+                                        flatDetailId: {
+                                            [Op.in]: tenant.flatDetailIds
+                                        }
+                                    },
+                                    attributes: ['ownerId']
+                                })
+                                // ownerId = owners[0].ownerId;
+
                                 const message = mailToUser(req.body.email, tenantSend.tenantId);
                                 console.log("ownerID1====?", tenantSend.owner, "87389547374 ", tenantSend)
-                                mailToOwner(tenantSend.ownerId1, tenantSend);
+                                owners.map(item => {
+                                    ownerId = item.ownerId;
+                                    mailToOwner(ownerId, tenantSend);
+                                });
+                                // mailToOwner(ownerId, tenantSend);
                                 return res.status(httpStatus.CREATED).json({
                                     message: "Tenant successfully created. please activate your account. click on the link delievered to your given email",
                                     // tenant: tenantSend
