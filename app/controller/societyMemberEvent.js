@@ -114,11 +114,13 @@ exports.update = async (req, res, next) => {
                 [Op.and]: [
                     { isActive: true },
                     { societyMemberEventName: req.body.societyMemberEventName },
+                    { societyMemberEventId: { [Op.ne]: id } }
                 ]
             }
         })
 
         let error = societyMemberEvent.some(member => {
+            console.log(societyMemberEvent);
             return member.societyMemberEventName.toLowerCase().replace(/ /g, '') == req.body.societyMemberEventName.toLowerCase().replace(/ /g, '');
         });
         if (error) {
