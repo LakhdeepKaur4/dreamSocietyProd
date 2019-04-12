@@ -327,6 +327,8 @@ module.exports = function (app) {
 
 	app.get('/api/flatDetail/:id', [authJwt.verifyToken, authJwt.isAdminRole], flatDetailController.getSlot);
 
+	app.get('/api/flatDetailForOwner/:id', [authJwt.verifyToken, authJwt.isAdminRole], flatDetailController.getSlotNew);
+
 	app.get('/api/flatDetail', [authJwt.verifyToken, authJwt.isAdminRole], flatDetailController.get);
 
 	app.put('/api/flatDetail/:id', [authJwt.verifyToken, authJwt.isAdminRole], flatDetailController.update);
