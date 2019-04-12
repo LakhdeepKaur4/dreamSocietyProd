@@ -276,7 +276,7 @@ exports.get = async (req, res, next) => {
 
 exports.deleteSelected = async (req, res, next) => {
     try {
-        const deleteSelected = req.body.ids.split(',');
+        const deleteSelected = req.body.ids;
         console.log("delete selected==>", deleteSelected);
         const update = { isActive: false };
         const userNames = [];
