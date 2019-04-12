@@ -69,6 +69,9 @@ db.eventBooking = require('../model/eventBooking.model')(sequelize, Sequelize);
 db.individualVendor=require('../model/individualVendor.model')(sequelize,Sequelize);
 db.flatParking = require('../model/flatParking.model')(sequelize,Sequelize);
 db.tenantFlatDetail = require('../model/tenantFlatDetail.model')(sequelize, Sequelize);
+db.ownerFlatDetail = require('../model/ownerFlatDetail.model')(sequelize, Sequelize);
+db.complaint = require('../model/complaint.model')(sequelize, Sequelize);
+db.complaintStatus = require('../model/complaintStatus.model')(sequelize, Sequelize);
 
 db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
 db.otp.belongsTo(db.tenant, { foreignKey: 'tenantId' });
@@ -145,8 +148,10 @@ db.ownerMembersDetail.belongsTo(db.user, { foreignKey: 'userId' });
 db.owner.belongsTo(db.user, { foreignKey: 'userId' });
 db.owner.belongsTo(db.society, { foreignKey: 'societyId' });
 db.owner.belongsTo(db.tower, { foreignKey: 'towerId' });
-db.owner.belongsTo(db.flatDetail, { foreignKey: 'flatDetailId' });
+// db.owner.belongsTo(db.flatDetail, { foreignKey: 'flatDetailId' });
 db.owner.belongsTo(db.floor, { foreignKey: 'floorId' });
+db.owner.belongsToMany(db.flatDetail, { through: 'owner_flatDetail_master', foreignKey: 'ownerId' });
+db.flatDetail.belongsToMany(db.owner, { through: 'owner_flatDetail_master', foreignKey: 'flatDetailId' });
 db.tenant.hasMany(db.tenantMembersDetail, { foreignKey: 'tenantId' });
 db.tenantMembersDetail.belongsTo(db.tenant, { foreignKey: 'tenantId' });
 // db.tenant.belongsTo(db.owner, { as: 'Owner1', foreignKey: 'ownerId1' });
@@ -186,6 +191,9 @@ db.individualVendor.belongsTo(db.city,{foreignKey:'cityId'});
 db.individualVendor.belongsTo(db.location,{foreignKey:'locationId'});
 db.individualVendor.belongsTo(db.service,{foreignKey:'serviceId'});
 db.individualVendor.belongsTo(db.rate,{foreignKey:'rateId'});
+db.complaint.belongsTo(db.service,{foreignKey:'serviceId'});
+db.complaint.belongsTo(db.vendor, { foreignKey: 'vendorId' });
+db.complaint.belongsTo(db.flatDetail, { foreignKey: 'flatDetailId' });
+db.complaint.belongsTo(db.complaintStatus, { foreignKey: 'complaintStatusId' });
 
-
-module.exports = db;
+module.exports = db;''

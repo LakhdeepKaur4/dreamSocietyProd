@@ -121,6 +121,7 @@ exports.create = async (req, res, next) => {
                 vendorId: vendorId,
                 rateId: body.rateId1,
                 rate: body.rate1,
+                dailyServices: dailyServices1,
                 userId: req.userId,
                 serviceId: body.serviceId1
             })
@@ -130,6 +131,7 @@ exports.create = async (req, res, next) => {
                 vendorId: vendorId,
                 rateId: body.rateId2,
                 rate: body.rate2,
+                dailyServices: dailyServices2,
                 userId: req.userId,
                 serviceId: body.serviceId2
             })
@@ -140,6 +142,7 @@ exports.create = async (req, res, next) => {
                 vendorId: vendorId,
                 rateId: body.rateId3,
                 rate: body.rate3,
+                dailyServices: dailyServices3,
                 userId: req.userId,
                 serviceId: body.serviceId3
             })
@@ -381,6 +384,7 @@ exports.create1 = async (req, res, next) => {
                 vendorId: vendorId,
                 rateId: body.rateId1,
                 rate: body.rate1,
+                dailyServices: body.dailyServices1,
                 userId: req.userId,
                 serviceId: body.serviceId1
             })
@@ -391,6 +395,7 @@ exports.create1 = async (req, res, next) => {
                 vendorId: vendorId,
                 rateId: body.rateId2,
                 rate: body.rate2,
+                dailyServices: body.dailyServices2,
                 userId: req.userId,
                 serviceId: body.serviceId2
             })
@@ -403,6 +408,7 @@ exports.create1 = async (req, res, next) => {
                 rateId: body.rateId3,
                 rate: body.rate3,
                 userId: req.userId,
+                dailyServices: body.dailyServices3,
                 serviceId: body.serviceId3
             })
         }
@@ -732,7 +738,7 @@ exports.deleteSelectedVendorServices = async (req, res, next) => {
 exports.updateVendorService = async (req, res, next) => {
     try {
         let updAttr = {};
-        let attrArr = ['serviceId', 'rateId', 'rate'];
+        let attrArr = ['serviceId', 'rateId', 'rate','dailyServices'];
         console.log("updating vendor");
         console.log(":::::req.body==>", req.body)
         const id = req.params.id;

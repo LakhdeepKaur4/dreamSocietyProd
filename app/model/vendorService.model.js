@@ -8,6 +8,10 @@ module.exports = (sequelize, Sequelize) => {
         rate:{
             type: Sequelize.FLOAT,
         },
+        dailyServices:{
+            type: Sequelize.BOOLEAN,
+            defaultValue: false
+        },
         isActive: {
             type: Sequelize.BOOLEAN,
             defaultValue: true

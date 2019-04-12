@@ -12,6 +12,7 @@ const User = db.user;
 const Role = db.role;
 const Test = db.test;
 const Tower = db.tower;
+const Floor = db.floor;
 const Society = db.society;
 const City = db.city;
 const Country = db.country;
@@ -19,6 +20,9 @@ const State = db.state;
 const Location = db.location;
 const Owner = db.owner;
 const Tenant = db.tenant;
+const TenantFlatDetail = db.tenantFlatDetail;
+// const Owner = db.owner;
+const OwnerFlatDetail = db.ownerFlatDetail;
 const Vendor = db.vendor;
 const Employee = db.employee;
 const FlatDetail = db.flatDetail;
@@ -37,8 +41,12 @@ exports.start = (req, res) => {
 }
 
 
+exports.test = (req, res) => {
+	res.send('Test');
+}
+
 function decrypt1(key, data) {
-	var decipher = crypto.createDecipher("aes-256-cbc", key);
+	var decipher = crypto.createDecipher("aes-128-cbc", key);
 	var decrypted = decipher.update(data, "hex", "utf-8");
 	decrypted += decipher.final("utf-8");
 
@@ -1373,7 +1381,6 @@ exports.signinDecrypted = async (req, res, next) => {
 			message: "Password cannot be empty"
 		})
 	}
-	console.log("1");
 	User.findOne({
 		nested: true,
 		where: {
@@ -1392,8 +1399,6 @@ exports.signinDecrypted = async (req, res, next) => {
 		]
 	}).then(user => {
 		let roleId;
-		console.log("2");
-		console.log("user==>", user)
 		user.roles.map(function (roles) { roleId = roles.id });
 		if (roleId == 3) {
 			Owner.findOne({
@@ -1416,18 +1421,20 @@ exports.signinDecrypted = async (req, res, next) => {
 				where: {
 					isActive: true,
 					userName: user.userName
-				}
+				},
+				include: [
+					{ where: { isActive: true }, model: FlatDetail },
+				]
 			})
-				.then(tenant => {
-					FlatDetail.findAll({
-						where: { isActive: true, flatDetailId: tenant.flatDetailId }
-					})
-						.then(flats => {
-							flats = flats;
-						})
+				// .then(tenant => {
+				// 	FlatDetail.findAll({
+				// 		where: { isActive: true, flatDetailId: tenant.flatDetailId }
+				// 	})
+				.then(flats => {
+					flats = flats.flat_detail_master;
 				})
+			// })
 		}
-
 		if (!user) {
 			console.log("------user-------");
 			return res.status(httpStatus.OK).send({
@@ -1456,7 +1463,6 @@ exports.signinDecrypted = async (req, res, next) => {
 			// user.parking = decrypt(user.parking);
 			// user.floor = decrypt(user.floor);
 		}
-
 		var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
 		// const password = User.findOne({where:{password:decrypt(req.body.password),isActive:true}});
 
@@ -1469,7 +1475,6 @@ exports.signinDecrypted = async (req, res, next) => {
 				message: "Invalid Password!"
 			});
 		}
-
 		var token = jwt.sign({
 			id: user.userId
 		}, config.secret, {
@@ -1487,13 +1492,10 @@ exports.signinDecrypted = async (req, res, next) => {
 		});
 
 	}).catch(err => {
-		console.log('123', err)
 		res.status(500).json({
 			"message": err
 		});
 	});
-
-	console.log("4");
 }
 
 exports.getUserDecrypted = (req, res, next) => {
@@ -1514,8 +1516,68 @@ exports.getUserDecrypted = (req, res, next) => {
 			},
 			{
 				model: Tower
-			}
-			]
+			}]
+		})
+			.then(users => {
+				users.map(item => {
+					if ((item['firstName'] !== null) && (item['lastName'] !== null) && (item['contact'] !== null)) {
+						item.firstName = decrypt(item.firstName);
+						item.lastName = decrypt(item.lastName);
+						item.userName = decrypt(item.userName);
+						item.email = decrypt(item.email);
+						item.contact = decrypt(item.contact);
+						// item.familyMember = decrypt(item.familyMember);
+						// item.parking = decrypt(item.parking);
+						// item.floor = decrypt(item.floor);
+						usersArr.push(item);
+					} else {
+						// item.firstName = decrypt(item.firstName);
+						// item.lastName = decrypt(item.lastName);
+						item.userName = decrypt(item.userName);
+						item.email = decrypt(item.email);
+						// item.contact = decrypt(item.contact);
+						// item.familyMember = decrypt(item.familyMember);
+						// item.parking = decrypt(item.parking);
+						// user.floor = decrypt(user.floor);
+					}
+				})
+				return usersArr;
+			})
+			.then(user => {
+				res.status(httpStatus.OK).json(user);
+			});
+	} catch (error) {
+		console.log("error--->", error)
+		res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+			"message": error
+		})
+	}
+}
+
+exports.getUserRoleDecrypted = (req, res, next) => {
+	try {
+		const usersArr = [];
+		User.findAll({
+			where: {
+				isActive: true
+			},
+			order: [
+				['createdAt', 'DESC']
+			],
+			include: [{
+				model: Role,
+				where: {
+					id: {
+						[Op.in]: [1, 2, 3, 4]
+					},
+				},
+				// through: {
+				//     attributes: ['roleId', 'roleName'],
+				// }
+			},
+			{
+				model: Tower
+			}]
 		})
 			.then(users => {
 				users.map(item => {
@@ -1829,8 +1891,10 @@ exports.assignRoles = async (req, res, next) => {
 		switch (roleId) {
 			case "3": {
 				const owner = await Owner.findOne({ where: { isActive: true, ownerId: req.body.userId } });
+				console.log("owner==>", owner.email)
 				// let ownerEmail = owner.email;
-				const user = await User.findOne({ where: { isActive: true, email: owner.email }, attributes: ['userId', 'firstName', 'lastName', 'userName'], include: [{ model: Role, attributes: ['id', 'roleName'] }] })
+				const user = await User.findOne({ where: { isActive: true, email: owner.email }, attributes: ['userId', 'firstName', 'lastName', 'userName'], include: [{ model: Role, attributes: ['id', 'roleName'] }] });
+				console.log("user==>", user);
 				user.firstName = decrypt(user.firstName);
 				user.lastName = decrypt(user.lastName);
 				user.userName = decrypt(user.userName);
@@ -1848,8 +1912,10 @@ exports.assignRoles = async (req, res, next) => {
 			}
 			case "4": {
 				const tenant = await Tenant.findOne({ where: { isActive: true, tenantId: req.body.userId } });
+				console.log(tenant)
 				// let tenantEmail = tenant.email;
-				const user = await User.findOne({ where: { isActive: true, email: tenant.email }, attributes: ['userId', 'firstName', 'lastName', 'userName'], include: [{ model: Role, attributes: ['id', 'roleName'] }] })
+				const user = await User.findOne({ where: { isActive: true, email: tenant.email }, attributes: ['userId', 'firstName', 'lastName', 'userName'], include: [{ model: Role, attributes: ['id', 'roleName'] }] });
+				console.log(user)
 				user.firstName = decrypt(user.firstName);
 				user.lastName = decrypt(user.lastName);
 				user.userName = decrypt(user.userName);
@@ -1865,46 +1931,46 @@ exports.assignRoles = async (req, res, next) => {
 				}
 				break;
 			}
-			case "5": {
-				const vendor = await Vendor.findOne({ where: { isActive: true, vendorId: req.body.userId } });
-				// let vendorEmail = vendor.email;
-				const user = await User.findOne({ where: { isActive: true, email: vendor.email }, attributes: ['userId', 'firstName', 'lastName', 'userName'], include: [{ model: Role, attributes: ['id', 'roleName'] }] })
-				user.firstName = decrypt(user.firstName);
-				user.lastName = decrypt(user.lastName);
-				user.userName = decrypt(user.userName);
-				userArr.push(user);
-				if (user) {
-					const userRoles = await UserRoles.create({
-						userId: user.userId,
-						roleId: req.body.id
-					});
-					if (userRoles && user) {
-						res.json({ userArr });
-					}
-				}
-				break;
-			}
-			case "6": {
-				console.log("in here");
-				const employee = await Employee.findOne({ where: { isActive: true, employeeId: req.body.userId } });
-				// let employeeEmail = decrypt(employee.email);
-				// console.log(employeeEmail);
-				const user = await User.findOne({ where: { isActive: true, email: employee.email }, attributes: ['userId', 'firstName', 'lastName', 'userName', 'email'], include: [{ model: Role, attributes: ['id', 'roleName'] }] });
-				user.firstName = decrypt(user.firstName);
-				user.lastName = decrypt(user.lastName);
-				user.userName = decrypt(user.userName);
-				userArr.push(user);
-				if (user) {
-					const userRoles = await UserRoles.create({
-						userId: user.userId,
-						roleId: req.body.id
-					});
-					if (userRoles && user) {
-						res.json({ userArr });
-					}
-				}
-				break;
-			}
+			// case "5": {
+			// 	const vendor = await Vendor.findOne({ where: { isActive: true, vendorId: req.body.userId } });
+			// 	// let vendorEmail = vendor.email;
+			// 	const user = await User.findOne({ where: { isActive: true, email: vendor.email }, attributes: ['userId', 'firstName', 'lastName', 'userName'], include: [{ model: Role, attributes: ['id', 'roleName'] }] })
+			// 	user.firstName = decrypt(user.firstName);
+			// 	user.lastName = decrypt(user.lastName);
+			// 	user.userName = decrypt(user.userName);
+			// 	userArr.push(user);
+			// 	if (user) {
+			// 		const userRoles = await UserRoles.create({
+			// 			userId: user.userId,
+			// 			roleId: req.body.id
+			// 		});
+			// 		if (userRoles && user) {
+			// 			res.json({ userArr });
+			// 		}
+			// 	}
+			// 	break;
+			// }
+			// case "6": {
+			// 	console.log("in here");
+			// 	const employee = await Employee.findOne({ where: { isActive: true, employeeId: req.body.userId } });
+			// 	// let employeeEmail = decrypt(employee.email);
+			// 	// console.log(employeeEmail);
+			// 	const user = await User.findOne({ where: { isActive: true, email: employee.email }, attributes: ['userId', 'firstName', 'lastName', 'userName', 'email'], include: [{ model: Role, attributes: ['id', 'roleName'] }] });
+			// 	user.firstName = decrypt(user.firstName);
+			// 	user.lastName = decrypt(user.lastName);
+			// 	user.userName = decrypt(user.userName);
+			// 	userArr.push(user);
+			// 	if (user) {
+			// 		const userRoles = await UserRoles.create({
+			// 			userId: user.userId,
+			// 			roleId: req.body.id
+			// 		});
+			// 		if (userRoles && user) {
+			// 			res.json({ userArr });
+			// 		}
+			// 	}
+			// 	break;
+			// }
 			default:
 				res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No Role Found with this Id" })
 		}
@@ -1914,9 +1980,20 @@ exports.assignRoles = async (req, res, next) => {
 	}
 }
 
-exports.getRolesForActivation = async (req, res, next) => {
+exports.getRolesToAssign = async (req, res, next) => {
 	try {
 		const role = await Role.findAll({ where: { id: { [Op.notIn]: [1, 2, 5, 6] } } });
+		console.log(role);
+		return res.status(httpStatus.OK).json({ role: role });
+	} catch (error) {
+		console.log(error);
+		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Sequelize Error' })
+	}
+}
+
+exports.getRolesForActivation = async (req, res, next) => {
+	try {
+		const role = await Role.findAll({ where: { id: { [Op.notIn]: [1, 2] } } });
 		console.log(role);
 		return res.status(httpStatus.OK).json({ role: role });
 	} catch (error) {
@@ -2281,7 +2358,8 @@ exports.multipleActivateUsers = async (req, res, next) => {
 }
 
 exports.flatByUserId = (req, res, next) => {
-	userId = 35;
+	userId = req.userId;
+	const flatIds = [];
 	// User.findOne({where:{isActive:true,userId:userId},include:[{model:Role}]})
 	User.findOne({
 		where: {
@@ -2297,23 +2375,131 @@ exports.flatByUserId = (req, res, next) => {
 		}]
 	}).then(user => {
 		if (user !== null) {
-			console.log("user==>", user)
-			Tenant.findOne({
-				where: {
-					isActive: true,
-					userName: user.userName
-				}
-			})
-				.then(tenant => {
-					FlatDetail.findAll({
-						where: { isActive: true, flatDetailId: tenant.flatDetailId }
-					})
-						.then(flats => {
-							res.status(httpStatus.OK).json({
-								flats: flats
-							})
-						})
+			// console.log(bcrypt.compareSync('dbEgbGGuqc', user.password));
+			// console.log("user==>", user)
+			// res.json(user);
+			if (user.roles[0].id === 4) {
+				Tenant.findOne({
+					where: {
+						isActive: true,
+						userName: user.userName
+					}
 				})
+					.then(tenant => {
+						if (tenant !== null) {
+							TenantFlatDetail.findAll({
+								where: {
+									isActive: true,
+									tenantId: tenant.tenantId
+								}
+							})
+								.then(flats => {
+									if (flats.length !== 0) {
+										flatIds.splice(0, flatIds.length);
+										flats.map(item => {
+											flatIds.push(item.flatDetailId);
+										})
+										FlatDetail.findAll({
+											where: {
+												isActive: true,
+												flatDetailId: {
+													[Op.in]: flatIds
+												}
+											},
+											include: [
+												{ model: Tower, where: { isActive: true }, attributes: ['towerId', 'towerName'] },
+												{ model: Floor, where: { isActive: true }, attributes: ['floorId', 'floorName'] }
+											]
+										})
+											.then(flats => {
+												if (flats.length !== 0) {
+													res.status(httpStatus.OK).json({
+														message: 'Flats Found',
+														flats: flats
+													})
+												} else {
+													res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+														message: 'No Flats Found',
+														flats: flats
+													})
+												}
+											})
+									} else {
+										res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+											message: 'No Flats Found',
+											flats: flats
+										})
+									}
+								})
+						} else {
+							res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+								message: 'No Flats Found',
+								flats: []
+							})
+						}
+					})
+			} else {
+				Owner.findOne({
+					where: {
+						isActive: true,
+						userName: user.userName
+					}
+				})
+					.then(owner => {
+						if (owner !== null) {
+							OwnerFlatDetail.findAll({
+								where: {
+									isActive: true,
+									owner: owner.ownerId
+								}
+							})
+								.then(flats => {
+									if (flats.length !== 0) {
+										flatIds.splice(0, flatIds.length);
+										flats.map(item => {
+											flatIds.push(item.flatDetailId);
+										})
+										FlatDetail.findAll({
+											where: {
+												isActive: true,
+												flatDetailId: {
+													[Op.in]: flatIds
+												}
+											},
+											include: [
+												{ model: Tower, where: { isActive: true }, attributes: ['towerId', 'towerName'] },
+												{ model: Floor, where: { isActive: true }, attributes: ['floorId', 'floorName'] }
+											]
+										})
+											.then(flats => {
+												if (flats.length !== 0) {
+													res.status(httpStatus.OK).json({
+														message: 'Flats Found',
+														flats: flats
+													})
+												} else {
+													res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+														message: 'No Flats Found',
+														flats: flats
+													})
+												}
+											})
+									} else {
+										res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+											message: 'No Flats Found',
+											flats: flats
+										})
+									}
+								})
+						} else {
+							res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+								message: 'No Flats Found',
+								flats: []
+							})
+						}
+					})
+			}
+
 		} else {
 			res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
 				message: 'User Not Found'

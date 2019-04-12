@@ -63,26 +63,26 @@ exports.update = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
         }
 
-        // const maintenance = await Maintenance.findOne({
-        //     where: {
-        //         [Op.and]: [
-        //             { isActive: true },
-        //             { maintenanceId: id },
-        //         ]
-        //     }
-        // })
+        const maintenance = await Maintenance.findOne({
+            where: {
+                [Op.and]: [
+                    { isActive: true },
+                    { maintenanceId: id },
+                ]
+            }
+        })
 
-        // if (maintenance.category === update.category) {
-        //     const updatedMaintenance = await Maintenance.find({ where: { maintenanceId: id } }).then(maintenance => {
-        //         return maintenance.updateAttributes(update)
-        //     })
-        //     if (updatedMaintenance) {
-        //         return res.status(httpStatus.OK).json({
-        //             message: "Maintainance Updated Page",
-        //             updatedMaintenance: updatedMaintenance
-        //         });
-        //     }
-        // } else {
+        if (maintenance.category === update.category) {
+            const updatedMaintenance = await Maintenance.find({ where: { maintenanceId: id } }).then(maintenance => {
+                return maintenance.updateAttributes(update)
+            })
+            if (updatedMaintenance) {
+                return res.status(httpStatus.OK).json({
+                    message: "Maintainance Updated Page",
+                    updatedMaintenance: updatedMaintenance
+                });
+            }
+        } else {
             const maintenances = await Maintenance.findAll({
                 where: {
                     isActive: true
@@ -108,7 +108,7 @@ exports.update = async (req, res, next) => {
                     updatedMaintenance
                 });
             }
-        // }
+        }
     } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }

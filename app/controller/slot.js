@@ -31,13 +31,34 @@ exports.create = async (req, res, next) => {
     }
 }
 
+exports.getSlot = async (req, res, next) => {
+    try {
+        const slot = await Slots.findAll({
+            attributes: ['slots', [sequelize.fn('count', sequelize.col('slots')), 'count']],
+            include: [{ model: Parking, attributes: ['parkingName'] }],
+            group: ['slot_master.parkingId'],
+            order: [['createdAt', 'DESC']],
+            raw: false,
+            order: sequelize.literal('count DESC')
+        })
+        if (slot) {
+            return res.status(httpStatus.OK).json({
+                slot: slot,
+            });
+        }
+    } catch (error) {
+        console.log("error-->", error)
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
+
 
 exports.get = async (req, res, next) => {
     try {
-        console.log("req",req.params);
+        console.log("req", req.params);
         console.log("slots is running");
-        let flat = await Flat.findOne({where:{flatId:req.params.flatId}});
-        let flatInteger = parseInt(flat.flatType.slice(0,1)) - 1;
+        let flat = await Flat.findOne({ where: { flatId: req.params.flatId } });
+        let flatInteger = parseInt(flat.flatType.slice(0, 1)) - 1;
 
         // const slot = await Slots.findAll({
         //     attributes: ['slots', [sequelize.fn('count', sequelize.col('slots')), 'count']],
@@ -53,10 +74,9 @@ exports.get = async (req, res, next) => {
                 parkingId: req.params.parkingId
             }
         });
-        console.log("atin");
         if (slots) {
             return res.status(httpStatus.OK).json({
-                message: "You can select " + flatInteger +  ' parking slots',
+                message: "You can select " + flatInteger + ' parking slots',
                 slot: slots,
                 slotNumbers: flatInteger
 

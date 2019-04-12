@@ -1,24 +1,5 @@
 'use strict';
 
-// var express = require('express'),
-//     cors = require('cors'),
-//     port = process.env.PORT || 8081,
-//     app = express();
-// app.use(cors());
-// app.get('/simple-cors', function(req, res){
-// 	console.log("------------- /simple-cors");
-//   res.json({
-//     text: 'Simple CORS requests are working. [GET]'
-//   });
-// });
-
-
-// if(!module.parent){
-//   app.listen(port, function(){
-//     console.log('Express server listening on port ' + port + '.');
-//   });
-// }
-
 var express = require('express');
 var app = express();
 var cors = require('cors');
@@ -28,19 +9,12 @@ const path = require('path');
 // var upload = require('express-fileupload');
 console.log('server started');
 
-// app.use(bodyParser.urlencoded({
-// 	extended: true
-// }));
-
-// app.use(bodyParser.json(app.use(bodyParser.urlencoded({
-//     limit: '50mb',
-//     extended: true
-//   }))));
+app.use(bodyParser.urlencoded({
+	extended: true
+}));
 
 app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
 app.use(bodyParser.json({ limit: '5mb' }));
-
-app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/public',express.static(path.resolve(__dirname, 'public')));
 
@@ -49,6 +23,8 @@ app.use('/public',express.static(path.resolve(__dirname, 'public')));
 
 
 require('./app/router/router.js')(app);
+
+// const complaint = require('./app/controller/complaintStatusCreate');
 
 const db = require('./app/config/db.config.js');
 
@@ -61,6 +37,7 @@ db.sequelize.sync({
 }).then(() => {
 	console.log('Drop and Resync with { force: false }');
 	//   initial();
+	// complaint();
 });
 
 

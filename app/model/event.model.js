@@ -11,12 +11,6 @@ module.exports = (sequelize, Sequelize) => {
         eventType: {
             type: Sequelize.STRING
         },
-        startDate: {
-            type:Sequelize.STRING
-        },
-        endDate: {
-            type:Sequelize.STRING
-        },
         isActive: {
             type: Sequelize.BOOLEAN,
             defaultValue: true

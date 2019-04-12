@@ -47,30 +47,33 @@ exports.get = async (req, res, next) => {
 exports.update = async (req, res, next) => {
     try {
         const id = req.params.id;
+   
         console.log("id==>", id)
         if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
         }
         const update = req.body;
-        // if (!update) {
-        //     return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
-        // }
-        // const relation = await Relation.findOne({
-        //     where: {
-        //         isActive: true,
-        //     }
-        // })
-        // if (relation.relationName === update.relationName) {
-        //     const updatedRelation = await Relation.find({ where: { relationId: id } }).then(relation => {
-        //         return relation.updateAttributes(update)
-        //     })
-        //     if (updatedRelation) {
-        //         return res.status(httpStatus.OK).json({
-        //             message: "Relation Updated Page",
-        //             updatedRelation: updatedRelation
-        //         });
-        //     }
-        // } else {
+        if (!update) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
+        }
+        const relation = await Relation.findOne({
+            where: {
+                isActive: true,
+                relationId:id
+            }
+        })
+        console.log(relation);
+        if (relation.relationName === update.relationName) {
+            const updatedRelation = await Relation.find({ where: { relationId: id } }).then(relation => {
+                return relation.updateAttributes(update)
+            })
+            if (updatedRelation) {
+                return res.status(httpStatus.OK).json({
+                    message: "Relation Updated Page",
+                    updatedRelation: updatedRelation
+                });
+            }
+        } else {
             const relations = await Relation.findAll({
                 where: {
                     isActive: true
@@ -91,7 +94,7 @@ exports.update = async (req, res, next) => {
                     updatedRelation
                 });
             }
-        // }
+        }
     } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }

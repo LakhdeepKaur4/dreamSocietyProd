@@ -48,6 +48,10 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.STRING,
             allowNull: false
         },
+        dailyRoutine: {
+            type: Sequelize.BOOLEAN,
+            defaultValue: false
+        },
         isActive: {
             type: Sequelize.BOOLEAN,
             defaultValue: false
@@ -56,7 +60,6 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.STRING,
             allowNull: false
         },
-
         endTime: {
             type: Sequelize.STRING,
             allowNull: false

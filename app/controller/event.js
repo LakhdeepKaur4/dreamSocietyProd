@@ -54,11 +54,12 @@ exports.get = async (req, res, next) => {
             include: [{
                 model: User,
                 as: 'organiser',
-                attributes: ['userId', 'userName'],
+                attributes: ['userId','firstName','lastName'],
             }]
         });
         event.map(e=>{
-            e.organiser.userName = decrypt(e.organiser.userName);
+            e.organiser.firstName = decrypt(e.organiser.firstName);
+            e.organiser.lastName = decrypt(e.organiser.lastName);
             events.push(e)
 
         })

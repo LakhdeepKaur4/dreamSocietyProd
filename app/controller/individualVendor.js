@@ -226,6 +226,7 @@ exports.create = async (req, res, next) => {
                 permanentAddress: encrypt(vendor.permanentAddress),
                 currentAddress: encrypt(vendor.currentAddress),
                 rate: encrypt(vendor.rate),
+                dailyRoutine: vendor.dailyRoutine,
                 startTime: vendor.startTime,
                 endTime: vendor.endTime,
                 startTime1: vendor.startTime1,
@@ -373,9 +374,9 @@ exports.get = (req, res, next) => {
                 item.rate = decrypt(item.rate);
                 item.profilePicture = decrypt(item.profilePicture);
                 item.documentOne = decrypt(item.documentOne);
-                item.documentOne = item.documentOne.replace('../../','');
+                item.documentOne = item.documentOne.replace('../../', '');
                 item.documentTwo = decrypt(item.documentTwo);
-                item.documentTwo = item.documentTwo.replace('../../','');
+                item.documentTwo = item.documentTwo.replace('../../', '');
 
                 vendorArr.push(item);
             })
@@ -536,6 +537,7 @@ exports.update = async (req, res, next) => {
             cityIdCheck = constraintCheck('cityId', update);
             stateIdCheck = constraintCheck('stateId', update);
             countryIdCheck = constraintCheck('countryId', update);
+            dailyRoutineCheck = constraintCheck('dailyRoutine', update);
 
             firstName = constraintReturn(firstNameCheck, update, 'firstName', vendor);
             lastName = constraintReturn(lastNameCheck, update, 'lastName', vendor);
@@ -556,6 +558,7 @@ exports.update = async (req, res, next) => {
             cityId = referenceConstraintReturn(cityIdCheck, update, 'cityId', vendor);
             countryId = referenceConstraintReturn(countryIdCheck, update, 'countryId', vendor);
             rateId = referenceConstraintReturn(rateIdCheck, update, 'rateId', vendor);
+            dailyRoutine = referenceConstraintReturn(dailyRoutineCheck, update, 'dailyRoutine', vendor);
 
             if ((update.profilePicture !== '') && (update.profilePicture !== null) && (update.profilePicture !== undefined)) {
                 vendorImage = await IndividualVendor.find({ where: { individualVendorId: id }, attributes: ['profilePicture'] });

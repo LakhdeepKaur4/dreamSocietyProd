@@ -54,10 +54,33 @@ exports.get = async (req, res, next) => {
 exports.update = async (req, res, next) => {
     try {
         const id = req.params.id;
+        const update = req.body;
+        console.log("update==>", update)
         console.log("id==>", id)
         if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
         }
+    
+        const designation = await Designation.findOne({
+            where: {
+                [Op.and]: [
+                    { isActive: true },
+                    { designationId: id },
+                ]
+            }
+        })
+
+        if (designation.designationName === update.designationName) {
+            const updatedDesignation = await Designation.find({ where: { designationId: id } }).then(designation => {
+                return designation.updateAttributes(update)
+            })
+            if (updatedDesignation) {
+                return res.status(httpStatus.OK).json({
+                    message: "Designation Updated Page",
+                    updatedDesignation: updatedDesignation
+                });
+            }
+        } else {
         const designations = await Designation.findAll({
             where: {
                 isActive: true
@@ -69,11 +92,7 @@ exports.update = async (req, res, next) => {
         if (error) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Designation Name already Exists" })
         }
-        const update = req.body;
-        console.log("update==>", update)
-        if (!update) {
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
-        }
+
         const updatedDesignation = await Designation.find({ where: { designationId: id } }).then(designation => {
             return designation.updateAttributes(update)
         })
@@ -83,6 +102,7 @@ exports.update = async (req, res, next) => {
                 updatedDesignation
             });
         }
+    }
     } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
