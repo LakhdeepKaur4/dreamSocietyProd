@@ -120,7 +120,7 @@ exports.update = async (req, res, next) => {
         })
 
         let error = societyMemberEvent.some(member => {
-            console.log(societyMemberEvent);
+            // console.log(societyMemberEvent);
             return member.societyMemberEventName.toLowerCase().replace(/ /g, '') == req.body.societyMemberEventName.toLowerCase().replace(/ /g, '');
         });
         if (error) {
