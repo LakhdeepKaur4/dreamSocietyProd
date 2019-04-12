@@ -413,7 +413,7 @@ module.exports = function (app) {
 
 	app.put('/api/designation/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], designationController.delete);
 
-	app.post('/api/societyBoardMember', [authJwt.isAdminRole], [authJwt.verifyToken, authJwt.isAdminRole], societyBoardMemberController.createEncrypted);
+	app.post('/api/societyBoardMember',  [authJwt.verifyToken, authJwt.isAdminRole], societyBoardMemberController.createEncrypted);
 
 	app.get('/api/societyBoardMember', [authJwt.verifyToken, authJwt.isAdminRole], societyBoardMemberController.getDecrypted);
 
