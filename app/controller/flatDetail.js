@@ -65,6 +65,8 @@ exports.get = async (req, res, next) => {
             where: {
                 isActive: true
             },
+            // attributes:[[sequelize.fn('count', sequelize.col('slotId')), 'countslot']],
+
             order: [
                 ['createdAt', 'DESC']
             ],

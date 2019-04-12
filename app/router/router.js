@@ -323,7 +323,17 @@ module.exports = function (app) {
 
 	app.post('/api/auth/signupCopy', [verifySignUp.checkRolesExisted], userController.signupCopy);
 
+<<<<<<< HEAD
 	app.post('/api/flatDetail', [authJwt.verifyToken, authJwt.isAdminRole], flatDetailController.create);
+=======
+	app.post('/api/flatDetail', [authJwt.verifyToken], flatDetailController.create);
+
+	app.get('/api/flatDetail', [authJwt.verifyToken], flatDetailController.get);
+
+	app.get('/api/getSlots/:id',[authJwt.verifyToken],flatDetailController.getSlots);
+
+	app.put('/api/flatDetail/:id', [authJwt.verifyToken], flatDetailController.update);
+>>>>>>> 8c77f3f2ba612d8ad8706096ba7867931c40cfa3
 
 	app.get('/api/flatDetail/:id', [authJwt.verifyToken, authJwt.isAdminRole], flatDetailController.getSlot);
 

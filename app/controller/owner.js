@@ -705,16 +705,7 @@ let deletePhoto = async function (owner) {
 exports.update1 = async (req, res, next) => {
   if (req.body.email !== undefined && req.body.contact !== null) {
     let existingOwner = await Owner.find({
-      where: {
-        isActive: true,
-        [Op.and]: [{
-          email: encrypt(key, req.body.email)
-        }, {
-          ownerId: {
-            [Op.ne]: req.params.id
-          }
-        }]
-      }
+      where: { [Op.and]: [{isActive:true},{ email: encrypt(key, req.body.email) }, { ownerId: { [Op.ne]: req.params.id } }] }
     });
     if (existingOwner) {
       return res
