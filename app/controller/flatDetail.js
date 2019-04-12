@@ -121,7 +121,7 @@ exports.getSlot = async(req,res,next) =>{
             model: Slot
         }
         ]});
-        slots.parkingName = slots.rows[0].parking_master.parkingName;
+        // slots.parkingName = slots.rows[0].parking_master.parkingName;
         res.status(httpStatus.OK).json({slots:slots});
     }catch(error){
         console.log(error)
