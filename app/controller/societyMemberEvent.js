@@ -18,7 +18,7 @@ exports.create = async (req, res, next) => {
             }
         })
         // console.log(cities);
-        let error = societyMemberEvent.some(member => {
+        let error = societyMemberEvent.map(member => {
             return member.societyMemberEventName.toLowerCase().replace(/ /g, '') == req.body.societyMemberEventName.toLowerCase().replace(/ /g, '');
         });
         if (error) {
@@ -119,7 +119,7 @@ exports.update = async (req, res, next) => {
             }
         })
 
-        let error = societyMemberEvent.some(member => {
+        let error = societyMemberEvent.map(member => {
             // console.log(societyMemberEvent);
             return member.societyMemberEventName.toLowerCase().replace(/ /g, '') == req.body.societyMemberEventName.toLowerCase().replace(/ /g, '');
         });
