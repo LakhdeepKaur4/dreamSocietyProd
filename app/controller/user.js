@@ -1295,9 +1295,9 @@ exports.updateEncrypted = async (req, res, next) => {
 				// user.setRoles(roles);
 				let roleId;
 				// user.setRoles(roles);
-				roles.map(role => {
-					roleId = role.id;
-				});
+				// roles.map(role => {
+					roleId = roles.id;
+				// });
 				UserRoles.create({ userId: user.userId, roleId: roleId });
 				return user.updateAttributes(updates);
 			})
