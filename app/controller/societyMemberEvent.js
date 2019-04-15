@@ -18,7 +18,7 @@ exports.create = async (req, res, next) => {
             }
         })
         // console.log(cities);
-        let error = societyMemberEvent.some(member => {
+        let error = societyMemberEvent.map(member => {
             return member.societyMemberEventName.toLowerCase().replace(/ /g, '') == req.body.societyMemberEventName.toLowerCase().replace(/ /g, '');
         });
         if (error) {
@@ -114,11 +114,13 @@ exports.update = async (req, res, next) => {
                 [Op.and]: [
                     { isActive: true },
                     { societyMemberEventName: req.body.societyMemberEventName },
+                    { societyMemberEventId: { [Op.ne]: id } }
                 ]
             }
         })
 
-        let error = societyMemberEvent.some(member => {
+        let error = societyMemberEvent.map(member => {
+            // console.log(societyMemberEvent);
             return member.societyMemberEventName.toLowerCase().replace(/ /g, '') == req.body.societyMemberEventName.toLowerCase().replace(/ /g, '');
         });
         if (error) {

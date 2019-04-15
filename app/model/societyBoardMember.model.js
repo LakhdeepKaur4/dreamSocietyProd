@@ -22,8 +22,7 @@ module.exports = (sequelize, Sequelize) => {
         },
         contactNumber: {
             type: Sequelize.STRING,
-            allowNull: false,
-            unique:'compositeIndex'
+            allowNull: false
         },
         panCardNumber: {
             type: Sequelize.STRING
@@ -42,8 +41,7 @@ module.exports = (sequelize, Sequelize) => {
         },
         email: {
             type: Sequelize.STRING,
-            allowNull: false,
-            unique:'compositeIndex'
+            allowNull: false
         },
         gender: {
             type: Sequelize.STRING,
