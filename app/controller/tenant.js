@@ -195,6 +195,10 @@ function saveToDisc(name, fileExt, base64String, callback) {
     });
 }
 
+filterFlats = item => {
+    return item.tenant_flatDetail_master.isActive === true;
+}
+
 exports.create = async (req, res, next) => {
     try {
         let tenantBody = req.body;
@@ -326,7 +330,12 @@ exports.delete = async (req, res, next) => {
                             UserRoles.update({ isActive: false }, { where: { userId: user.userId, roleId: 4 } });
                         })
                 })
-            TenantFlatDetail.update({ isActive: false }, { where: { tenantId: id } });
+            TenantFlatDetail.findAll({ where: { tenantId: id } })
+                .then(flats => {
+                    flats.map(item => {
+                        item.destroy();
+                    })
+                })
             TenantMembersDetail.update({ isActive: false }, { where: { tenantId: id } });
             return res.status(httpStatus.OK).json({
                 message: "Tenant deleted successfully",
@@ -1115,11 +1124,89 @@ exports.getFlats = (req, res, next) => {
             if (tenant !== null) {
                 // console.log(tenant);
                 res.status(httpStatus.OK).json({
-                    flats: tenant.flat_detail_masters
+                    flats: tenant.flat_detail_masters.filter(filterFlats)
                 })
             } else {
                 res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
                     message: 'No tenant found'
+                })
+            }
+        })
+        .catch(err => {
+            console.log('Error ===>', err);
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
+}
+
+exports.editFlat = (req, res, next) => {
+    const body = req.body;
+    console.log('Body ===>', body);
+
+    TenantFlatDetail.findOne({
+        where: {
+            tenantId: body.tenantId,
+            flatDetailId: body.previousFlatDetailId,
+            isActive: true
+        }
+    })
+        .then(flat => {
+            if (flat !== null) {
+                TenantFlatDetail.findOne({
+                    where: {
+                        tenantId: body.tenantId,
+                        flatDetailId: body.flatDetailId,
+                        isActive: true
+                    }
+                })
+                    .then(flatExisting => {
+                        if (flatExisting !== null) {
+                            res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                                message: 'Flat details already exist for same tenant'
+                            })
+                        } else {
+                            flat.updateAttributes({ flatDetailId: body.flatDetailId });
+                            res.status(httpStatus.CREATED).json({
+                                message: 'Flat details updated successfully'
+                            })
+                        }
+                    })
+                    .catch(err => {
+                        console.log('Error ===>', err);
+                        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+                    })
+            } else {
+                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                    message: 'Flat details not updated'
+                })
+            }
+        })
+        .catch(err => {
+            console.log('Error ===>', err);
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
+}
+
+exports.deleteFlat = (req, res, next) => {
+    const body = req.body;
+    console.log('Body ===>', body);
+
+    TenantFlatDetail.findOne({
+        where: {
+            tenantId: body.tenantId,
+            flatDetailId: body.flatDetailId,
+            isActive: true
+        }
+    })
+        .then(flat => {
+            console.log(flat);
+            if (flat !== null) {
+                flat.destroy();
+                res.status(httpStatus.OK).json({
+                    message: 'Flat deleted successfully'
+                })
+            } else {
+                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                    message: 'Flat not deleted'
                 })
             }
         })

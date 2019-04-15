@@ -72,6 +72,7 @@ db.tenantFlatDetail = require('../model/tenantFlatDetail.model')(sequelize, Sequ
 db.ownerFlatDetail = require('../model/ownerFlatDetail.model')(sequelize, Sequelize);
 db.complaint = require('../model/complaint.model')(sequelize, Sequelize);
 db.complaintStatus = require('../model/complaintStatus.model')(sequelize, Sequelize);
+db.machine = require('../model/machine.model')(sequelize, Sequelize);
 
 db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
 db.otp.belongsTo(db.tenant, { foreignKey: 'tenantId' });
@@ -195,5 +196,8 @@ db.complaint.belongsTo(db.service,{foreignKey:'serviceId'});
 db.complaint.belongsTo(db.vendor, { foreignKey: 'vendorId' });
 db.complaint.belongsTo(db.flatDetail, { foreignKey: 'flatDetailId' });
 db.complaint.belongsTo(db.complaintStatus, { foreignKey: 'complaintStatusId' });
+db.machine.belongsTo(db.flatDetail, { foreignKey: 'flatDetailId' });
+// db.machine.belongsTo(db.tower, { foreignKey: 'towerId' });
+// db.machine.belongsTo(db.floor, { foreignKey: 'floorId' });
 
 module.exports = db;''

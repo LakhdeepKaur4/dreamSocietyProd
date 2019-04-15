@@ -1295,9 +1295,9 @@ exports.updateEncrypted = async (req, res, next) => {
 				// user.setRoles(roles);
 				let roleId;
 				// user.setRoles(roles);
-				// roles.map(role => {
-					roleId = roles.id;
-				// });
+				roles.map(role => {
+					roleId = role.id;
+				});
 				UserRoles.create({ userId: user.userId, roleId: roleId });
 				return user.updateAttributes(updates);
 			})
@@ -1398,8 +1398,8 @@ exports.signinDecrypted = async (req, res, next) => {
 		}
 		]
 	}).then(user => {
-		
-		
+
+
 		if (user === null) {
 			console.log("------user-------");
 			return res.status(httpStatus.OK).send({

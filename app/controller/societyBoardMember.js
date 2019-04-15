@@ -235,30 +235,30 @@ exports.createEncrypted = async (req, res, next) => {
                 // locationId: member.locationId,
             }
             SocietyBoardMember.create(create)
-            .then(societyBoardMember => {
-                societyBoardMember.firstName = decrypt(societyBoardMember.firstName);
-                societyBoardMember.lastName = decrypt(societyBoardMember.lastName);
-                societyBoardMember.currentAddress = decrypt(societyBoardMember.currentAddress);
-                societyBoardMember.permanentAddress = decrypt(societyBoardMember.permanentAddress);
-                societyBoardMember.contactNumber = decrypt(societyBoardMember.contactNumber);
-                societyBoardMember.panCardNumber = decrypt(societyBoardMember.panCardNumber);
-                societyBoardMember.bankName = decrypt(societyBoardMember.bankName);
-                societyBoardMember.accountHolderName = decrypt(societyBoardMember.accountHolderName);
-                societyBoardMember.accountNumber = decrypt(societyBoardMember.accountNumber);
-                societyBoardMember.email = decrypt(societyBoardMember.email);
-                societyBoardMember.gender = decrypt(societyBoardMember.gender);
-                societyBoardMember.optionalMail = decrypt(societyBoardMember.optionalMail);
-                societyBoardMember.optionalContactNumber = decrypt(societyBoardMember.optionalContactNumber);
-                societyBoardMember.IFSCCode = decrypt(societyBoardMember.IFSCCode);
-                return res.status(httpStatus.CREATED).json({
-                    message: "Society Board Member registered successfully",
-                    societyBoardMember
-                });
-            })
-            .catch(err => {
-                console.log('Error ===>',err);
-                return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-            })
+                .then(societyBoardMember => {
+                    societyBoardMember.firstName = decrypt(societyBoardMember.firstName);
+                    societyBoardMember.lastName = decrypt(societyBoardMember.lastName);
+                    societyBoardMember.currentAddress = decrypt(societyBoardMember.currentAddress);
+                    societyBoardMember.permanentAddress = decrypt(societyBoardMember.permanentAddress);
+                    societyBoardMember.contactNumber = decrypt(societyBoardMember.contactNumber);
+                    societyBoardMember.panCardNumber = decrypt(societyBoardMember.panCardNumber);
+                    societyBoardMember.bankName = decrypt(societyBoardMember.bankName);
+                    societyBoardMember.accountHolderName = decrypt(societyBoardMember.accountHolderName);
+                    societyBoardMember.accountNumber = decrypt(societyBoardMember.accountNumber);
+                    societyBoardMember.email = decrypt(societyBoardMember.email);
+                    societyBoardMember.gender = decrypt(societyBoardMember.gender);
+                    societyBoardMember.optionalMail = decrypt(societyBoardMember.optionalMail);
+                    societyBoardMember.optionalContactNumber = decrypt(societyBoardMember.optionalContactNumber);
+                    societyBoardMember.IFSCCode = decrypt(societyBoardMember.IFSCCode);
+                    return res.status(httpStatus.CREATED).json({
+                        message: "Society Board Member registered successfully",
+                        societyBoardMember
+                    });
+                })
+                .catch(err => {
+                    console.log('Error ===>', err);
+                    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+                })
         } else {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
         }
