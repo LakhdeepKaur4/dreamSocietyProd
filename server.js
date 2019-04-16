@@ -40,8 +40,6 @@ db.sequelize.sync({
 	// complaint();
 });
 
-
-
 app.use(function (req, res, next) {
 	console.log("p-------------------");
 	if (req.method === "OPTIONS") {

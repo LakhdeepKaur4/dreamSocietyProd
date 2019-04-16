@@ -72,7 +72,7 @@ exports.update = async (req, res, next) => {
 
         if (designation.designationName === update.designationName) {
             const updatedDesignation = await Designation.find({ where: { designationId: id } }).then(designation => {
-                return designation.updateAttributes(update)
+                return designation.updateAttributes(update);
             })
             if (updatedDesignation) {
                 return res.status(httpStatus.OK).json({

@@ -97,17 +97,17 @@ exports.update = async (req, res) => {
             [Op.and]: [
                 { isActive: true },
                 { locationId: id },
-                { stateId: req.body.stateId },
-                { countryId: req.body.countryId },
-                { cityId: req.body.cityId },
+                // { stateId: req.body.stateId },
+                // { countryId: req.body.countryId },
+                // { cityId: req.body.cityId },
             ]
         }
     })
     console.log("location==>", location)
-    if(location != null){
     if (location.locationName === updates.locationName) {
+        // console.log("in if")
         const updatedLocation = await Location.find({ where: { locationId: id } }).then(location => {
-            location.updateAttributes(updates)
+           return location.updateAttributes(updates);
         })
         if (updatedLocation) {
             return res.status(httpStatus.OK).json({
@@ -115,7 +115,6 @@ exports.update = async (req, res) => {
                 updatedLocation: updatedLocation
             });
         }
-    }
     } else {
         const locations = await Location.findAll({
             where: {
