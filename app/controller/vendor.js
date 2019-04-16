@@ -8,6 +8,7 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
+const randomInt = require('random-int');
 
 const nexmo = new Nexmo(
     {
@@ -359,6 +360,15 @@ exports.create1 = async (req, res, next) => {
         if (existingContact || existingUserContact) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'Contact already exists' })
         }
+
+        let randomNumber;
+        randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+        const vendorExists = await Vendor.findOne({ where: { isActive: true, vendorId: randomNumber } });
+        if (vendorExists) {
+            console.log("duplicate random number")
+            randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+        }
+
         let customVendorName = body.firstName + body.lastName;
         const userName = customVendorName += 'v' + Math.floor((Math.random() * 100) + 1);
         const password = passwordGenerator.generate({
@@ -366,6 +376,7 @@ exports.create1 = async (req, res, next) => {
             numbers: true
         });
         const vendor = await Vendor.create({
+            vendorId: randomNumber,
             userName: encrypt(key, userName),
             password: password,
             firstName: encrypt(key, body.firstName),
@@ -459,6 +470,7 @@ exports.create1 = async (req, res, next) => {
         let email = decrypt(key, vendor.email);
         // set users
         let user = await User.create({
+            userId: vendor.vendorId,
             firstName: encrypt1(key, firstName),
             lastName: encrypt1(key, lastName),
             userName: encrypt1(key, vendorUserName),
@@ -738,7 +750,7 @@ exports.deleteSelectedVendorServices = async (req, res, next) => {
 exports.updateVendorService = async (req, res, next) => {
     try {
         let updAttr = {};
-        let attrArr = ['serviceId', 'rateId', 'rate','dailyServices'];
+        let attrArr = ['serviceId', 'rateId', 'rate', 'dailyServices'];
         console.log("updating vendor");
         console.log(":::::req.body==>", req.body)
         const id = req.params.id;

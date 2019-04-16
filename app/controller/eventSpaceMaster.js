@@ -25,6 +25,7 @@ exports.create = async (req, res, next) => {
         }
         body.userId = req.userId;
         const eventSpace = await EventSpace.create(body);
+        console.log("eventSpace ==>",eventSpace);
         return res.status(httpStatus.CREATED).json({
             message: "Event Space registered successfully",
             eventSpace

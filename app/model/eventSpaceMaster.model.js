@@ -22,6 +22,15 @@ module.exports = (sequelize, Sequelize) => {
       description: {
         type: Sequelize.STRING
       },
+      from :{
+        type: Sequelize.DATEONLY
+      },
+      to :{
+        type: Sequelize.DATEONLY
+      },
+      price :{
+        type: Sequelize.FLOAT
+      },
       isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true

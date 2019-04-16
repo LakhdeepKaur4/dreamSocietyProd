@@ -82,7 +82,7 @@ exports.get = (req, res, next) => {
         })
 }
 
-exports.update = (req,res,next) => {
+exports.update = (req, res, next) => {
     const body = req.body;
     body.machineId = req.params.id;
     console.log('Body ===>', body);
@@ -110,7 +110,7 @@ exports.update = (req,res,next) => {
                 })
                     .then(machine => {
                         if (machine !== null) {
-                            machine.updateattributes(body);
+                            machine.updateAttributes(body);
                             res.status(httpStatus.CREATED).json({
                                 message: 'Machine updated successfully'
                             })
@@ -128,6 +128,66 @@ exports.update = (req,res,next) => {
         })
         .catch(err => {
             console.log('Error', err);
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
+}
+
+exports.delete = (req, res, next) => {
+    const machineId = req.params.id;
+    console.log('ID ===>', machineId);
+
+    Machine.findOne({
+        where: {
+            machineId: machineId,
+            isActive: true
+        }
+    })
+        .then(machine => {
+            if (machine !== null) {
+                machine.updateAttributes({ isActive: false });
+                res.status(httpStatus.OK).json({
+                    message: 'Deleted successfully'
+                })
+            } else {
+                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                    message: 'Not deleted'
+                })
+            }
+        })
+        .catch(err => {
+            console.log('Error ===>', err);
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
+}
+
+exports.deleteSelected = (req, res, next) => {
+    const machineIds = req.body.ids;
+    console.log('IDs ===>', machineIds);
+
+    Machine.findAll({
+        where: {
+            machineId: {
+                [Op.in]: machineIds
+            },
+            isActive: true
+        }
+    })
+        .then(machines => {
+            if (machines.length !== 0) {
+                machines.map(item => {
+                    item.updateAttributes({ isActive: false })
+                })
+                res.status(httpStatus.OK).json({
+                    message: 'Deleted successfully'
+                })
+            } else {
+                res.status(httpStatus.NO_CONTENT).json({
+                    message: 'No data found'
+                })
+            }
+        })
+        .catch(err => {
+            console.log('Error ===>', err);
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
 }

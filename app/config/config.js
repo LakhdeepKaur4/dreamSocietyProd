@@ -1,4 +1,6 @@
 module.exports = {
+  randomNumberMin:10,
+  randomNumberMax:100,
   algorithm : 'aes256',
   api_key: 'e434699c',
   api_secret: 'eTNNejUT2sCPjlor',

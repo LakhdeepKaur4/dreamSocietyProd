@@ -14,7 +14,7 @@ const smtpTransport = require('nodemailer-smtp-transport');
 const jwt = require('jsonwebtoken');
 const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
 const bcrypt = require('bcryptjs');
-
+const randomInt = require('random-int');
 
 const Owner = db.owner;
 
@@ -260,6 +260,13 @@ exports.create1 = async (req, res, next) => {
       return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
         message: "contact already exist"
       });
+    }
+    let randomNumber;
+    randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+    const OwnerExists = await Owner.findOne({ where: { isActive: true, ownerId: randomNumber } });
+    if (OwnerExists) {
+        console.log("duplicate random number")
+        randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
     }
     let ownerBody = req.body;
     let memberBody = req.body;

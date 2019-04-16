@@ -119,6 +119,37 @@ exports.getSlot = async(req,res,next) =>{
             model: Slot
         }
         ]});
+        // slots.parkingName = slots.rows[0].parking_master.parkingName;
+        res.status(httpStatus.OK).json({slots:slots});
+    }catch(error){
+        console.log(error)
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json({message:"Sequelize Error"});
+    }
+}
+
+
+exports.getSlotNew = async(req,res,next) =>{
+    try{
+        const flatDetailId = req.params.id;
+        const slots = await FlatParking.findAndCountAll({where:{isActive:true,flatDetailId:flatDetailId},       include: [{
+            where: { isActive: true },
+            // attributes: [[sequelize.fn('count', sequelize.col('flatParkingId')), 'count']],
+            model: FlatDetail,
+            include:[
+                {model:Tower,attributes:['towerId','towerName']},
+                {model:Floor,attributes:['floorId','floorName']},
+                {model:Flat,attributes:['flatId','flatType']},
+            ]
+        },
+        {
+            where: { isActive: true },
+            model: Parking
+        },
+        {
+            where: { isActive: true, },
+            model: Slot
+        }
+        ]});
         slots.parkingName = slots.rows[0].parking_master.parkingName;
         res.status(httpStatus.OK).json({slots:slots});
     }catch(error){

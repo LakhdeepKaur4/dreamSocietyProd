@@ -1,14 +1,13 @@
 const db = require('../config/db.config.js');
 const httpStatus = require('http-status');
 const config = require('../config/config');
-const cron = require('node-schedule');
 const crypto = require('crypto');
 var passwordGenerator = require('generate-password');
-var path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
+const randomInt = require('random-int');
 
 const Employee = db.employee;
 const EmployeeType = db.employeeType;
@@ -23,8 +22,6 @@ const Otp = db.otp;
 const Role = db.role;
 const EmployeeDetail = db.employeeDetail;
 const UserRoles = db.userRole;
-
-
 
 let mailToUser = (email, employeeId) => {
     const token = jwt.sign(
@@ -268,9 +265,16 @@ generateRandomId = () => {
 exports.createEncrypt = async (req, res, next) => {
     try {
         let body = req.body;
+        let randomNumber;
+        randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+        const employeeExists = await Employee.findOne({ where: { isActive: true, employeeId: randomNumber } });
+        const userExists = await User.findOne({ where: { isActive: true, userId: randomNumber } });
+        if (employeeExists !== null ||  userExists !== null) {
+            console.log("duplicate random number")
+            randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+        }
         console.log('Body ===>', body);
         body.userId = req.userId;
-        let employee;
         let employeeId;
         const password = passwordGenerator.generate({
             length: 10,
@@ -312,13 +316,15 @@ exports.createEncrypt = async (req, res, next) => {
         const uniqueId = generateRandomId();
         console.log(uniqueId);
         body.uniqueId = uniqueId;
+        body.employeeId = randomNumber;
         userName = body.firstName + body.uniqueId.toString(36);
-        console.log("atin------>", body.userName);
+        console.log("atin------>", userName);
 
         if (user1 === null && user2 === null) {
             if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
                 await Employee
                     .create({
+                        employeeId: body.employeeId,
                         uniqueId: uniqueId,
                         userName: encrypt(userName),
                         firstName: encrypt(body.firstName),
@@ -344,7 +350,7 @@ exports.createEncrypt = async (req, res, next) => {
                         // locationId2: body.locationId2
                     })
                     .then(emp => {
-                        // console.log(emp);
+                        console.log(emp);
                         employee = emp;
                         // console.log(emp.employeeId);
                         employeeId = emp.employeeId;
@@ -429,6 +435,7 @@ exports.createEncrypt = async (req, res, next) => {
                         // let email =  employee.email;
                         // set users
                         let user = await User.create({
+                            userId: employee.employeeId,
                             firstName: encrypt(firstName),
                             lastName: encrypt(lastName),
                             userName: encrypt(employeeUserName),
@@ -440,12 +447,12 @@ exports.createEncrypt = async (req, res, next) => {
                         // set roles
                         console.log(employee.password);
                         console.log(employee.password);
-                        // let roles = await Role.findOne({
-                        //     where: { id: 6 }
-                        // });
-                        // console.log("employee role",roles)
-                        // // user.setRoles(roles);
-                        // UserRoles.create({userId:user.userId,roleId:roles.id});
+                        let roles = await Role.findOne({
+                            where: { id: 6 }
+                        });
+                        console.log("employee role",roles)
+                        // user.setRoles(roles);
+                        UserRoles.create({userId:user.userId,roleId:roles.id});
                         const message = mailToUser(req.body.email, employeeId);
                         return res.status(httpStatus.CREATED).json({
                             message: "Employee successfully created. please activate your account. click on the link delievered to your given email"

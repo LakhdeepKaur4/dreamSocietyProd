@@ -2,7 +2,7 @@ module.exports = (sequelize, Sequelize) => {
 	const Employee = sequelize.define('employee_master', {
 		employeeId: {
 			type: Sequelize.INTEGER,
-			autoIncrement: true,
+			// autoIncrement: true,
 			primaryKey: true
         },
         uniqueId: {
