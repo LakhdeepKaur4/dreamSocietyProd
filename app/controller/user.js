@@ -1398,43 +1398,43 @@ exports.signinDecrypted = async (req, res, next) => {
 		}
 		]
 	}).then(user => {
-		let roleId;
-		user.roles.map(function (roles) { roleId = roles.id });
-		if (roleId == 3) {
-			Owner.findOne({
-				where: {
-					isActive: true,
-					userName: user.userName
-				}
-			})
-				.then(owner => {
-					FlatDetail.findAll({
-						where: { isActive: true, flatDetailId: owner.flatDetailId }
-					})
-						.then(flats => {
-							flats = flats;
-						})
-				})
-		}
-		if (roleId == 4) {
-			Tenant.findOne({
-				where: {
-					isActive: true,
-					userName: user.userName
-				},
-				include: [
-					{ where: { isActive: true }, model: FlatDetail },
-				]
-			})
-				// .then(tenant => {
-				// 	FlatDetail.findAll({
-				// 		where: { isActive: true, flatDetailId: tenant.flatDetailId }
-				// 	})
-				.then(flats => {
-					flats = flats.flat_detail_master;
-				})
-			// })
-		}
+		// let roleId;
+		// user.roles.map(function (roles) { roleId = roles.id });
+		// if (roleId == 3) {
+		// 	Owner.findOne({
+		// 		where: {
+		// 			isActive: true,
+		// 			userName: user.userName
+		// 		}
+		// 	})
+		// 		.then(owner => {
+		// 			FlatDetail.findAll({
+		// 				where: { isActive: true, flatDetailId: owner.flatDetailId }
+		// 			})
+		// 				.then(flats => {
+		// 					flats = flats;
+		// 				})
+		// 		})
+		// }
+		// if (roleId == 4) {
+		// 	Tenant.findOne({
+		// 		where: {
+		// 			isActive: true,
+		// 			userName: user.userName
+		// 		},
+		// 		include: [
+		// 			{ where: { isActive: true }, model: FlatDetail },
+		// 		]
+		// 	})
+		// 		// .then(tenant => {
+		// 		// 	FlatDetail.findAll({
+		// 		// 		where: { isActive: true, flatDetailId: tenant.flatDetailId }
+		// 		// 	})
+		// 		.then(flats => {
+		// 			flats = flats.flat_detail_master;
+		// 		})
+		// 	// })
+		// }
 		if (!user) {
 			console.log("------user-------");
 			return res.status(httpStatus.OK).send({
