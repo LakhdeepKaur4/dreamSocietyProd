@@ -1594,16 +1594,25 @@ exports.editFlat = async (req,res,next) => {
     let deleteFlat = await OwnerFlatDetail.findOne({where:{isActive:true,flatDetailId:previousFlatId,ownerId:ownerId}});
     if(deleteFlat){
       deleteFlat.updateAttributes({isActive:false});
-      let newFlat = await OwnerFlatDetail.create({
-        ownerId:ownerId,
-        flatDetailId:newFlatId
-      });
-      if(newFlat){
+      let checkprev = await OwnerFlatDetail.findOne({where:{isActive:false,ownerId:ownerId,flatDetailId:newFlatId}});
+      if(checkprev){
+        checkprev.updateAttributes({isActive:true});
         res.status(httpStatus.OK).json({
-          message: "Flat edit successfully",
-          result: newFlat
+          message: "Flat edit successfully"
         })
-      }
+      }else{
+        let newFlat = await OwnerFlatDetail.create({
+          ownerId:ownerId,
+          flatDetailId:newFlatId
+        });
+        if(newFlat){
+          res.status(httpStatus.OK).json({
+            message: "Flat edit successfully",
+            result: newFlat
+          })
+        }
+      }   
+      
     }
   }catch(error){
     console.log(error);
