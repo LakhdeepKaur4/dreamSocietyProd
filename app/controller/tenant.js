@@ -167,7 +167,7 @@ let mailToOwner = async (ownerId, tenant) => {
                         }
                     ],
                     "Subject": "Tenant tried to register in Dream Society",
-                    "HTMLPart": `${userName} is registering in Dream society.click on the link to verify your tenant. <a href="http://192.168.1.16:3000/login/tenantVerification?ownerId=${ownerId}&tenantId=${tenantId}">Click here</a>`
+                    "HTMLPart": `${userName} is registering in Dream society.click on the link to verify your tenant. <a href="http://mydreamsociety.com/login/tenantVerification?ownerId=${ownerId}&tenantId=${tenantId}">Click here</a>`
                     //   "HTMLPart": `your username is: ${userName} and password is: ${password}. `
                 }
             ]
