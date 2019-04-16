@@ -128,7 +128,7 @@ let mailToUser = (email, tenantId) => {
                         }
                     ],
                     "Subject": "Activation link",
-                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?tenantId=${tenantId}&token=${token}">click here</a>`
+                    "HTMLPart": `<b>Your Verification link has been sent to your registered flat Owner</b>`
                 }
             ]
         })
@@ -148,7 +148,10 @@ let mailToOwner = async (ownerId, tenant) => {
     let key = config.secret;
     const owner = await Owner.findOne({ where: { isActive: true, ownerId: ownerId } });
     let email = decrypt1(key, owner.email)
-    let userName = tenant.userName;
+    mailToUser(decrypt1(key,tenant.email),tenant.tenantId);
+    ownerId = encrypt(ownerId.toString());
+    tenantId = encrypt(tenant.tenantId.toString());
+    let userName = decrypt(tenant.userName);
     const request = mailjet.post("send", { 'version': 'v3.1' })
         .request({
             "Messages": [
@@ -164,7 +167,7 @@ let mailToOwner = async (ownerId, tenant) => {
                         }
                     ],
                     "Subject": "Tenant tried to register in Dream Society",
-                    "HTMLPart": `${userName} is registering in Dream society`
+                    "HTMLPart": `${userName} is registering in Dream society.click on the link to verify your tenant. <a href="http://192.168.1.16:3000/login/tenantVerification?ownerId=${ownerId}&tenantId=${tenantId}">Click here</a>`
                     //   "HTMLPart": `your username is: ${userName} and password is: ${password}. `
                 }
             ]
@@ -193,10 +196,6 @@ function saveToDisc(name, fileExt, base64String, callback) {
             callback(null, pathFile);
         }
     });
-}
-
-filterFlats = item => {
-    return item.tenant_flatDetail_master.isActive === true;
 }
 
 exports.create = async (req, res, next) => {
@@ -330,12 +329,7 @@ exports.delete = async (req, res, next) => {
                             UserRoles.update({ isActive: false }, { where: { userId: user.userId, roleId: 4 } });
                         })
                 })
-            TenantFlatDetail.findAll({ where: { tenantId: id } })
-                .then(flats => {
-                    flats.map(item => {
-                        item.destroy();
-                    })
-                })
+            TenantFlatDetail.update({ isActive: false }, { where: { tenantId: id } });
             TenantMembersDetail.update({ isActive: false }, { where: { tenantId: id } });
             return res.status(httpStatus.OK).json({
                 message: "Tenant deleted successfully",
@@ -577,7 +571,7 @@ exports.createEncrypted = async (req, res, next) => {
                                 })
                                 // ownerId = owners[0].ownerId;
 
-                                const message = mailToUser(req.body.email, tenantSend.tenantId);
+                                // const message = mailToUser(req.body.email, tenantSend.tenantId);
                                 console.log("ownerID1====?", tenantSend.owner, "87389547374 ", tenantSend)
                                 owners.map(item => {
                                     ownerId = item.ownerId;
@@ -1124,89 +1118,11 @@ exports.getFlats = (req, res, next) => {
             if (tenant !== null) {
                 // console.log(tenant);
                 res.status(httpStatus.OK).json({
-                    flats: tenant.flat_detail_masters.filter(filterFlats)
+                    flats: tenant.flat_detail_masters
                 })
             } else {
                 res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
                     message: 'No tenant found'
-                })
-            }
-        })
-        .catch(err => {
-            console.log('Error ===>', err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
-}
-
-exports.editFlat = (req, res, next) => {
-    const body = req.body;
-    console.log('Body ===>', body);
-
-    TenantFlatDetail.findOne({
-        where: {
-            tenantId: body.tenantId,
-            flatDetailId: body.previousFlatDetailId,
-            isActive: true
-        }
-    })
-        .then(flat => {
-            if (flat !== null) {
-                TenantFlatDetail.findOne({
-                    where: {
-                        tenantId: body.tenantId,
-                        flatDetailId: body.flatDetailId,
-                        isActive: true
-                    }
-                })
-                    .then(flatExisting => {
-                        if (flatExisting !== null) {
-                            res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                                message: 'Flat details already exist for same tenant'
-                            })
-                        } else {
-                            flat.updateAttributes({ flatDetailId: body.flatDetailId });
-                            res.status(httpStatus.CREATED).json({
-                                message: 'Flat details updated successfully'
-                            })
-                        }
-                    })
-                    .catch(err => {
-                        console.log('Error ===>', err);
-                        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-                    })
-            } else {
-                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'Flat details not updated'
-                })
-            }
-        })
-        .catch(err => {
-            console.log('Error ===>', err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
-}
-
-exports.deleteFlat = (req, res, next) => {
-    const body = req.body;
-    console.log('Body ===>', body);
-
-    TenantFlatDetail.findOne({
-        where: {
-            tenantId: body.tenantId,
-            flatDetailId: body.flatDetailId,
-            isActive: true
-        }
-    })
-        .then(flat => {
-            console.log(flat);
-            if (flat !== null) {
-                flat.destroy();
-                res.status(httpStatus.OK).json({
-                    message: 'Flat deleted successfully'
-                })
-            } else {
-                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'Flat not deleted'
                 })
             }
         })

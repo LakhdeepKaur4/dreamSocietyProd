@@ -1,3 +1,33 @@
+const db = require("../config/db.config.js");
+const config = require("../config/config.js");
+const httpStatus = require("http-status");
+var passwordGenerator = require("generate-password");
+const key = config.secret;
+const fs = require("fs");
+const http = require('http');
+const crypto = require("crypto");
+const jwt = require('jsonwebtoken');
+const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
+
+
+const Owner = db.owner;
+const Tenant = db.tenant;
+const Otp = db.otp;
+const OwnerFlatDetail = db.ownerFlatDetail;
+
+
+function decrypt(key, data) {
+    var decipher = crypto.createDecipher("aes-128-cbc", key);
+    var decrypted = decipher.update(data, "hex", "utf-8");
+    decrypted += decipher.final("utf-8");
+
+    return decrypted;
+}
+
+
+
+
+
 let mailToUser = (email, tenantId) => {
     const token = jwt.sign(
         { data: 'foo' },
@@ -24,7 +54,7 @@ let mailToUser = (email, tenantId) => {
         })
     request
         .then((result) => {
-            console.log(result.body)
+            console.log(result.query)
             // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
         })
         .catch((err) => {
@@ -32,18 +62,30 @@ let mailToUser = (email, tenantId) => {
         })
 }
 
-
-// exports.checkAndSendMail = (req,res,next) => {
-//     jwt.verify(req.query.token, 'secret', async (err, decoded) => {
-//         if (err) {
-//             console.log(err);
-//             return res.status(200).json(
-//                 {
-//                     tokenVerified: false,
-//                     message: 'your token has expired'
-//                 });
-//         }
-//         else {
-
-//         }
-    
+exports.sendMailToTenant =  async (req,res,next) => {
+    try{
+        console.log("ownerId",req.query);
+        let ownerId = decrypt(key,req.query.ownerId);
+        let tenantId = decrypt(key,req.query.tenantId);
+        if(ownerId && tenantId){
+            let tenant = await Tenant.findOne({where:{tenantId:tenantId,isActive:false}});
+            let flatDetailId = tenant.flatDetailId;
+            let email = decrypt(key,tenant.email);
+            let flat = OwnerFlatDetail.findOne({where:{isActive:true,ownerId:ownerId,flatDetailId:flatDetailId}});
+            if(flat){
+                mailToUser(email,tenantId);
+                res.status(httpStatus.CREATED).json({
+                    message: "Activation link has been send to your Tenant"
+                  });
+            }
+            else {
+                res.status(httpStatus.CREATED).json({
+                    message: "You are not owner of the registered Tenant's Flat. Please contact Admin. "
+                  });
+            }
+        }
+    } catch(error){
+        console.log("error==>", error);
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
