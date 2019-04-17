@@ -489,6 +489,10 @@ module.exports = function (app) {
 
 	app.get('/api/tenant/getFlats/:id', [authJwt.verifyToken, isAdminRole], tenant.getFlats);
 
+	app.put('/api/tenant/editFlat', [authJwt.verifyToken, isAdminRole], tenant.editFlat);
+
+	app.put('/api/tenant/deleteFlat', [authJwt.verifyToken, isAdminRole], tenant.deleteFlat);
+
 	app.put('/api/tenant/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], tenant.deleteSelected);
 
 	app.put('/api/tenant/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], tenant.delete);
