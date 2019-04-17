@@ -108,39 +108,39 @@ function decrypt1(key, data) {
     return decrypted;
 }
 
-// let mailToUser = (email, tenantId) => {
-//     const token = jwt.sign(
-//         { data: 'foo' },
-//         'secret', { expiresIn: '1h' });
-//     tenantId = encrypt(tenantId.toString());
-//     const request = mailjet.post("send", { 'version': 'v3.1' })
-//         .request({
-//             "Messages": [
-//                 {
-//                     "From": {
-//                         "Email": "rohit.khandelwal@greatwits.com",
-//                         "Name": "Greatwits"
-//                     },
-//                     "To": [
-//                         {
-//                             "Email": email,
-//                             "Name": 'Atin' + ' ' + 'Tanwar'
-//                         }
-//                     ],
-//                     "Subject": "Activation link",
-//                     "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?tenantId=${tenantId}&token=${token}">click here</a>`
-//                 }
-//             ]
-//         })
-//     request
-//         .then((result) => {
-//             console.log(result.body)
-//             // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
-//         })
-//         .catch((err) => {
-//             console.log(err.statusCode)
-//         })
-// }
+let mailToUser = (email, tenantId) => {
+    const token = jwt.sign(
+        { data: 'foo' },
+        'secret', { expiresIn: '1h' });
+    tenantId = encrypt(tenantId.toString());
+    const request = mailjet.post("send", { 'version': 'v3.1' })
+        .request({
+            "Messages": [
+                {
+                    "From": {
+                        "Email": "rohit.khandelwal@greatwits.com",
+                        "Name": "Greatwits"
+                    },
+                    "To": [
+                        {
+                            "Email": email,
+                            "Name": 'Atin' + ' ' + 'Tanwar'
+                        }
+                    ],
+                    "Subject": "Activation link",
+                    "HTMLPart": `<b>Your Verification link has been sent to your registered flat Owner</b>`
+                }
+            ]
+        })
+    request
+        .then((result) => {
+            console.log(result.body)
+            // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
+        })
+        .catch((err) => {
+            console.log(err.statusCode)
+        })
+}
 
 let mailToOwner = async (ownerId, tenant) => {
     // let email = decrypt1(key,owner.email);
@@ -148,7 +148,10 @@ let mailToOwner = async (ownerId, tenant) => {
     let key = config.secret;
     const owner = await Owner.findOne({ where: { isActive: true, ownerId: ownerId } });
     let email = decrypt1(key, owner.email)
-    let userName = tenant.userName;
+    mailToUser(decrypt1(key,tenant.email),tenant.tenantId);
+    ownerId = encrypt(ownerId.toString());
+    tenantId = encrypt(tenant.tenantId.toString());
+    let userName = decrypt(tenant.userName);
     const request = mailjet.post("send", { 'version': 'v3.1' })
         .request({
             "Messages": [
@@ -164,7 +167,7 @@ let mailToOwner = async (ownerId, tenant) => {
                         }
                     ],
                     "Subject": "Tenant tried to register in Dream Society",
-                    "HTMLPart": `${userName} is registering in Dream society`
+                    "HTMLPart": `${userName} is registering in Dream society.click on the link to verify your tenant. <a href="http://mydreamsociety.com/login/tenantVerification?ownerId=${ownerId}&tenantId=${tenantId}">Click here</a>`
                     //   "HTMLPart": `your username is: ${userName} and password is: ${password}. `
                 }
             ]
@@ -577,7 +580,7 @@ exports.createEncrypted = async (req, res, next) => {
                                 })
                                 // ownerId = owners[0].ownerId;
 
-                                const message = mailToUser(req.body.email, tenantSend.tenantId);
+                                // const message = mailToUser(req.body.email, tenantSend.tenantId);
                                 console.log("ownerID1====?", tenantSend.owner, "87389547374 ", tenantSend)
                                 owners.map(item => {
                                     ownerId = item.ownerId;
