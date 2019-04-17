@@ -1382,7 +1382,7 @@ exports.signinDecrypted = async (req, res, next) => {
 		})
 	}
 	User.findOne({
-		nested: true,
+		// nested: true,
 		where: {
 			[Op.and]: [{
 				userName: encrypt(req.body.userName)
