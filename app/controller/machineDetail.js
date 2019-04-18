@@ -4,29 +4,25 @@ const httpStatus = require('http-status');
 
 const Op = db.Sequelize.Op;
 
-const Machine = db.machine;
-const FlatDetail = db.flatDetail;
-const Tower = db.tower;
-const Floor = db.floor;
 const MachineDetail = db.machineDetail;
 
 exports.create = (req, res, next) => {
     const body = req.body;
     console.log('Body ===>', body);
 
-    Machine.findOne({
+    MachineDetail.findOne({
         where: {
-            machineDetailId: body.machineDetailId,
+            machineActualId: body.machineActualId,
             isActive: true
         }
     })
         .then(machineExisting => {
             if (machineExisting !== null) {
                 res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'Machine already in use for another flat'
+                    message: 'Machine already exist'
                 })
             } else {
-                Machine.create(body)
+                MachineDetail.create(body)
                     .then(machine => {
                         if (machine !== null) {
                             res.status(httpStatus.CREATED).json({
@@ -34,79 +30,68 @@ exports.create = (req, res, next) => {
                             })
                         } else {
                             res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                                message: 'Machine registeration not successful'
+                                message: 'Machine not registered'
                             })
                         }
                     })
                     .catch(err => {
-                        console.log('Error', err);
+                        console.log('Error ===>', err);
                         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
                     })
             }
         })
         .catch(err => {
-            console.log('Error', err);
+            console.log('Error ===>', err);
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
 }
 
 exports.get = (req, res, next) => {
-    Machine.findAll({
+    MachineDetail.findAll({
         where: {
             isActive: true
-        },
-        include: [
-            {
-                model: FlatDetail,
-                where: { isActive: true },
-                include: [
-                    { model: Tower, where: { isActive: true }, attributes: ['towerId', 'towerName'] },
-                    { model: Floor, where: { isActive: true }, attributes: ['floorId', 'floorName'] }
-                ]
-            },
-            { model: MachineDetail, where: { isActive: true } }
-        ]
+        }
     })
         .then(machines => {
             if (machines.length !== 0) {
                 res.status(httpStatus.OK).json({
-                    Machines: machines
+                    machinesDetail: machines
                 })
             } else {
-                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'No data available'
+                res.status(httpStatus.NO_CONTENT).json({
+                    message: 'No Content'
                 })
             }
         })
         .catch(err => {
-            console.log('Error', err);
+            console.log('Error ===>', err);
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
 }
 
 exports.update = (req, res, next) => {
+    const machineDetailId = req.params.id;
+    console.log('Id ===>', machineDetailId);
+    body.machineDetailId = machineDetailId;
     const body = req.body;
-    body.machineId = req.params.id;
     console.log('Body ===>', body);
 
-    Machine.findOne({
+    MachineDetail.findOne({
         where: {
-            machineDetailId: body.machineDetailId,
+            machineActualId: body.machineActualId,
+            machineDetailId: { [Op.ne]: body.machineDetailId },
             isActive: true,
-            machineId: {
-                [Op.ne]: body.machineId
-            }
         }
     })
         .then(machineExisting => {
             if (machineExisting !== null) {
                 res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'Machine already in use for another flat'
+                    message: 'Machine already exist'
                 })
             } else {
-                Machine.findOne({
+                MachineDetail.findOne({
                     where: {
-                        machineId: body.machineId,
+                        machineDetailId: body.machineDetailId,
                         isActive: true
                     }
                 })
@@ -117,30 +102,30 @@ exports.update = (req, res, next) => {
                                 message: 'Machine updated successfully'
                             })
                         } else {
-                            res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                                message: 'Machine updation not successful'
+                            res.status(httpStatus.NO_CONTENT).json({
+                                message: 'Machine does not exist'
                             })
                         }
                     })
                     .catch(err => {
-                        console.log('Error', err);
+                        console.log('Error ===>', err);
                         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
                     })
             }
         })
         .catch(err => {
-            console.log('Error', err);
+            console.log('Error ===>', err);
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
 }
 
 exports.delete = (req, res, next) => {
-    const machineId = req.params.id;
+    const machineDetailId = req.params.id;
     console.log('ID ===>', machineId);
 
-    Machine.findOne({
+    MachineDetail.findOne({
         where: {
-            machineId: machineId,
+            machineDetailId: machineDetailId,
             isActive: true
         }
     })
@@ -151,7 +136,7 @@ exports.delete = (req, res, next) => {
                     message: 'Deleted successfully'
                 })
             } else {
-                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                res.status(httpStatus.NO_CONTENT).json({
                     message: 'Not deleted'
                 })
             }
@@ -166,9 +151,9 @@ exports.deleteSelected = (req, res, next) => {
     const machineIds = req.body.ids;
     console.log('IDs ===>', machineIds);
 
-    Machine.findAll({
+    MachineDetail.findAll({
         where: {
-            machineId: {
+            machineDetailId: {
                 [Op.in]: machineIds
             },
             isActive: true

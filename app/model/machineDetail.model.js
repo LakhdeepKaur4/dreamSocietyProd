@@ -1,9 +1,12 @@
 module.exports = (sequelize, Sequelize) => {
-    const Machine = sequelize.define('machine_master', {
-        machineId: {
+    const MachineDetail = sequelize.define('machine_detail_master', {
+        machineDetailId: {
             type: Sequelize.INTEGER,
             autoIncrement: true,
             primaryKey: true
+        },
+        machineActualId: {
+            type: Sequelize.STRING,
         },
         isActive: {
             type: Sequelize.BOOLEAN,
@@ -21,5 +24,5 @@ module.exports = (sequelize, Sequelize) => {
             freezeTableName: true
         });
 
-    return Machine;
+    return MachineDetail;
 }
