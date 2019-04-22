@@ -47,6 +47,7 @@ module.exports = function (app) {
 	const complaint = require('../controller/complaint');
 	const ownerPermission = require('../controller/ownerPermission');
 	const machine = require('../controller/machine');
+	const machineDetail = require('../controller/machineDetail');
 
 
 	app.get('/', userController.start);
