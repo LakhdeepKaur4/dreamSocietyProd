@@ -2,7 +2,7 @@ module.exports = (sequelize, Sequelize) => {
     const Vendor = sequelize.define('vendor_master', {
         vendorId: {
             type: Sequelize.INTEGER,
-            autoIncrement: true,
+            // autoIncrement: true,
             primaryKey: true
         },
         userName: {

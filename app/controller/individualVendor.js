@@ -10,6 +10,7 @@ const config = require('../config/config.js');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
+const randomInt = require('random-int');
 
 
 const IndividualVendor = db.individualVendor;
@@ -144,6 +145,15 @@ exports.create = async (req, res, next) => {
     const vendor = req.body;
     vendor.userId = req.userId;
 
+    let randomNumber;
+    randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+    const vendorExists = await IndividualVendor.findOne({ where: { isActive: true, individualVendorId: randomNumber } });
+    const userExists = await User.findOne({ where: { isActive: true, userId: randomNumber } });
+    if (vendorExists !== null || userExists !== null) {
+        console.log("duplicate random number")
+        randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+    }
+
     console.log('Body ===>', vendor);
 
     const uniqueId = generateRandomId();
@@ -217,6 +227,7 @@ exports.create = async (req, res, next) => {
     if (user1 === null && user2 === null) {
         if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
             IndividualVendor.create({
+                individualVendorId: randomNumber,
                 firstName: encrypt(vendor.firstName),
                 lastName: encrypt(vendor.lastName),
                 userName: encrypt(vendor.userName),
@@ -251,6 +262,7 @@ exports.create = async (req, res, next) => {
                         })
 
                         User.create({
+                            userId: randomNumber,
                             firstName: encrypt(vendor.firstName),
                             lastName: encrypt(vendor.lastName),
                             userName: encrypt(vendor.userName),

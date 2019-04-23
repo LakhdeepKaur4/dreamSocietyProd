@@ -2,7 +2,7 @@ module.exports = (sequelize, Sequelize) => {
 	const User = sequelize.define('user_master', {
 		userId: {
 			type: Sequelize.INTEGER,
-			autoIncrement: true,
+			// autoIncrement: true,
 			primaryKey: true
 		},
 		firstName: {

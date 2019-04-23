@@ -336,6 +336,16 @@ exports.create1 = async (req, res, next) => {
     try {
         let body = req.body;
         console.log("body===>", req.body);
+
+        let randomNumber;
+        randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+        const vendorExists = await Vendor.findOne({ where: { isActive: true, vendorId: randomNumber } });
+        const userExists = await User.findOne({ where: { isActive: true, userId: randomNumber } });
+        if (vendorExists !== null || userExists !== null) {
+            console.log("duplicate random number")
+            randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+        }
+
         let existingEmail = await Vendor.findOne({
             where: {
                 isActive: true,
@@ -361,13 +371,7 @@ exports.create1 = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'Contact already exists' })
         }
 
-        let randomNumber;
-        randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
-        const vendorExists = await Vendor.findOne({ where: { isActive: true, vendorId: randomNumber } });
-        if (vendorExists) {
-            console.log("duplicate random number")
-            randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
-        }
+        
 
         let customVendorName = body.firstName + body.lastName;
         const userName = customVendorName += 'v' + Math.floor((Math.random() * 100) + 1);

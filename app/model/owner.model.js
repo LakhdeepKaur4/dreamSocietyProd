@@ -2,7 +2,7 @@ module.exports = (sequelize, Sequelize) => {
       const Owner = sequelize.define('owner_master', {
             ownerId: {
                   type: Sequelize.INTEGER,
-                  autoIncrement: true,
+                  // autoIncrement: true,
                   primaryKey: true
             },
             firstName: {

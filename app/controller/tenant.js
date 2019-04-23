@@ -11,6 +11,7 @@ const bcrypt = require('bcryptjs');
 const Op = db.Sequelize.Op;
 const jwt = require('jsonwebtoken');
 const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
+const randomInt = require('random-int');
 
 
 const Tenant = db.tenant;
@@ -128,7 +129,7 @@ let mailToUser = (email, tenantId) => {
                         }
                     ],
                     "Subject": "Activation link",
-                    "HTMLPart": `<b>Your Verification link has been sent to your registered flat Owner</b>`
+                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?tenantId=${tenantId}&token=${token}">click here</a>`
                 }
             ]
         })
@@ -148,7 +149,7 @@ let mailToOwner = async (ownerId, tenant) => {
     let key = config.secret;
     const owner = await Owner.findOne({ where: { isActive: true, ownerId: ownerId } });
     let email = decrypt1(key, owner.email)
-    mailToUser(decrypt1(key,tenant.email),tenant.tenantId);
+    mailToUser(decrypt1(key, tenant.email), tenant.tenantId);
     ownerId = encrypt(ownerId.toString());
     tenantId = encrypt(tenant.tenantId.toString());
     let userName = decrypt(tenant.userName);
@@ -167,7 +168,7 @@ let mailToOwner = async (ownerId, tenant) => {
                         }
                     ],
                     "Subject": "Tenant tried to register in Dream Society",
-                    "HTMLPart": `${userName} is registering in Dream society.click on the link to verify your tenant. <a href="http://mydreamsociety.com/login/tenantVerification?ownerId=${ownerId}&tenantId=${tenantId}">Click here</a>`
+                    "HTMLPart": `${userName} is registering in Dream society`
                     //   "HTMLPart": `your username is: ${userName} and password is: ${password}. `
                 }
             ]
@@ -355,6 +356,15 @@ exports.createEncrypted = async (req, res, next) => {
     try {
         console.log('Creating Tenant');
 
+        let randomNumber;
+        randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+        const tenantExists = await Tenant.findOne({ where: { isActive: true, tenantId: randomNumber } });
+        const userExists = await User.findOne({ where: { isActive: true, userId: randomNumber } });
+        if (tenantExists !== null || userExists !== null) {
+            console.log("duplicate random number")
+            randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+        }
+
         let tenant = req.body;
         let members = req.body.member;
         const membersArr = [];
@@ -368,6 +378,7 @@ exports.createEncrypted = async (req, res, next) => {
         tenant.fileExt = tenant.fileName.slice(index + 1);
         tenant.fileName = tenant.fileName.slice(0, index);
         tenant.profilePicture = tenant.profilePicture.split(',')[1];
+        tenant.tenantId = randomNumber;
         const password = passwordGenerator.generate({
             length: 10,
             numbers: true
@@ -418,6 +429,7 @@ exports.createEncrypted = async (req, res, next) => {
         if (user1 === null && user2 === null) {
             if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
                 Tenant.create({
+                    tenantId: tenant.tenantId,
                     firstName: encrypt(tenant.firstName),
                     lastName: encrypt(tenant.lastName),
                     userName: encrypt(tenant.userName),
@@ -465,6 +477,7 @@ exports.createEncrypted = async (req, res, next) => {
                         })
 
                         User.create({
+                            userId: tenant.tenantId,
                             firstName: encrypt(tenant.firstName),
                             lastName: encrypt(tenant.lastName),
                             userName: encrypt(tenant.userName),
@@ -580,7 +593,7 @@ exports.createEncrypted = async (req, res, next) => {
                                 })
                                 // ownerId = owners[0].ownerId;
 
-                                // const message = mailToUser(req.body.email, tenantSend.tenantId);
+                                const message = mailToUser(req.body.email, tenantSend.tenantId);
                                 console.log("ownerID1====?", tenantSend.owner, "87389547374 ", tenantSend)
                                 owners.map(item => {
                                     ownerId = item.ownerId;

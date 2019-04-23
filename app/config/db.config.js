@@ -74,6 +74,7 @@ db.complaint = require('../model/complaint.model')(sequelize, Sequelize);
 db.complaintStatus = require('../model/complaintStatus.model')(sequelize, Sequelize);
 db.machine = require('../model/machine.model')(sequelize, Sequelize);
 db.machineDetail = require('../model/machineDetail.model')(sequelize, Sequelize);
+db.rfid = require('../model/rfid.model')(sequelize, Sequelize);
 
 db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
 db.otp.belongsTo(db.tenant, { foreignKey: 'tenantId' });
@@ -200,4 +201,4 @@ db.complaint.belongsTo(db.complaintStatus, { foreignKey: 'complaintStatusId' });
 db.machine.belongsTo(db.flatDetail, { foreignKey: 'flatDetailId' });
 db.machine.belongsTo(db.machineDetail, { foreignKey: 'machineDetailId' });
 
-module.exports = db;''
+module.exports = db;

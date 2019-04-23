@@ -121,7 +121,7 @@ exports.update = (req, res, next) => {
 
 exports.delete = (req, res, next) => {
     const machineDetailId = req.params.id;
-    console.log('ID ===>', machineId);
+    console.log('ID ===>', machineDetailId);
 
     MachineDetail.findOne({
         where: {

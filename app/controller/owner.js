@@ -265,7 +265,8 @@ exports.create1 = async (req, res, next) => {
     let randomNumber;
     randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
     const OwnerExists = await Owner.findOne({ where: { isActive: true, ownerId: randomNumber } });
-    if (OwnerExists) {
+    const userExists = await User.findOne({ where: { isActive: true, userId: randomNumber } });
+    if (OwnerExists !== null || userExists !== null) {
         console.log("duplicate random number")
         randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
     }
@@ -295,8 +296,10 @@ exports.create1 = async (req, res, next) => {
       numbers: true
     });
     ownerBody.password = password;
+    ownerBody.ownerId = randomNumber;
     const owner = await Owner.create({
       // ownerName: encrypt(key, ownerBody.ownerName),
+      ownerId: ownerBody.ownerId,
       firstName: encrypt(key, ownerBody.firstName),
       lastName: encrypt(key, ownerBody.lastName),
       userName: encrypt(key, ownerBody.userName),
@@ -400,6 +403,7 @@ exports.create1 = async (req, res, next) => {
     let email = decrypt(key, owner.email);
     // set users
     let user = await User.create({
+      userId: ownerBody.ownerId,
       firstName: encrypt1(key, firstName),
       lastName: encrypt1(key, lastName),
       userName: encrypt1(key, ownerUserName),
