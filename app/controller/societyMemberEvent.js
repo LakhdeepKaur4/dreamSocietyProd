@@ -17,12 +17,15 @@ exports.create = async (req, res, next) => {
                 ]
             }
         })
-        // console.log(cities);
-        let error = societyMemberEvent.map(member => {
-            return member.societyMemberEventName.toLowerCase().replace(/ /g, '') == req.body.societyMemberEventName.toLowerCase().replace(/ /g, '');
-        });
-        if (error) {
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Society Event Name already Exists" })
+        console.log(societyMemberEvent);
+        if (societyMemberEvent.length > 0) {
+            let error = societyMemberEvent.map(member => {
+                console.log("in herereee")
+                return member.societyMemberEventName.toLowerCase().replace(/ /g, '') == req.body.societyMemberEventName.toLowerCase().replace(/ /g, '');
+            });
+            if (error) {
+                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Society Event Name already Exists" })
+            }
         }
         body.userId = req.userId;
         const event = await SocietyMemberEvent.create(body);
@@ -118,12 +121,13 @@ exports.update = async (req, res, next) => {
                 ]
             }
         })
-
-        let error = societyMemberEvent.map(member => {
-            return member.societyMemberEventName.toLowerCase().replace(/ /g, '') == req.body.societyMemberEventName.toLowerCase().replace(/ /g, '');
-        });
-        if (error) {
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Society Event Name already Exists" })
+        if (societyMemberEvent.length > 0) {
+            let error = societyMemberEvent.map(member => {
+                return member.societyMemberEventName.toLowerCase().replace(/ /g, '') == req.body.societyMemberEventName.toLowerCase().replace(/ /g, '');
+            });
+            if (error) {
+                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Society Event Name already Exists" })
+            }
         }
         const updatedEvent = await SocietyMemberEvent.find({ where: { societyMemberEventId: id } }).then(event => {
             return event.updateAttributes(update);
