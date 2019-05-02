@@ -161,6 +161,8 @@ exports.update = async (req, res, next) => {
                 [Op.and]: [
                     { isActive: true },
                     { maintenanceTypeId: id },
+                    { sizeId: update.size },
+                    { rate: update.rate }
                 ]
             }
         })
@@ -188,11 +190,13 @@ exports.update = async (req, res, next) => {
             if (error) {
                 return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Maintainance Name already Exists" })
             }
-            const maintenance = await MaintenanceType.create(body);
-            if (maintenance) {
+            const updatedMaintenanceType = await MaintenanceType.find({ where: { maintenanceTypeId: id } }).then(maintenance => {
+                return maintenance.updateAttributes(update)
+            })
+            if (updatedMaintenanceType) {
                 return res.status(httpStatus.OK).json({
-                    message: "Maintenance successfully Updated",
-                    maintenance
+                    message: "Maintenance type Updated Page",
+                    updatedMaintenanceType
                 });
             }
         }
