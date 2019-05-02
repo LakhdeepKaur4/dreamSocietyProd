@@ -160,9 +160,10 @@ exports.update = async (req, res, next) => {
             where: {
                 [Op.and]: [
                     { isActive: true },
-                    { maintenanceTypeId: id },
+                    // { maintenanceTypeId: id },
                     { sizeId: update.size },
-                    { rate: update.rate }
+                    { rate: update.rate },
+                    { maintenanceTypeId: { [Op.ne]: id } }
                 ]
             }
         })
