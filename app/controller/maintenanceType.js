@@ -107,96 +107,36 @@ exports.get = async (req, res, next) => {
     }
 }
 
-// exports.update = async (req, res, next) => {
-//     try {
-//         console.log("maintenannce>")
-//         const id = req.params.id;
-//         console.log("id==>", id)
-//         if (!id) {
-//             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
-//         }
-//         const update = req.body;
-//         console.log("update==>", update)
-//         if (!update) {
-//             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
-//         }
-//         const alreadyExist = await MaintenanceType.findOne({ where: { isActive: true, maintenanceId: update.maintenanceId, sizeId: update.sizeId, maintenanceTypeId: { [Op.ne]: id } } });
-
-//         if (alreadyExist !== null) {
-//             if (alreadyExist.rate === parseFloat(update.rate)) {
-//                 res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-//                     message: 'Maintenance Type already exist'
-//                 })
-//             }
-//         } else {
-//             const updatedMaintenanceType = await MaintenanceType.find({ where: { maintenanceTypeId: id } }).then(maintenanceType => {
-//                 return maintenanceType.updateAttributes(update)
-//             })
-//             if (updatedMaintenanceType) {
-//                 return res.status(httpStatus.OK).json({
-//                     message: "Maintenance Type Updated Page",
-//                     updatedMaintenanceType
-//                 });
-//             }
-//         }
-//     } catch (error) {
-//         console.log(error)
-//         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
-//     }
-// }
-
 exports.update = async (req, res, next) => {
     try {
-        console.log("update maintenance")
+        console.log("maintenannce>")
         const id = req.params.id;
-        const update = req.body;
-        console.log(update)
         console.log("id==>", id)
         if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
         }
+        const update = req.body;
+        console.log("update==>", update)
+        if (!update) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
+        }
+        const alreadyExist = await MaintenanceType.findOne({ where: { isActive: true, maintenanceId: update.maintenanceId, sizeId: update.sizeId, maintenanceTypeId: { [Op.ne]: id } } });
 
-        const maintenance = await MaintenanceType.findOne({
-            where: {
-                [Op.and]: [
-                    { isActive: true },
-                    // { maintenanceTypeId: id },
-                    { sizeId: update.size },
-                    { rate: update.rate },
-                    { maintenanceTypeId: { [Op.ne]: id } }
-                ]
-            }
-        })
-
-        if (maintenance) {
-            const updatedMaintenance = await MaintenanceType.find({ where: { maintenanceTypeId: id } }).then(maintenance => {
-                return maintenance.updateAttributes(update)
-            })
-            if (updatedMaintenance) {
-                return res.status(httpStatus.OK).json({
-                    message: "Maintainance Updated Page",
-                    updatedMaintenance: updatedMaintenance
-                });
+        if (alreadyExist !== null) {
+            console.log(alreadyExist.rate)
+            console.log(update.rate)
+            if (alreadyExist.rate != update.rate) {
+                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                    message: 'Maintenance Type already exist'
+                })
             }
         } else {
-            const maintenanceTypes = await MaintenanceType.findAll({
-                where: {
-                    isActive: true
-                }
-            })
-            let error = maintenanceTypes.some(maintenance => {
-                if (maintenance.maintenanceId == req.body.maintenanceId && maintenance.sizeId == req.body.sizeId)
-                    return true;
-            });
-            if (error) {
-                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Maintainance Name already Exists" })
-            }
-            const updatedMaintenanceType = await MaintenanceType.find({ where: { maintenanceTypeId: id } }).then(maintenance => {
-                return maintenance.updateAttributes(update)
+            const updatedMaintenanceType = await MaintenanceType.find({ where: { maintenanceTypeId: id } }).then(maintenanceType => {
+                return maintenanceType.updateAttributes(update)
             })
             if (updatedMaintenanceType) {
                 return res.status(httpStatus.OK).json({
-                    message: "Maintenance type Updated Page",
+                    message: "Maintenance Type Updated Page",
                     updatedMaintenanceType
                 });
             }
@@ -206,6 +146,68 @@ exports.update = async (req, res, next) => {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
+
+// exports.update = async (req, res, next) => {
+//     try {
+//         console.log("update maintenance")
+//         const id = req.params.id;
+//         const update = req.body;
+//         console.log(update)
+//         console.log("id==>", id)
+//         if (!id) {
+//             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
+//         }
+
+//         const maintenance = await MaintenanceType.findOne({
+//             where: {
+//                 [Op.and]: [
+//                     { isActive: true },
+//                     { maintenanceId: update.maintenanceId },
+//                     { sizeId: update.sizeId },
+//                     // { rate: update.rate },
+//                     // { maintenanceTypeId: { [Op.ne]: id } }
+//                 ]
+//             }
+//         })
+//         console.log(maintenance)
+//         if (maintenance.rate != update.rate) {
+//             const updatedMaintenance = await MaintenanceType.find({ where: { maintenanceTypeId: id } }).then(maintenance => {
+//                 return maintenance.updateAttributes(update)
+//             })
+//             if (updatedMaintenance) {
+//                 return res.status(httpStatus.OK).json({
+//                     message: "Maintainance Updated Page",
+//                     updatedMaintenance: updatedMaintenance
+//                 });
+//             }
+//         } else {
+//             const maintenanceTypes = await MaintenanceType.findAll({
+//                 where: {
+//                     isActive: true
+//                 }
+//             })
+//             let error = maintenanceTypes.some(maintenance => {
+//                 if (maintenance.maintenanceId == req.body.maintenanceId && maintenance.sizeId == req.body.sizeId)
+//                     return true;
+//             });
+//             if (error) {
+//                 return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Maintainance Name already Exists" })
+//             }
+//             const updatedMaintenanceType = await MaintenanceType.find({ where: { maintenanceTypeId: id } }).then(maintenance => {
+//                 return maintenance.updateAttributes(update)
+//             })
+//             if (updatedMaintenanceType) {
+//                 return res.status(httpStatus.OK).json({
+//                     message: "Maintenance type Updated Page",
+//                     updatedMaintenanceType
+//                 });
+//             }
+//         }
+//     } catch (error) {
+//         console.log(error)
+//         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+//     }
+// }
 
 exports.delete = async (req, res, next) => {
     try {
