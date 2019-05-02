@@ -6,7 +6,7 @@ module.exports = (sequelize, Sequelize) => {
             primaryKey: true
         },
         rate: {
-            type:  Sequelize.DECIMAL(10,3),
+            type:  Sequelize.DECIMAL(10,2),
         },
         isActive: {
             type: Sequelize.BOOLEAN,
