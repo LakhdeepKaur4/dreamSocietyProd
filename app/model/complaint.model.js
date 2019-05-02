@@ -18,6 +18,9 @@ module.exports = (sequelize, Sequelize) => {
         slotTime3: {
             type: Sequelize.STRING
         },
+        date: {
+            type: Sequelize.DATE
+        },
         isAccepted: {
             type: Sequelize.BOOLEAN,
             defaultValue: false

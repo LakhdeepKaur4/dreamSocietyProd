@@ -29,6 +29,8 @@ const FlatDetail = db.flatDetail;
 const OTPTable = db.otpUserVerify;
 const Token = db.tokenVerify;
 const UserRoles = db.userRole;
+const UserRfid = db.userRfid;
+const OwnerMembersDetail = db.ownerMembersDetail;
 
 const Op = db.Sequelize.Op;
 
@@ -144,6 +146,22 @@ generateOTP = () => {
 generateToken = () => {
 	const token = Math.random().toString(36).replace('0.', '');
 	return token;
+}
+
+sendSMS = (number, OTP) => {
+	const apiKey = '07hlECj1sy4-ynODCNlExLsx91Pv29Zdrh0bxc1pLc';
+	const num = number;
+
+	const message = `Your OTP for password reset is ${OTP} which is valid for 5 min. Please do not disclose OTP.`;
+
+	http.get(`http://api.textlocal.in/send/?apiKey=${apikey}&numbers=${num}&message=${message}`, (err, data) => {
+		if (err) {
+			console.log('Message sending error ===>', err);
+			return false;
+		} else {
+			return true;
+		}
+	});
 }
 
 exports.signup = async (req, res) => {
@@ -1500,7 +1518,7 @@ exports.getUserDecrypted = (req, res, next) => {
 						// item.lastName = decrypt(item.lastName);
 						item.userName = decrypt(item.userName);
 						item.email = decrypt(item.email);
-						// item.contact = decrypt(item.contact);
+						item.contact = decrypt(item.contact);
 						// item.familyMember = decrypt(item.familyMember);
 						// item.parking = decrypt(item.parking);
 						// user.floor = decrypt(user.floor);
@@ -1701,7 +1719,7 @@ exports.changePassword = (req, res, next) => {
 		})
 }
 
-exports.tokenVerify = (req, res, next) => {
+exports.tokenVerify = async (req, res, next) => {
 	console.log(req.params);
 	url = req.params.url;
 	const reqObj = {};
@@ -1715,6 +1733,16 @@ exports.tokenVerify = (req, res, next) => {
 
 	token = decrypt(reqObj.token);
 
+	userContact = await User.findOne({
+		where: {
+			userId: userId,
+			isActive: true
+		},
+		attributes: ['contact']
+	});
+
+	contact = decrypt(userContact.contact);
+
 	Token.findOne({
 		where: {
 			token: token
@@ -1725,13 +1753,20 @@ exports.tokenVerify = (req, res, next) => {
 				OTP = generateOTP();
 				console.log(OTP);
 
-				OTPTable.create({
-					otp: OTP,
-					userId: userId
-				})
-				res.status(httpStatus.OK).json({
-					message: 'Token verified'
-				});
+				smsSended = sendSMS(contact, OTP);
+				if (!smsSended) {
+					res.status(httpStatus.FAILED_DEPENDENCY).json({
+						message: 'SMS send failure. Please contact admin.'
+					})
+				} else {
+					OTPTable.create({
+						otp: OTP,
+						userId: userId
+					})
+					res.status(httpStatus.OK).json({
+						message: 'Token verified'
+					});
+				}
 			} else {
 				res.status(httpStatus.UNAUTHORIZED).json({
 					messageErr: 'Token expired'
@@ -1970,6 +2005,7 @@ exports.getRolesForActivation = async (req, res, next) => {
 exports.activeUsersByRole = async (req, res, next) => {
 	try {
 		const roleId = req.params.id;
+		const userIds = [];
 		console.log(roleId);
 		const tenantsArr = [];
 		const ownersArr = [];
@@ -1978,27 +2014,33 @@ exports.activeUsersByRole = async (req, res, next) => {
 		console.log(roleId);
 		switch (roleId) {
 			case "3":
-				const owners = await Owner.findAll({ where: { isActive: true }, attributes: ['ownerId', 'firstName', 'lastName'] });
+				const userByRole = await UserRoles.findAll({ where: { isActive: true, roleId: roleId } });
+				userByRole.map(user => { userIds.push(user.userId) });
+				const owners = await User.findAll({ where: { isActive: true, userId: { [Op.in]: userIds } }, attributes: ['userId', 'firstName', 'lastName', 'email'] });
 				owners.map(owner => {
 					let firstName = decrypt(owner.firstName);
 					let lastName = decrypt(owner.lastName);
+					let email = decrypt1(key, owner.email);
 					let fullName = firstName + " " + lastName;
 					console.log(fullName)
 					ownersArr['fullName'] = fullName;
 					ownersArr['type'] = 'Owner',
-						ownersArr.push({ fullName: fullName, userId: owner.ownerId, type: 'ActiveOwner' });
+						ownersArr.push({ fullName: fullName, userId: owner.userId, type: 'ActiveOwner', email: email });
 				})
 				res.status(httpStatus.OK).json({ users: ownersArr });
 				break;
 			case "4":
-				const tenants = await Tenant.findAll({ where: { isActive: true }, attributes: ['tenantId', 'firstName', 'lastName', 'email'] });
+				const users = await UserRoles.findAll({ where: { isActive: true, roleId: roleId } });
+				users.map(user => { userIds.push(user.userId) });
+				const tenants = await User.findAll({ where: { isActive: true, userId: { [Op.in]: userIds } }, attributes: ['userId', 'firstName', 'lastName', 'email'] });
 				// console.log(tenants)
 				tenants.map(tenant => {
 					let firstName = decrypt(tenant.firstName);
 					let lastName = decrypt(tenant.lastName);
+					let email = decrypt1(key, tenant.email);
 					let fullName = firstName + " " + lastName;
 					tenantsArr['fullName'] = fullName;
-					tenantsArr.push({ fullName: fullName, userId: tenant.tenantId, type: 'ActiveTenant' });
+					tenantsArr.push({ fullName: fullName, userId: tenant.userId, type: 'ActiveTenant', email: email });
 				})
 				res.status(httpStatus.OK).json({ users: tenantsArr });
 				break;
@@ -2007,9 +2049,10 @@ exports.activeUsersByRole = async (req, res, next) => {
 				vendors.map(vendor => {
 					let firstName = decrypt(vendor.firstName);
 					let lastName = decrypt(vendor.lastName);
+					let email = decrypt1(key, vendor.email);
 					let fullName = firstName + " " + lastName;
 					vendorsArr['fullName'] = fullName;
-					vendorsArr.push({ fullName: fullName, userId: vendor.vendorId, type: 'ActiveVendor' });
+					vendorsArr.push({ fullName: fullName, userId: vendor.vendorId, type: 'ActiveVendor', email: email });
 				})
 				res.status(httpStatus.OK).json({ users: vendorsArr });
 				break;
@@ -2020,30 +2063,16 @@ exports.activeUsersByRole = async (req, res, next) => {
 					let firstName = decrypt(employee.firstName);
 					let middleName = decrypt(employee.middleName);
 					let lastName = decrypt(employee.lastName);
-					let fullName = firstName + " " + middleName + " " + lastName
+					let email = decrypt1(key, employee.email);
+					let fullName = firstName + " " + middleName + " " + lastName;
 					employeesArr['fullName'] = fullName;
-					employeesArr.push({ fullName: fullName, userId: employee.employeeId, type: 'ActiveEmployee' });
+					employeesArr.push({ fullName: fullName, userId: employee.employeeId, type: 'ActiveEmployee', email: email });
 				})
 				res.status(httpStatus.OK).json({ users: employeesArr });
 				break;
 			default:
 				res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No Role Found with this Id" })
 		}
-
-
-		// const user = await User.findAll({
-		// 	where:{isActive:true},
-		//     attributes: ['userId', 'userName'],
-		//      include: [{
-		// 		raw:true,
-		//         model: Role,
-		//         where: { id:roleId },
-		//         attributes: ['id', 'roleName'],
-		//     },
-		//     ]
-		// });
-		// console.log("user==>",user);
-		// res.send(user)
 	} catch (error) {
 		console.log(error);
 		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Sequelize Error' })
@@ -2057,28 +2086,35 @@ exports.deactiveUsersByRole = async (req, res, next) => {
 		const ownersArr = [];
 		const vendorsArr = [];
 		const employeesArr = [];
+		const userIds = [];
 		console.log(roleId)
 		switch (roleId) {
 			case "3":
-				const owners = await Owner.findAll({ where: { isActive: false }, attributes: ['ownerId', 'firstName', 'lastName'] });
+				const userByRole = await UserRoles.findAll({ where: { isActive: false, roleId: roleId } });
+				userByRole.map(user => { userIds.push(user.userId) });
+				const owners = await User.findAll({ where: { isActive: false, userId: { [Op.in]: userIds } }, attributes: ['userId', 'firstName', 'lastName', 'email'] });
+				// const owners = await Owner.findAll({ where: { isActive: false }, attributes: ['ownerId', 'firstName', 'lastName'] });
 				owners.map(owner => {
 					let firstName = decrypt1(key, owner.firstName);
 					let lastName = decrypt1(key, owner.lastName);
+					let email = decrypt1(key, owner.email);
 					let fullName = firstName + " " + lastName;
 					ownersArr['fullName'] = fullName;
-					ownersArr.push({ fullName: fullName, userId: owner.ownerId, type: 'DeactiveOwner' });
+					ownersArr.push({ fullName: fullName, userId: owner.userId, type: 'DeactiveOwner', email: email });
 				})
 				res.status(httpStatus.OK).json({ users: ownersArr });
 				break;
 			case "4":
-				const tenants = await Tenant.findAll({ where: { isActive: false }, attributes: ['tenantId', 'firstName', 'lastName'] });
+				const users = await UserRoles.findAll({ where: { isActive: false, roleId: roleId } });
+				users.map(user => { userIds.push(user.userId) });
+				const tenants = await User.findAll({ where: { isActive: false, userId: { [Op.in]: userIds } }, attributes: ['userId', 'firstName', 'lastName', 'email'] });
 				// console.log(tenants)
 				tenants.map(tenant => {
 					let firstName = decrypt(tenant.firstName);
 					let lastName = decrypt(tenant.lastName);
 					let fullName = firstName + " " + lastName;
 					tenantsArr['fullName'] = fullName;
-					tenantsArr.push({ fullName: fullName, userId: tenant.tenantId, type: 'DeactiveTenant' });
+					tenantsArr.push({ fullName: fullName, userId: tenant.userId, type: 'DeactiveTenant' });
 				})
 				res.status(httpStatus.OK).json({ users: tenantsArr });
 				break;
@@ -2150,6 +2186,8 @@ exports.rolesToAssign = async (req, res, next) => {
 exports.activateUsers = async (req, res, next) => {
 	try {
 		console.log(req.body);
+		const userRoleIds = [];
+		const userIds = [];
 		const userId = req.body.userId;
 		const type = req.body.type;
 		const update = { isActive: true };
@@ -2157,34 +2195,92 @@ exports.activateUsers = async (req, res, next) => {
 			case "DeactiveTenant":
 				const tenant = await Tenant.findOne({ where: { tenantId: userId, isActive: false } });
 				if (tenant) {
-					await Tenant.update(update, { where: { tenantId: userId } });
-					res.status(httpStatus.OK).json({ message: "Tenant deactivated successfully" });
+					await Tenant.update(update, { where: { tenant: userId } });
+					const user = await User.findOne({ where: { userId: userId, isActive: false } });
+					if (user) {
+						await User.update(update, { where: { userId: userId } });
+						const userRoles = await UserRoles.findAll({ where: { isActive: false, userId: userId } });
+						userRoles.map(users => { userRoleIds.push(users.userRoleId) });
+						await UserRoles.update(update, { where: { userRoleId: { [Op.in]: userRoleIds } } });
+						await UserRfid.update(update, { where: { userId: userId } });
+						await TenantFlatDetail.update(update, { where: { tenantId: userId } });
+					}
+					const tenantMember = await TenantMembersDetail.findAll({ where: { isActive: false, tenantId: userId } });
+					tenantMember.map(members => { userIds.push(members.memberId) });
+					if (tenantMember.length > 0) {
+						await TenantMembersDetail.update(update, { where: { memberId: { [Op.in]: userIds } } });
+						await UserRfid.update(update, { where: { userId: { [Op.in]: userIds } } });
+						await UserRoles.update(update, { where: { userId: { [Op.in]: userIds } } });
+					}
+					res.status(httpStatus.OK).json({ message: "Owner activated successfully" });
 				}
 				break;
 			case "DeactiveOwner":
 				const owner = await Owner.findOne({ where: { ownerId: userId, isActive: false } });
-				if (owner) {
+				console.log(owner)
+				if (owner && owner != null) {
+					console.log("inside owner");
 					await Owner.update(update, { where: { ownerId: userId } });
-					res.status(httpStatus.OK).json({ message: "Owner deactivated successfully" });
+					const user = await User.findOne({ where: { userId: userId, isActive: false } });
+					console.log("**********************************************************1")
+					if (user) {
+						await User.update(update, { where: { userId: userId } });
+						console.log("**********************************************************2")
+						const userRoles = await UserRoles.findAll({ where: { isActive: false, userId: userId } });
+						userRoles.map(users => {
+							console.log("inside user role if", users)
+							userRoleIds.push(users.userRoleId)
+						});
+						console.log("userRole ", userRoleIds);
+						console.log("**********************************************************3")
+						const roleid = await UserRoles.update(update, { where: { userRoleId: { [Op.in]: userRoleIds } } });
+						console.log("********role updated**************************************************4", roleid)
+						await UserRfid.update(update, { where: { userId: userId } });
+						console.log("**********************************************************5")
+						await OwnerFlatDetail.update(update, { where: { ownerId: userId } });
+					}
+					const ownerMember = await OwnerMembersDetail.findAll({ where: { isActive: false, ownerId: userId } });
+					ownerMember.map(members => { userIds.push(members.memberId) });
+					if (ownerMember.length > 0) {
+						await OwnerMembersDetail.update(update, { where: { memberId: { [Op.in]: userIds } } });
+						await UserRfid.update(update, { where: { userId: { [Op.in]: userIds } } });
+						await UserRoles.update(update, { where: { userId: { [Op.in]: userIds } } });
+					}
+					res.status(httpStatus.OK).json({ message: "Owner activated successfully" });
 				}
 				break;
 			case "DeactiveVendor":
 				const vendor = await Vendor.findOne({ where: { vendorId: userId, isActive: false } });
 				if (vendor) {
 					await Vendor.update(update, { where: { vendorId: userId } });
-					res.status(httpStatus.OK).json({ message: "Vendor deactivated successfully" });
+					const user = await User.findOne({ where: { userId: userId, isActive: false } });
+					if (user) {
+						await User.update(update, { where: { userId: userId } });
+					}
+					const userRole = await UserRoles.findOne({ where: { isActive: false, userId: userId } });
+					if (userRole) {
+						await UserRoles.update(update, { where: { userId: userId } });
+					}
+					res.status(httpStatus.OK).json({ message: "Vendor activated successfully" });
 				}
 				break;
 			case "DeactiveEmployee":
 				const employee = await Employee.findOne({ where: { employeeId: userId, isActive: false } });
 				if (employee) {
 					await Employee.update(update, { where: { employeeId: userId } });
-					res.status(httpStatus.OK).json({ message: "Employee deactivated successfully" });
+					const user = await User.findOne({ where: { userId: userId, isActive: false } });
+					if (user) {
+						await User.update(update, { where: { userId: userId } });
+					}
+					const userRole = await UserRoles.findOne({ where: { isActive: false, userId: userId } });
+					if (userRole) {
+						await UserRoles.update(update, { where: { userId: userId } });
+					}
+					res.status(httpStatus.OK).json({ message: "Employee activated successfully" });
 				}
 				break;
 			default:
 				res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'No user found with this userId' });
-
 		}
 	} catch (error) {
 		console.log(error);
@@ -2195,22 +2291,150 @@ exports.activateUsers = async (req, res, next) => {
 exports.deactivateUsers = async (req, res, next) => {
 	try {
 		console.log(req.body);
+		const userIds = [];
+		const userRoleIds = [];
+		const ownerFlats = [];
+		const tenantIds = [];
 		const userId = req.body.userId;
 		console.log(userId)
 		const type = req.body.type;
 		const update = { isActive: false };
 		switch (type) {
+			case "ActiveOwner":
+				const owner = await Owner.findOne({ where: { ownerId: userId, isActive: true } });
+				console.log(owner)
+				if (owner && owner != null) {
+					await Owner.update(update, { where: { ownerId: userId } });
+					const user = await User.findOne({ where: { userId: userId, isActive: true } });
+					if (user && user != null) {
+						await User.update(update, { where: { userId: userId } });
+						const userRoles = await UserRoles.findAll({ where: { isActive: true, userId: userId } });
+						userRoles.map(users => { userRoleIds.push(users.userRoleId) });
+						if (UserRoles && userRoles != null) {
+							await UserRoles.update(update, { where: { userRoleId: { [Op.in]: userRoleIds } } });
+						}
+						await UserRfid.update(update, { where: { userId: userId } });
+						// const ownerFlatDetail = await OwnerFlatDetail.findAll({ where: { isActive: true, ownerId: userId } })
+						// if (ownerFlatDetail) {
+						// 	await OwnerFlatDetail.update(update, { where: { ownerId: userId } });
+
+						// 	// ownerFlatDetail.map(flats => ownerFlats.push(flats.flatDetail));
+						// 	// console.log("owner flats -->", ownerFlats);
+						// 	// const tenantFlatDetail = await TenantFlatDetail.findAll({ where: { isActive: true, flatDetailId: { [Op.in]: ownerFlats } } });
+						// 	// tenantFlatDetail.map(tenant => tenantIds.push(tenant.tenantId));
+						// 	// await Tenant.update(update, { where: { tenantId: { [Op.in]: tenantIds } } });
+						// }
+						await OwnerFlatDetail.findAll({
+							where: {
+								ownerId: userId,
+								isActive: true
+							}
+						}).then(entries => {
+							return entries.forEach(async function (entry) {
+								// Deactivate Tenant Here
+								let tenants = await TenantFlatDetail.findAll({
+									where: {
+										isActive: true,
+										flatDetailId: entry.flatDetailId
+									}
+								});
+								if (tenants) {
+									// tenants.forEach(tenant => tenant.updateAttributes(update))
+									tenants.forEach(async tenant => {
+										let tenantToDeactivate = await Tenant.findOne({ where: { isActive: true, tenantId: tenant.tenantId } });
+										let user1 = await User.findOne({ where: { isActive: true, userId: tenant.tenantId } });
+										let rfId = await UserRfId.findOne({ where: { isActive: true, userId: tenant.tenantId } });
+										let role = await UserRoles.findOne({ where: { isActive: true, userId: tenant.tenantId } });
+										let tenantMembers = await TenantMembersDetail.findAll({ where: { isActive: true, tenantId: tenant.tenantId } });
+										tenantMembers.forEach(async tenantMember => {
+											let userMember = await User.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
+											let memberRfId = await UserRfId.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
+											let memberRole = await UserRoles.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
+											if (userMember) {
+												userMember.updateAttributes({ isActive: false });
+											}
+											if (memberRfId) {
+												memberRfId.updateAttributes({ isActive: false });
+											}
+											if (memberRole) {
+												memberRole.updateAttributes({ isActive: false });
+											}
+											tenantMember.updateAttributes({ isActive: false });
+										})
+										if (tenantToDeactivate) {
+											tenantToDeactivate.updateAttributes({ isActive: false });
+										}
+										if (user1) {
+											user1.updateAttributes({ isActive: false });
+										}
+										if (rfId) {
+											rfId.updateAttributes({ isActive: false });
+										}
+										if (role) {
+											role.updateAttributes({ isActive: false });
+										}
+										if (tenant) {
+											tenant.updateAttributes({ isActive: false });
+										}
+									}
+									)
+								}
+								return entry.updateAttributes(update);
+							})
+						});
+					}
+					const ownerMember = await OwnerMembersDetail.findAll({ where: { isActive: true, ownerId: userId } });
+					ownerMember.map(members => { userIds.push(members.memberId) });
+					console.log(userIds);
+					if (ownerMember.length > 0) {
+						const member = await OwnerMembersDetail.update(update, { where: { memberId: { [Op.in]: userIds } } });
+						await UserRfid.update(update, { where: { userId: { [Op.in]: userIds } } });
+						await UserRoles.update(update, { where: { userId: { [Op.in]: userIds } } });
+					}
+
+					const tenant = await Tenant.findOne({ where: { ownerId: userId, isActive: true } });
+					if (tenant) {
+						await Tenant.update(update, { where: { ownerId: userId } });
+						const user = await User.findOne({ where: { userId: userId, isActive: true } });
+						if (user) {
+							await User.update(update, { where: { userId: userId } });
+							const userRoles = await User.findAll({ where: { isActive: true, userId: userId } });
+							userRoles.map(users => { userRoleIds.push(users.userRoleId) });
+							await UserRoles.update(update, { where: { userRoleId: { [Op.in]: userRoleIds } } });
+							await UserRfid.update(update, { where: { userId: userId } });
+							await TenantFlatDetail.update(update, { where: { tenantId: userId } });
+						}
+						const tenantMember = await TenantMembersDetail.findAll({ where: { isActive: true, tenantId: userId } });
+						tenantMember.map(members => { userIds.push(members.memberId) });
+						if (tenantMember.length > 0) {
+							await TenantMembersDetail.update(update, { where: { tenantId: { [Op.in]: userIds } } });
+							await UserRfid.update(update, { where: { userId: { [Op.in]: userIds } } });
+							await UserRoles.update(update, { where: { userId: { [Op.in]: userIds } } });
+						}
+					}
+					res.status(httpStatus.OK).json({ message: "Owner deactivated successfully" });
+				}
+				break;
 			case "ActiveTenant":
 				const tenant = await Tenant.findOne({ where: { tenantId: userId, isActive: true } });
 				if (tenant) {
 					await Tenant.update(update, { where: { tenantId: userId } });
-					res.status(httpStatus.OK).json({ message: "Tenant deactivated successfully" });
-				}
-				break;
-			case "ActiveOwner":
-				const owner = await Owner.findOne({ where: { ownerId: userId, isActive: true } });
-				if (owner) {
-					await Owner.update(update, { where: { ownerId: userId } });
+					const user = await User.findOne({ where: { userId: userId, isActive: true } });
+					if (user) {
+						await User.update(update, { where: { userId: userId } });
+						const userRoles = await User.findAll({ where: { isActive: true, userId: userId } });
+						userRoles.map(users => { userRoleIds.push(users.userRoleId) });
+						await UserRoles.update(update, { where: { userRoleId: { [Op.in]: userRoleIds } } });
+						await UserRfid.update(update, { where: { userId: userId } });
+						await TenantFlatDetail.update(update, { where: { tenantId: userId } });
+					}
+					const tenantMember = await TenantMembersDetail.findAll({ where: { isActive: true, tenantId: userId } });
+					tenantMember.map(members => { userIds.push(members.memberId) });
+					if (tenantMember.length > 0) {
+						await TenantMembersDetail.update(update, { where: { tenantId: { [Op.in]: userIds } } });
+						await UserRfid.update(update, { where: { userId: { [Op.in]: userIds } } });
+						await UserRoles.update(update, { where: { userId: { [Op.in]: userIds } } });
+					}
 					res.status(httpStatus.OK).json({ message: "Owner deactivated successfully" });
 				}
 				break;
@@ -2218,14 +2442,30 @@ exports.deactivateUsers = async (req, res, next) => {
 				const vendor = await Vendor.findOne({ where: { vendorId: userId, isActive: true } });
 				if (vendor) {
 					await Vendor.update(update, { where: { vendorId: userId } });
+					const user = await User.findOne({ where: { userId: userId, isActive: true } });
+					if (user) {
+						await User.update(update, { where: { userId: userId } });
+					}
+					const userRole = await UserRoles.findOne({ where: { isActive: true, userId: userId } });
+					if (userRole) {
+						await UserRoles.update(update, { where: { userId: userId } });
+					}
 					res.status(httpStatus.OK).json({ message: "Vendor deactivated successfully" });
 				}
 				break;
 			case "ActiveEmployee":
 				const employee = await Employee.findOne({ where: { employeeId: userId, isActive: true } });
-				console.log(employee)
+				await UserRoles.findOne({ where: { isActive: true, userId: userId } });
 				if (employee) {
 					await Employee.update(update, { where: { employeeId: userId } });
+					const user = await User.findOne({ where: { userId: userId, isActive: true } });
+					if (user) {
+						await User.update(update, { where: { userId: userId } });
+					}
+					const userRole = await UserRoles.findOne({ where: { isActive: true, userId: userId } });
+					if (userRole) {
+						await UserRoles.update(update, { where: { userId: userId } });
+					}
 					res.status(httpStatus.OK).json({ message: "Employee deactivated successfully" });
 				}
 				break;
@@ -2248,26 +2488,201 @@ exports.multipleDeactivateUsers = async (req, res, next) => {
 		const update = { isActive: false }
 		switch (type) {
 			case "ActiveTenant":
-				const updatedTenant = await Tenant.update(update, { where: { tenantId: { [Op.in]: selectedIds } } });
+				const updatedTenant = await Tenant.update(update, { where: { tenantId: { [Op.in]: deleteSelected } } });
+				const users = await Tenant.findAll({ where: { tenantId: { [Op.in]: deleteSelected } }, attributes: ['userName'] });
+				users.map(item => {
+					userNames.push(item.userName);
+				})
+				const userIds = await User.findAll({ where: { userName: { [Op.in]: userNames } } });
 				if (updatedTenant) {
-					res.status(httpStatus.OK).json({ message: "Tenants deactivated successfully" });
+					User.update({ isActive: false }, { where: { userName: { [Op.in]: userNames } } });
+					UserRoles.update({ isActive: false }, { where: { userId: { [Op.in]: userIds }, roleId: 4 } });
+					UserRFID.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } } });
+					TenantFlatDetail.update({ isActive: false }, { where: { tenantId: { [Op.in]: deleteSelected } } });
+					TenantMembersDetail.findAll({
+						where: {
+							tenantId: { [Op.in]: deleteSelected }
+						}
+					})
+						.then(tenantMembers => {
+							tenantMembers.map(item => {
+								item.updateAttributes({ isActive: false });
+								User.update({ isActive: false }, { where: { userId: item.memberId } });
+								UserRoles.update({ isActive: false }, { where: { userId: item.memberId, roleId: 4 } });
+								UserRFID.update({ isActive: false }, { where: { userId: item.memberId } });
+							})
+						})
 				}
 				break;
 			case "ActiveOwner":
-				const updatedOwner = await Owner.update(update, { where: { ownerId: { [Op.in]: selectedIds } } });
-				if (updatedOwner) {
-					res.status(httpStatus.OK).json({ message: "Owners deactivated successfully" });
+				const updatedOwners = await Owner.update(update, {
+					where: {
+						ownerId: {
+							[Op.in]: selectedIds
+						}
+					}
+				});
+				let usersToUpdate = await Owner.findAll({
+					where: {
+						ownerId: {
+							[Op.in]: selectedIds
+						}
+					}
+				});
+				// const updatedUsers = await User.findAll()
+				if (usersToUpdate.length > 0) {
+					usersToUpdate.forEach(async (updatedOwner) => {
+						console.log("updatedOwnerEmail", updatedOwner.email)
+						let user = await User.findOne({
+							where: {
+								isActive: true,
+								userId: updatedOwner.ownerId
+							}
+						});
+						let urfId = await UserRfId.findOne({
+							where: {
+								isActive: true,
+								userId: updatedOwner.ownerId
+							}
+						});
+						console.log("user_rf_id ====>", urfId)
+						urfId.updateAttributes(update);
+						let role = await UserRoles.findOne({
+							where: {
+								userId: user.userId
+							}
+						});
+						role.updateAttributes(update);
+						return user.updateAttributes(update);
+					});
 				}
+
+				// const updatedUsers = updatedOwners.forEach(async (owner) => {
+				//   await User.update(update,{where:{email:owner.email}})
+				// })
+
+				const updatedOwnersMembers = await OwnerMembersDetail.findAll({
+					where: {
+						ownerId: {
+							[Op.in]: deleteSelected
+						}
+					}
+				});
+
+				updatedOwnersMembers.forEach(async member => {
+					let memberUser = await User.findOne({
+						where: {
+							isActive: true,
+							userId: member.memberId
+						}
+					});
+					let role = await UserRoles.findOne({
+						where: {
+							userId: member.memberId
+						}
+					});
+					let urfId = await UserRfId.findOne({
+						where: {
+							isActive: true,
+							userId: member.memberId
+						}
+					});
+					console.log("user_rf_id ====>", urfId);
+					if (urfId) {
+						urfId.updateAttributes(update);
+					}
+					if (role) {
+						role.updateAttributes(update);
+					}
+					if (memberUser) {
+						memberUser.updateAttributes(update);
+					}
+					member.updateAttributes(update);
+				})
+
+
+
+				let flats = await OwnerFlatDetail.findAll({
+					where: {
+						isActive: true,
+						ownerId: {
+							[Op.in]: deleteSelected
+						}
+					}
+				});
+				if (flats.length > 0) {
+					flats.forEach(async flat => {
+						let tenants = await TenantFlatDetail.findAll({ where: { isActive: true, flatDetailId: flat.flatDetailId } });
+						if (tenants) {
+							tenants.forEach(async tenant => {
+
+								let tenantToDeactivate = await Tenant.findOne({ where: { isActive: true, tenantId: tenant.tenantId } });
+								let user1 = await User.findOne({ where: { isActive: true, userId: tenant.tenantId } });
+								let rfId = await UserRfId.findOne({ where: { isActive: true, userId: tenant.tenantId } });
+								let role = await UserRoles.findOne({ where: { isActive: true, userId: tenant.tenantId } });
+								let tenantMembers = await TenantMembersDetail.findAll({ where: { isActive: true, tenantId: tenant.tenantId } });
+								tenantMembers.forEach(async tenantMember => {
+									let userMember = await User.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
+									let memberRfId = await UserRfId.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
+									let memberRole = await UserRoles.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
+									if (userMember) {
+										userMember.updateAttributes(update);
+									}
+									if (memberRfId) {
+										memberRfId.updateAttributes(update);
+									}
+									if (memberRole) {
+										memberRole.updateAttributes(update);
+									}
+									tenantMember.updateAttributes(update);
+								})
+								if (tenantToDeactivate) {
+									tenantToDeactivate.updateAttributes(update);
+								}
+								if (user1) {
+									user1.updateAttributes(update);
+								}
+								if (rfId) {
+									rfId.updateAttributes(update);
+								}
+								if (role) {
+									role.updateAttributes(update);
+								}
+								if (tenant) {
+									tenant.updateAttributes(update);
+								}
+
+							})
+						}
+					})
+				}
+
+				let flatDetails = await OwnerFlatDetail.update(update, {
+					where: {
+						isActive: true,
+						ownerId: {
+							[Op.in]: deleteSelected
+						}
+					}
+				});
+
+				if (updatedOwners && updatedOwnersMembers && flatDetails) {
+					return res.status(httpStatus.OK).json({
+						message: "Owners deactivated successfully",
+					});
+				};
 				break;
 			case "ActiveVendor":
 				const updatedVendor = await Vendor.update(update, { where: { vendorId: { [Op.in]: selectedIds } } });
-				if (updatedVendor) {
+				const updatedUser = await User.update(update, { where: { userId: { [Op.in]: selectedIds } } })
+				if (updatedVendor && updatedUser) {
 					res.status(httpStatus.OK).json({ message: "Vendors deactivated successfully" });
 				}
 				break;
 			case "ActiveEmployee":
 				const updatedEmployee = await Employee.update(update, { where: { employeeId: { [Op.in]: selectedIds } } });
-				if (updatedEmployee) {
+				const updated = await User.update(update, { where: { userId: { [Op.in]: selectedIds } } })
+				if (updatedEmployee && updated) {
 					res.status(httpStatus.OK).json({ message: "Employees deactivated successfully" });
 				}
 				break;
@@ -2290,26 +2705,201 @@ exports.multipleActivateUsers = async (req, res, next) => {
 		const update = { isActive: true }
 		switch (type) {
 			case "DeactiveTenant":
-				const updatedTenant = await Tenant.update(update, { where: { tenantId: { [Op.in]: selectedIds } } });
+				const updatedTenant = await Tenant.update(update, { where: { tenantId: { [Op.in]: deleteSelected } } });
+				const users = await Tenant.findAll({ where: { tenantId: { [Op.in]: deleteSelected } }, attributes: ['userName'] });
+				users.map(item => {
+					userNames.push(item.userName);
+				})
+				const userIds = await User.findAll({ where: { userName: { [Op.in]: userNames } } });
 				if (updatedTenant) {
-					res.status(httpStatus.OK).json({ message: "Tenants activated successfully" });
+					User.update(update, { where: { userName: { [Op.in]: userNames } } });
+					UserRoles.update(update, { where: { userId: { [Op.in]: userIds }, roleId: 4 } });
+					UserRFID.update(update, { where: { userId: { [Op.in]: deleteSelected } } });
+					TenantFlatDetail.update(update, { where: { tenantId: { [Op.in]: deleteSelected } } });
+					TenantMembersDetail.findAll({
+						where: {
+							tenantId: { [Op.in]: deleteSelected }
+						}
+					})
+						.then(tenantMembers => {
+							tenantMembers.map(item => {
+								item.updateAttributes(update);
+								User.update(update, { where: { userId: item.memberId } });
+								UserRoles.update(update, { where: { userId: item.memberId, roleId: 4 } });
+								UserRFID.update(update, { where: { userId: item.memberId } });
+							})
+						})
 				}
 				break;
 			case "DeactiveOwner":
-				const updatedOwner = await Owner.update(update, { where: { ownerId: { [Op.in]: selectedIds } } });
-				if (updatedOwner) {
-					res.status(httpStatus.OK).json({ message: "Owners activated successfully" });
+				const updatedOwners = await Owner.update(update, {
+					where: {
+						ownerId: {
+							[Op.in]: selectedIds
+						}
+					}
+				});
+				let usersToUpdate = await Owner.findAll({
+					where: {
+						ownerId: {
+							[Op.in]: selectedIds
+						}
+					}
+				});
+				// const updatedUsers = await User.findAll()
+				if (usersToUpdate.length > 0) {
+					usersToUpdate.forEach(async (updatedOwner) => {
+						console.log("updatedOwnerEmail", updatedOwner.email)
+						let user = await User.findOne({
+							where: {
+								isActive: false,
+								userId: updatedOwner.ownerId
+							}
+						});
+						let urfId = await UserRfId.findOne({
+							where: {
+								isActive: false,
+								userId: updatedOwner.ownerId
+							}
+						});
+						console.log("user_rf_id ====>", urfId)
+						urfId.updateAttributes(update);
+						let role = await UserRoles.findOne({
+							where: {
+								userId: user.userId
+							}
+						});
+						role.updateAttributes(update);
+						return user.updateAttributes(update);
+					});
 				}
+
+				// const updatedUsers = updatedOwners.forEach(async (owner) => {
+				//   await User.update(update,{where:{email:owner.email}})
+				// })
+
+				const updatedOwnersMembers = await OwnerMembersDetail.findAll({
+					where: {
+						ownerId: {
+							[Op.in]: deleteSelected
+						}
+					}
+				});
+
+				updatedOwnersMembers.forEach(async member => {
+					let memberUser = await User.findOne({
+						where: {
+							isActive: false,
+							userId: member.memberId
+						}
+					});
+					let role = await UserRoles.findOne({
+						where: {
+							userId: member.memberId
+						}
+					});
+					let urfId = await UserRfId.findOne({
+						where: {
+							isActive: false,
+							userId: member.memberId
+						}
+					});
+					console.log("user_rf_id ====>", urfId);
+					if (urfId) {
+						urfId.updateAttributes(update);
+					}
+					if (role) {
+						role.updateAttributes(update);
+					}
+					if (memberUser) {
+						memberUser.updateAttributes(update);
+					}
+					member.updateAttributes(update);
+				})
+
+
+
+				let flats = await OwnerFlatDetail.findAll({
+					where: {
+						isActive: false,
+						ownerId: {
+							[Op.in]: deleteSelected
+						}
+					}
+				});
+				if (flats.length > 0) {
+					flats.forEach(async flat => {
+						let tenants = await TenantFlatDetail.findAll({ where: { isActive: false, flatDetailId: flat.flatDetailId } });
+						if (tenants) {
+							tenants.forEach(async tenant => {
+
+								let tenantToDeactivate = await Tenant.findOne({ where: { isActive: false, tenantId: tenant.tenantId } });
+								let user1 = await User.findOne({ where: { isActive: false, userId: tenant.tenantId } });
+								let rfId = await UserRfId.findOne({ where: { isActive: false, userId: tenant.tenantId } });
+								let role = await UserRoles.findOne({ where: { isActive: false, userId: tenant.tenantId } });
+								let tenantMembers = await TenantMembersDetail.findAll({ where: { isActive: false, tenantId: tenant.tenantId } });
+								tenantMembers.forEach(async tenantMember => {
+									let userMember = await User.findOne({ where: { isActive: false, userId: tenantMember.memberId } });
+									let memberRfId = await UserRfId.findOne({ where: { isActive: false, userId: tenantMember.memberId } });
+									let memberRole = await UserRoles.findOne({ where: { isActive: false, userId: tenantMember.memberId } });
+									if (userMember) {
+										userMember.updateAttributes(update);
+									}
+									if (memberRfId) {
+										memberRfId.updateAttributes(update);
+									}
+									if (memberRole) {
+										memberRole.updateAttributes(update);
+									}
+									tenantMember.updateAttributes(update);
+								})
+								if (tenantToDeactivate) {
+									tenantToDeactivate.updateAttributes(update);
+								}
+								if (user1) {
+									user1.updateAttributes(update);
+								}
+								if (rfId) {
+									rfId.updateAttributes(update);
+								}
+								if (role) {
+									role.updateAttributes(update);
+								}
+								if (tenant) {
+									tenant.updateAttributes(update);
+								}
+
+							})
+						}
+					})
+				}
+
+				let flatDetails = await OwnerFlatDetail.update(update, {
+					where: {
+						isActive: false,
+						ownerId: {
+							[Op.in]: deleteSelected
+						}
+					}
+				});
+
+				if (updatedOwners && updatedOwnersMembers && flatDetails) {
+					return res.status(httpStatus.OK).json({
+						message: "Owners activated successfully",
+					});
+				};
 				break;
 			case "DeactiveVendor":
 				const updatedVendor = await Vendor.update(update, { where: { vendorId: { [Op.in]: selectedIds } } });
-				if (updatedVendor) {
+				const updatedUser = await User.update(update, { where: { userId: { [Op.in]: selectedIds } } })
+				if (updatedVendor && updatedUser) {
 					res.status(httpStatus.OK).json({ message: "Vendors activated successfully" });
 				}
 				break;
 			case "DeactiveEmployee":
 				const updatedEmployee = await Employee.update(update, { where: { employeeId: { [Op.in]: selectedIds } } });
-				if (updatedEmployee) {
+				const updated = await User.update(update, { where: { userId: { [Op.in]: selectedIds } } })
+				if (updatedEmployee && updated) {
 					res.status(httpStatus.OK).json({ message: "Employees activated successfully" });
 				}
 				break;
@@ -2415,7 +3005,7 @@ exports.flatByUserId = (req, res, next) => {
 							OwnerFlatDetail.findAll({
 								where: {
 									isActive: true,
-									owner: owner.ownerId
+									ownerId: owner.ownerId
 								}
 							})
 								.then(flats => {
@@ -2475,5 +3065,110 @@ exports.flatByUserId = (req, res, next) => {
 			console.log(err);
 			res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
 		})
+}
+
+exports.activeUsersCount = async (req, res, next) => {
+	try {
+		const activeUsers = await User.findAndCountAll({ where: { isActive: true } });
+		const deactiveUsers = await User.findAndCountAll({ where: { isActive: false } });
+		const activeTenant = await Tenant.findAndCountAll({ where: { isActive: true } });
+		const deactiveTenant = await Tenant.findAndCountAll({ where: { isActive: false } });
+		const activeVendor = await Vendor.findAndCountAll({ where: { isActive: true } });
+		const deactiveVendor = await Vendor.findAndCountAll({ where: { isActive: false } });
+		const activeEmployee = await Employee.findAndCountAll({ where: { isActive: true } });
+		const deactiveEmployee = await Employee.findAndCountAll({ where: { isActive: false } });
+		const activeOwner = await Owner.findAndCountAll({ where: { isActive: true } });
+		const deactiveOwner = await Owner.findAndCountAll({ where: { isActive: false } });
+		if (activeUsers && deactiveUsers && activeTenant && deactiveTenant && activeVendor && deactiveVendor && activeEmployee && deactiveEmployee && activeOwner && deactiveOwner) {
+			res.status(httpStatus.OK).json({
+				totalActiveTenant: activeTenant.count,
+				totalDeactiveTenant: deactiveTenant.count, totalActiveVendor: activeVendor.count,
+				totalDeactiveVendor: deactiveVendor.count, totalActiveEmployee: activeEmployee.count, totalDeactiveEmployee: deactiveEmployee.count,
+				totalActiveOwner: activeOwner.count, totalDeactiveOwner: deactiveOwner.count
+			})
+		}
+	} catch (error) {
+		res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+	}
+}
+
+exports.checkEmail = (req, res, next) => {
+	const body = req.body;
+	console.log('Body ===>', body);
+
+	User.findOne({
+		where: {
+			isActive: true,
+			email: encrypt(body.email)
+		}
+	})
+		.then(user => {
+			if (user !== null) {
+				res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+					message: 'Email in use for another user'
+				})
+			} else {
+				res.status(httpStatus.OK).json({
+					message: 'Email can be used'
+				})
+			}
+		})
+		.catch(err => {
+			console.log('Error ===>', err);
+			res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+		})
+}
+
+exports.checkContact = (req, res, next) => {
+	const body = req.body;
+	console.log('Body ===>', body);
+
+	User.findOne({
+		where: {
+			isActive: true,
+			contact: encrypt(body.contact)
+		}
+	})
+		.then(user => {
+			if (user !== null) {
+				res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+					message: 'Contact in use for another user'
+				})
+			} else {
+				res.status(httpStatus.OK).json({
+					message: 'Contact can be used'
+				})
+			}
+		})
+		.catch(err => {
+			console.log('Error ===>', err);
+			res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+		})
+}
+
+// function getAge(DOB) {
+//     var today = new Date();
+//     var birthDate = new Date(DOB);
+//     var age = today.getFullYear() - birthDate.getFullYear();
+//     var m = today.getMonth() - birthDate.getMonth();
+//     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+//         age = age - 1;
+//     }
+
+//     return age;
+// }
+
+// alert(getAge("8-17-1981"));
+
+exports.ageWiseCount = async (req, res, next) => {
+	try {
+		let children = [];
+		let adult = [];
+
+
+	} catch (error) {
+		console.log('Error ===>', error);
+		res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+	}
 }
 

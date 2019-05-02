@@ -49,6 +49,9 @@ module.exports = function (app) {
 	const machine = require('../controller/machine');
 	const machineDetail = require('../controller/machineDetail');
 	const rfidController = require('../controller/rfid');
+	const commonAreaController = require('../controller/commonArea');
+	const electricityConsumerController = require('../controller/electricityConsumer');
+	const commonAreaDetailController = require('../controller/commonAreaDetail');
 
 
 	app.get('/', userController.start);
@@ -70,6 +73,10 @@ module.exports = function (app) {
 	app.get('/api/user/search', userController.search);
 
 	// app.get('/api/user/test', [authJwt.verifyToken], userController.userContent);
+
+	app.post('/api/check/email', [authJwt.verifyToken, authJwt.isAdminRole], userController.checkEmail);
+
+	app.post('/api/check/contact', [authJwt.verifyToken, authJwt.isAdminRole], userController.checkContact);
 
 	app.get('/api/user/userRole', [authJwt.verifyToken, authJwt.isAdminRole], userController.roleTest);
 
@@ -97,7 +104,7 @@ module.exports = function (app) {
 
 	app.get('/api/user/:id', userController.getById);
 
-	app.post('/api/user/changePassword', [authJwt.verifyToken, isAdminRole], userController.changePassword);
+	app.post('/api/user/changePassword', [authJwt.verifyToken], userController.changePassword);
 
 	app.get('/api/forgotPassword/:userName', userController.forgottenPassword);
 
@@ -451,7 +458,7 @@ module.exports = function (app) {
 
 	app.post('/api/owner/ownerMember/:id', [authJwt.verifyToken, authJwt.isAdminRole], owner.addMember);
 
-	app.get('/api/owner', [authJwt.verifyToken], owner.get2);
+	app.get('/api/owner',  owner.get2);
 
 	app.put('/api/owner/:id', [authJwt.verifyToken, authJwt.isAdminRole], owner.update2);
 
@@ -463,7 +470,7 @@ module.exports = function (app) {
 
 	app.put('/api/owner/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], owner.deleteSelected);
 
-	app.put('/api/ownerMember/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], owner.deleteSelectedMembers);
+	app.put('/api/ownerMember/delete/deleteSelected',  owner.deleteSelectedMembers);
 
 	app.put('/api/owner/ownerMember/update/:id', [authJwt.verifyToken, authJwt.isAdminRole], owner.updateMember);
 
@@ -485,7 +492,7 @@ module.exports = function (app) {
 
 	app.post('/api/tenant', [authJwt.verifyToken, authJwt.isAdminRole], tenant.createEncrypted);
 
-	app.get('/api/tenant', [authJwt.verifyToken, authJwt.isAdminRole], tenant.getDecrypted);
+	app.get('/api/tenant', [authJwt.verifyToken, isAdminRole], tenant.getDecrypted);
 
 	app.post('/api/tenant/addFlat', [authJwt.verifyToken, isAdminRole], tenant.addFlats);
 
@@ -543,7 +550,7 @@ module.exports = function (app) {
 
 	app.post('/api/ownerActivation', otpChecker.checkOtp);
 
-	app.post('/api/checkToken', checkToken.checkToken);
+	app.post('/api/checkToken', checkToken.checkToken);	
 
 	app.post('/api/createEventBooking', [authJwt.verifyToken, authJwt.isAdminRole], eventBooking.create);
 
@@ -573,15 +580,19 @@ module.exports = function (app) {
 
 	app.get('/api/complaintRegister', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], complaint.get);
 
+	app.get('/api/userComplaints', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], complaint.getByUserId);
+
 	app.get('/api/machine', [authJwt.verifyToken, authJwt.isAdminRole], machine.get);
 
 	app.post('/api/machine', [authJwt.verifyToken, authJwt.isAdminRole], machine.create);
-	
+
 	app.put('/api/machine/:id', [authJwt.verifyToken, authJwt.isAdminRole], machine.update);
 
 	app.put('/api/machine/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], machine.deleteSelected);
 
 	app.put('/api/machine/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], machine.delete);
+
+	app.get('/api/getMachines', [authJwt.verifyToken, authJwt.isAdminRole], machine.getMachineForCommonArea);
 
 	app.get('/api/machineDetail', [authJwt.verifyToken, authJwt.isAdminRole], machineDetail.get);
 
@@ -602,4 +613,51 @@ module.exports = function (app) {
 	app.put('/api/rfid/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], rfidController.deleteSelected);
 
 	app.put('/api/rfid/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], rfidController.delete);
+
+	app.get('/api/user/count/list', [authJwt.verifyToken, authJwt.isAdminRole], userController.activeUsersCount);
+
+	app.get('/api/inventory/count/list', [authJwt.verifyToken, authJwt.isAdminRole], inventoryController.inventoryList);
+
+	app.get('/api/flats/count', [authJwt.verifyToken, authJwt.isAdminRole], tenant.flatsList);
+
+	app.get('/api/rfid/tenant/count', [authJwt.verifyToken, authJwt.isAdminRole], tenant.rfidCount);
+
+	app.get('/api/rfid/owner/count', [authJwt.verifyToken, authJwt.isAdminRole], owner.rfidCount);
+
+	app.get('/api/tenant/rfid', [authJwt.verifyToken, authJwt.isAdminRole], rfidController.getRFID);
+
+	app.get('/api/getRfid', [authJwt.verifyToken, authJwt.isAdminRole], rfidController.getRFIDByAll);
+
+	app.get('/api/commonArea', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaController.get);
+
+	app.post('/api/commonArea', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaController.create);
+
+	app.put('/api/commonArea/:id', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaController.update);
+
+	app.put('/api/commonArea/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaController.deleteSelected);
+
+	app.put('/api/commonArea/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaController.delete);
+
+	app.post('/api/electricityConsumer', [authJwt.verifyToken, authJwt.isAdminRole], electricityConsumerController.create);
+
+	app.get('/api/electricityConsumer', [authJwt.verifyToken, authJwt.isAdminRole], electricityConsumerController.get);
+
+	app.put('/api/electricityConsumer/:id', [authJwt.verifyToken, authJwt.isAdminRole], electricityConsumerController.update);
+
+	app.put('/api/electricityConsumer/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], electricityConsumerController.deleteSelected);
+
+	app.put('/api/electricityConsumer/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], electricityConsumerController.delete);
+
+	app.post('/api/commonAreaDetail', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaDetailController.create);
+
+	// app.get('/api/commonAreaDetail', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaDetailController.get);
+
+	app.get('/api/commonAreaDetail', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaDetailController.getAreaAndMachine);
+
+	app.put('/api/commonAreaDetail/:id', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaDetailController.updateAreaAndMachine);
+
+	app.put('/api/commonAreaDetail/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaDetailController.deleteSelected);
+
+	app.put('/api/commonAreaDetail/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaDetailController.delete);
+
 }

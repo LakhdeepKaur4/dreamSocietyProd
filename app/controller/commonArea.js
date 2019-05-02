@@ -4,139 +4,140 @@ const httpStatus = require('http-status');
 
 const Op = db.Sequelize.Op;
 
-const MachineDetail = db.machineDetail;
+const CommonArea = db.commonArea;
 
 exports.create = (req, res, next) => {
     const body = req.body;
     console.log('Body ===>', body);
 
-    MachineDetail.findOne({
+    CommonArea.findOne({
         where: {
-            machineActualId: body.machineActualId,
-            isActive: true
+            isActive: true,
+            commonArea: body.commonArea
         }
     })
-        .then(machineExisting => {
-            if (machineExisting !== null) {
+        .then(commonAreaExisting => {
+            if (commonAreaExisting !== null) {
                 res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'Machine already exist'
+                    message: 'Common Area exist!'
                 })
             } else {
-                MachineDetail.create(body)
-                    .then(machine => {
-                        if (machine !== null) {
+                CommonArea.create(body)
+                    .then(commonArea => {
+                        if (commonArea !== null) {
                             res.status(httpStatus.CREATED).json({
-                                message: 'Machine registered successfully'
+                                message: 'Created Successfully!'
                             })
                         } else {
                             res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                                message: 'Machine not registered'
+                                message: 'Not created'
                             })
                         }
                     })
                     .catch(err => {
                         console.log('Error ===>', err);
-                        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+                        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
                     })
             }
         })
         .catch(err => {
             console.log('Error ===>', err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
         })
 }
 
 exports.get = (req, res, next) => {
-    MachineDetail.findAll({
+    CommonArea.findAll({
         where: {
             isActive: true
-        }
+        },
     })
-        .then(machines => {
-            if (machines.length !== 0) {
+        .then(commonAreas => {
+            if (commonAreas.length !== 0) {
                 res.status(httpStatus.OK).json({
-                    machinesDetail: machines
+                    commonAreas: commonAreas
                 })
             } else {
                 res.status(httpStatus.NO_CONTENT).json({
-                    message: 'No Content'
+                    message: 'No data available!'
                 })
             }
         })
         .catch(err => {
             console.log('Error ===>', err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
         })
 }
 
 exports.update = (req, res, next) => {
+    const commonAreaId = req.params.id;
     const body = req.body;
-    const machineDetailId = req.params.id;
-    console.log('Id ===>', machineDetailId);
-    body.machineDetailId = machineDetailId;
+    body.commonAreaId = commonAreaId;
     console.log('Body ===>', body);
 
-    MachineDetail.findOne({
+    CommonArea.findOne({
         where: {
-            machineActualId: body.machineActualId,
-            machineDetailId: { [Op.ne]: body.machineDetailId },
             isActive: true,
+            commonArea: body.commonArea,
+            commonAreaId: {
+                [Op.ne]: body.commonAreaId
+            }
         }
     })
-        .then(machineExisting => {
-            if (machineExisting !== null) {
+        .then(commonAreaExisting => {
+            if (commonAreaExisting !== null) {
                 res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'Machine already exist'
+                    message: 'Common Area exist!'
                 })
             } else {
-                MachineDetail.findOne({
+                CommonArea.findOne({
                     where: {
-                        machineDetailId: body.machineDetailId,
+                        commonAreaId: body.commonAreaId,
                         isActive: true
                     }
                 })
-                    .then(machine => {
-                        if (machine !== null) {
-                            machine.updateAttributes(body);
+                    .then(commonArea => {
+                        if (commonArea !== null) {
+                            commonArea.updateAttributes(body);
                             res.status(httpStatus.CREATED).json({
-                                message: 'Machine updated successfully'
+                                message: 'Updated Successfully!'
                             })
                         } else {
-                            res.status(httpStatus.NO_CONTENT).json({
-                                message: 'Machine does not exist'
+                            res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                                message: 'Not updated'
                             })
                         }
                     })
                     .catch(err => {
                         console.log('Error ===>', err);
-                        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+                        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
                     })
             }
         })
         .catch(err => {
             console.log('Error ===>', err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
         })
 }
 
 exports.delete = (req, res, next) => {
-    const machineDetailId = req.params.id;
-    console.log('ID ===>', machineDetailId);
+    const commonAreaId = req.params.id;
+    console.log('ID ===>', commonAreaId);
 
-    MachineDetail.findOne({
+    CommonArea.findOne({
         where: {
-            machineDetailId: machineDetailId,
+            commonAreaId: commonAreaId,
             isActive: true
         }
     })
-        .then(machine => {
-            if (machine !== null) {
-                machine.updateAttributes({ isActive: false });
+        .then(commonArea => {
+            if (commonArea !== null) {
+                commonArea.updateAttributes({ isActive: false });
                 res.status(httpStatus.OK).json({
                     message: 'Deleted successfully'
                 })
             } else {
-                res.status(httpStatus.NO_CONTENT).json({
+                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
                     message: 'Not deleted'
                 })
             }
@@ -148,20 +149,20 @@ exports.delete = (req, res, next) => {
 }
 
 exports.deleteSelected = (req, res, next) => {
-    const machineIds = req.body.ids;
-    console.log('IDs ===>', machineIds);
+    const commonAreaIds = req.body.ids;
+    console.log('IDs ===>', commonAreaIds);
 
-    MachineDetail.findAll({
+    CommonArea.findAll({
         where: {
-            machineDetailId: {
-                [Op.in]: machineIds
+            commonAreaId: {
+                [Op.in]: commonAreaIds
             },
             isActive: true
         }
     })
-        .then(machines => {
-            if (machines.length !== 0) {
-                machines.map(item => {
+        .then(commonAreas => {
+            if (commonAreas.length !== 0) {
+                commonAreas.map(item => {
                     item.updateAttributes({ isActive: false })
                 })
                 res.status(httpStatus.OK).json({

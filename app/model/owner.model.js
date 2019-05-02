@@ -87,6 +87,7 @@ module.exports = (sequelize, Sequelize) => {
                   defaultValue: null,
                   type: Sequelize.DATE
             }
+            
       }, {
                   freezeTableName: true
             });

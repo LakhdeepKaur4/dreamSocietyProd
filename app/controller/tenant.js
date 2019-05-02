@@ -23,17 +23,13 @@ const Tower = db.tower;
 const Society = db.society;
 const Relation = db.relation;
 const Floor = db.floor;
-const Location = db.location;
-const City = db.city;
-const State = db.state;
-const Country = db.country;
 const User = db.user;
 const Otp = db.otp;
 const Role = db.role;
 const UserRoles = db.userRole;
-const Slot = db.slot;
-const Parking = db.parking;
 const TenantFlatDetail = db.tenantFlatDetail;
+const RFID = db.rfid;
+const UserRFID = db.userRfid;
 
 setInterval(async function () {
     // console.log("atin")
@@ -72,7 +68,7 @@ decrypt = (text) => {
 }
 
 constraintCheck = (property, object) => {
-    if ((property in object) && object[property] !== undefined && object[property] !== '' && object[property] !== null) {
+    if ((property in object) && object[property] !== undefined && object[property] !== null) {
         return true;
     } else {
         return false;
@@ -109,11 +105,11 @@ function decrypt1(key, data) {
     return decrypted;
 }
 
-let mailToUser = (email, tenantId) => {
+let mailToUser = (email, id) => {
     const token = jwt.sign(
         { data: 'foo' },
         'secret', { expiresIn: '1h' });
-    tenantId = encrypt(tenantId.toString());
+    tenantId = encrypt(id.toString());
     const request = mailjet.post("send", { 'version': 'v3.1' })
         .request({
             "Messages": [
@@ -129,7 +125,7 @@ let mailToUser = (email, tenantId) => {
                         }
                     ],
                     "Subject": "Activation link",
-                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?tenantId=${tenantId}&token=${token}">click here</a>`
+                    "HTMLPart": `<b>Your verification link has been sent to your owner</b>`
                 }
             ]
         })
@@ -143,16 +139,16 @@ let mailToUser = (email, tenantId) => {
         })
 }
 
-let mailToOwner = async (ownerId, tenant) => {
+let mailToOwner = async (ownerId, email, id, userName) => {
     // let email = decrypt1(key,owner.email);
     // let password = owner.password;
     let key = config.secret;
     const owner = await Owner.findOne({ where: { isActive: true, ownerId: ownerId } });
-    let email = decrypt1(key, owner.email)
-    mailToUser(decrypt1(key, tenant.email), tenant.tenantId);
+    let email1 = decrypt1(key, owner.email)
+    mailToUser(decrypt1(key, email), id);
     ownerId = encrypt(ownerId.toString());
-    tenantId = encrypt(tenant.tenantId.toString());
-    let userName = decrypt(tenant.userName);
+    tenantId = encrypt(id.toString());
+    let userName1 = decrypt(userName);
     const request = mailjet.post("send", { 'version': 'v3.1' })
         .request({
             "Messages": [
@@ -163,12 +159,54 @@ let mailToOwner = async (ownerId, tenant) => {
                     },
                     "To": [
                         {
-                            "Email": email,
+                            "Email": email1,
                             "Name": 'Atin' + ' ' + 'Tanwar'
                         }
                     ],
                     "Subject": "Tenant tried to register in Dream Society",
-                    "HTMLPart": `${userName} is registering in Dream society`
+                    "HTMLPart": `${userName1} is registering in Dream society <b>Click on the given link to verify your tenant</b> <a href="http://mydreamsociety.com/login/tenantVerification?ownerId=${ownerId}&tenantId=${tenantId}">click here</a>`
+                    //   "HTMLPart": `your username is: ${userName} and password is: ${password}. `
+                }
+            ]
+        })
+    request
+        .then((result) => {
+            console.log(result.body)
+            // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
+        })
+        .catch((err) => {
+            console.log(err.statusCode)
+        })
+}
+
+
+
+let mailToOwner1 = async (ownerId, email, id, userName) => {
+    // let email = decrypt1(key,owner.email);
+    // let password = owner.password;
+    let key = config.secret;
+    const owner = await Owner.findOne({ where: { isActive: true, ownerId: ownerId } });
+    let email1 = decrypt1(key, owner.email)
+    mailToUser(decrypt1(key, email), id);
+    ownerId = encrypt(ownerId.toString());
+    tenantId = encrypt(id.toString());
+    let userName1 = decrypt(userName);
+    const request = mailjet.post("send", { 'version': 'v3.1' })
+        .request({
+            "Messages": [
+                {
+                    "From": {
+                        "Email": "rohit.khandelwal@greatwits.com",
+                        "Name": "Greatwits"
+                    },
+                    "To": [
+                        {
+                            "Email": email1,
+                            "Name": 'Atin' + ' ' + 'Tanwar'
+                        }
+                    ],
+                    "Subject": "Tenant tried to register in Dream Society",
+                    "HTMLPart": `${userName1} is registering in Dream society <b>Click on the given link to verify your tenant</b> <a href="http://mydreamsociety.com/login/tenantVerification?ownerId=${ownerId}&tenantMemberId=${tenantId}">click here</a>`
                     //   "HTMLPart": `your username is: ${userName} and password is: ${password}. `
                 }
             ]
@@ -199,86 +237,8 @@ function saveToDisc(name, fileExt, base64String, callback) {
     });
 }
 
-filterFlats = item => {
+let filterFlats = item => {
     return item.tenant_flatDetail_master.isActive === true;
-}
-
-exports.create = async (req, res, next) => {
-    try {
-        let tenantBody = req.body;
-        let memberBody = req.body;
-        let memberId = [];
-        tenantBody.userId = req.userId;
-        let customVendorName = tenantBody.tenantName;
-        const userName = customVendorName + 'T' + tenantBody.towerId + tenantBody.flatDetailId;
-        tenantBody.userName = userName;
-        const password = passwordGenerator.generate({
-            length: 10,
-            numbers: true
-        });
-        tenantBody.password = password;
-        const tenant = await Tenant.create(tenantBody);
-        const tenantId = tenant.tenantId;
-        if (req.body.profilePicture) {
-            saveToDisc(tenantBody.fileName, tenantBody.fileExt, tenantBody.profilePicture, (err, resp) => {
-                if (err) {
-                    console.log(err)
-                }
-                console.log(resp)
-                const updatedImage = {
-                    picture: resp
-                };
-                Tenant.update(updatedImage, { where: { tenantId: tenantId } });
-            });
-        }
-        if (tenantBody.noOfMembers) {
-            memberBody.userId = req.userId;
-            memberBody.tenantId = tenantId;
-            const tenantMember = await TenantMembersDetail.bulkCreate(tenantBody.member, { returning: true },
-                {
-                    fields: ["memberName", "memberDob", "relationId", "gender"],
-                })
-            tenantMember.forEach(item => {
-                memberId.push(item.memberId)
-            });
-            const bodyToUpdate = {
-                userId: req.userId
-            }
-            const updatedMember = await TenantMembersDetail.update(bodyToUpdate, { where: { memberId: { [Op.in]: memberId } } });
-
-        }
-
-        return res.status(httpStatus.CREATED).json({
-            message: "Tenant successfully created",
-            tenant
-        });
-    } catch (error) {
-        console.log("error==>", error);
-        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
-    }
-}
-
-exports.get = async (req, res, next) => {
-    try {
-        const tenant = await Tenant.findAll({
-            // where: { isActive: true },
-            order: [['createdAt', 'DESC']],
-            // include: [{
-            //     model: User,
-            //     as: 'organiser',
-            //     attributes: ['userId', 'userName'],
-            // }]
-        });
-        if (tenant) {
-            return res.status(httpStatus.OK).json({
-                message: "Tenant Content Page",
-                tenant
-            });
-        }
-    } catch (error) {
-        console.log("error==>", error)
-        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
-    }
 }
 
 
@@ -300,8 +260,22 @@ exports.deleteSelected = async (req, res, next) => {
         if (updatedTenant) {
             User.update({ isActive: false }, { where: { userName: { [Op.in]: userNames } } });
             UserRoles.update({ isActive: false }, { where: { userId: { [Op.in]: userIds }, roleId: 4 } });
+            UserRFID.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } } });
             TenantFlatDetail.update({ isActive: false }, { where: { tenantId: { [Op.in]: deleteSelected } } });
-            TenantMembersDetail.update(update, { where: { tenantId: { [Op.in]: deleteSelected } } });
+            TenantMembersDetail.findAll({
+                where: {
+                    tenantId: { [Op.in]: deleteSelected }
+                }
+            })
+                .then(tenantMembers => {
+                    tenantMembers.map(item => {
+                        item.updateAttributes({ isActive: false });
+                        User.update({ isActive: false }, { where: { userId: item.memberId } });
+                        UserRoles.update({ isActive: false }, { where: { userId: item.memberId, roleId: 4 } });
+                        UserRFID.update({ isActive: false }, { where: { userId: item.memberId } });
+                    })
+                })
+
             return res.status(httpStatus.OK).json({
                 message: "Tenant deleted successfully",
             });
@@ -334,13 +308,27 @@ exports.delete = async (req, res, next) => {
                             UserRoles.update({ isActive: false }, { where: { userId: user.userId, roleId: 4 } });
                         })
                 })
+            UserRFID.update({ isActive: false }, { where: { userId: id } });
             TenantFlatDetail.findAll({ where: { tenantId: id } })
                 .then(flats => {
                     flats.map(item => {
-                        item.destroy();
+                        item.updateAttributes({ isActive: false });
                     })
                 })
-            TenantMembersDetail.update({ isActive: false }, { where: { tenantId: id } });
+            TenantMembersDetail.findAll({
+                where: {
+                    tenantId: id
+                }
+            })
+                .then(tenantMembers => {
+                    tenantMembers.map(item => {
+                        item.updateAttributes({ isActive: false });
+                        User.update({ isActive: false }, { where: { userId: item.memberId } });
+                        UserRoles.update({ isActive: false }, { where: { userId: item.memberId, roleId: 4 } });
+                        UserRFID.update({ isActive: false }, { where: { userId: item.memberId } });
+                    })
+                })
+
             return res.status(httpStatus.OK).json({
                 message: "Tenant deleted successfully",
                 tenant: updatedTenant
@@ -440,18 +428,9 @@ exports.createEncrypted = async (req, res, next) => {
                     permanentAddress: encrypt(tenant.permanentAddress),
                     correspondenceAddress: encrypt(tenant.correspondenceAddress),
                     aadhaarNumber: encrypt(tenant.aadhaarNumber),
-                    // bankName: encrypt(tenant.bankName),
-                    // accountHolderName: encrypt(tenant.accountHolderName),
-                    // accountNumber: encrypt(tenant.accountNumber),
                     gender: encrypt(tenant.gender),
                     panCardNumber: encrypt(tenant.panCardNumber),
-                    // IFSCCode: encrypt(tenant.IFSCCode),
                     noOfMembers: tenant.noOfMembers,
-                    // ownerId: tenant.ownerId1,
-                    // ownerId1: tenant.ownerId1,
-                    // ownerId2: tenant.ownerId2,
-                    // ownerId3: tenant.ownerId3,
-
                     userId: tenant.userId,
                     floorId: tenant.floorId,
                     societyId: tenant.societyId,
@@ -465,10 +444,10 @@ exports.createEncrypted = async (req, res, next) => {
                         if (tenant.flatDetailId !== null && tenant.flatDetailId !== undefined && tenant.flatDetailId !== '') {
                             TenantFlatDetail.create({
                                 flatDetailId: tenant.flatDetailId,
-                                tenantId: entry.tenantId
+                                tenantId: entry.tenantId,
+                                isActive: false
                             })
                         }
-
 
                         const roles = await Role.findOne({
                             where: {
@@ -491,7 +470,8 @@ exports.createEncrypted = async (req, res, next) => {
                         })
                             .then(user => {
                                 // user.setRoles(roles);
-                                UserRoles.create({ userId: user.userId, roleId: roles.id });
+                                UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false });
+                                UserRFID.create({ userId: tenant.tenantId, rfidId: tenant.rfidId, isActive: false });
                             })
                         if (tenant.profilePicture) {
                             await saveToDisc(tenant.fileName, tenant.fileExt, tenant.profilePicture, (err, res) => {
@@ -508,57 +488,63 @@ exports.createEncrypted = async (req, res, next) => {
                         }
                         if (tenant.noOfMembers !== 0 && tenant.noOfMembers !== null) {
                             members.map(item => {
-                                item.memberName = encrypt(item.memberName);
+                                let randomNumber;
+                                randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+
+                                item.memberId = randomNumber;
+                                let memberUserName = item.firstName.replace(/ /g, '') + 'T' + uniqueId.toString(36);
+                                const password = passwordGenerator.generate({
+                                    length: 10,
+                                    numbers: true
+                                });
+                                item.password = password;
+                                item.memberDob = item.memberDob;
+                                item.email = encrypt(item.email);
+                                item.contact = encrypt(item.contact);
+                                item.firstName = encrypt(item.firstName);
+                                item.lastName = encrypt(item.lastName);
+                                item.aadhaarNumber = encrypt(item.aadhaarNumber);
+                                item.userName = encrypt(memberUserName);
                                 item.gender = encrypt(item.gender);
                                 item.userId = req.userId;
                                 item.tenantId = entry.tenantId;
                                 membersArr.push(item);
                             })
                             membersArr.map(item => {
-                                TenantMembersDetail.create(item);
+                                TenantMembersDetail.create(item)
+                                    .then(async member => {
+                                        const owners = await OwnerFlatDetail.findAll({
+                                            where: {
+                                                isActive: true,
+                                                flatDetailId: tenant.flatDetailId
+                                            },
+                                            attributes: ['ownerId']
+                                        })
+                                        owners.map(item => {
+                                            ownerId = item.ownerId;
+                                            mailToOwner1(ownerId, member.email, member.memberId, member.userName);
+                                        });
+                                    });
+                                User.create({
+                                    userId: item.memberId,
+                                    firstName: encrypt(item.firstName),
+                                    lastName: encrypt(item.lastName),
+                                    userName: encrypt(item.userName),
+                                    contact: encrypt(item.contact),
+                                    email: encrypt(item.email),
+                                    password: bcrypt.hashSync(item.password, 8),
+                                    // familyMember: encrypt(tenant.noOfMembers.toString()),
+                                    // parking: encrypt('...'),
+                                    towerId: tenant.towerId,
+                                    isActive: false
+                                })
+                                    .then(user => {
+                                        // user.setRoles(roles);
+                                        UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false });
+                                        UserRFID.create({ userId: user.userId, rfidId: item.rfidId, isActive: false });
+                                    })
                             })
                         }
-
-                        // await Owner.findOne({
-                        //     attributes: ['ownerId'],
-                        //     where: {
-                        //         flatDetailId: tenant.flatDetailId
-                        //     }
-                        // })
-                        //     .then(owners => {
-                        //         owners.map(item => {
-                        //             ownersArr.push(item.ownerId);
-                        //         })
-                        //         return ownersArr;
-                        //     })
-                        //     .then(owners => {
-                        //         if (ownersArr.length !== 0) {
-                        //             if (ownersArr[0]) {
-                        //                 ownerId1 = ownersArr[0];
-                        //             }
-                        //             else {
-                        //                 ownerId1 = null;
-                        //             }
-                        //             if (ownersArr[1]) {
-                        //                 ownerId2 = ownersArr[1];
-                        //             }
-                        //             else {
-                        //                 ownerId2 = null;
-                        //             }
-                        //             if (ownersArr[2]) {
-                        //                 ownerId3 = ownersArr[2];
-                        //             }
-                        //             else {
-                        //                 ownerId3 = null;
-                        //             }
-                        //             const ownersIds = {
-                        //                 ownerId1: ownerId1,
-                        //                 ownerId2: ownerId2,
-                        //                 ownerId3: ownerId3
-                        //             };
-                        //             Tenant.update(ownersIds, { where: { tenantId: entry.tenantId } });
-                        //         }
-                        //     })
                     })
                     .then(() => {
                         Tenant.find({
@@ -568,21 +554,6 @@ exports.createEncrypted = async (req, res, next) => {
                         })
                             .then(async tenantSend => {
                                 let ownerId;
-                                // tenantSend.firstName = decrypt(tenantSend.firstName);
-                                // tenantSend.lastName = decrypt(tenantSend.lastName);
-                                // tenantSend.userName = decrypt(tenantSend.userName);
-                                // tenantSend.email = decrypt(tenantSend.email);
-                                // tenantSend.contact = decrypt(tenantSend.contact);
-                                // tenantSend.picture = decrypt(tenantSend.picture);
-                                // tenantSend.aadhaarNumber = decrypt(tenantSend.aadhaarNumber);
-                                // tenantSend.permanentAddress = decrypt(tenantSend.permanentAddress);
-                                // tenantSend.correspondenceAddress = decrypt(tenantSend.correspondenceAddress);
-                                // tenantSend.bankName = decrypt(tenantSend.bankName);
-                                // tenantSend.accountHolderName = decrypt(tenantSend.accountHolderName);
-                                // tenantSend.accountNumber = decrypt(tenantSend.accountNumber);
-                                // tenantSend.gender = decrypt(tenantSend.gender);
-                                // tenantSend.panCardNumber = decrypt(tenantSend.panCardNumber);
-                                // tenantSend.IFSCCode = decrypt(tenantSend.IFSCCode);
 
                                 const owners = await OwnerFlatDetail.findAll({
                                     where: {
@@ -593,11 +564,11 @@ exports.createEncrypted = async (req, res, next) => {
                                 })
                                 // ownerId = owners[0].ownerId;
 
-                                const message = mailToUser(req.body.email, tenantSend.tenantId);
+                                // const message = mailToUser(req.body.email, tenantSend.tenantId);
                                 console.log("ownerID1====?", tenantSend.owner, "87389547374 ", tenantSend)
                                 owners.map(item => {
                                     ownerId = item.ownerId;
-                                    mailToOwner(ownerId, tenantSend);
+                                    mailToOwner(ownerId, tenantSend.email, tenantSend.tenantId, tenantSend.userName);
                                 });
                                 // mailToOwner(ownerId, tenantSend);
                                 return res.status(httpStatus.CREATED).json({
@@ -622,70 +593,157 @@ exports.createEncrypted = async (req, res, next) => {
     }
 }
 
-exports.getDecrypted = async (req, res, next) => {
-    try {
-        const tenantsArr = [];
+// exports.getDecrypted = async (req, res, next) => {
+//     try {
+//         const tenantsArr = [];
 
-        Tenant.findAll({
-            where: {
-                isActive: true
-            },
-            order: [['createdAt', 'DESC']],
-            include: [
-                { model: Society },
-                // { model: Tower },
-                {
-                    model: FlatDetail, include: [
-                        { model: Tower, where: { isActive: true }, attributes: ['towerId', 'towerName'] },
-                        { model: Floor, where: { isActive: true }, attributes: ['floorId', 'floorName'] }
-                    ]
-                },
-                // { model: Floor },
-                // { model: Owner, as: 'Owner1' },
-                // { model: Owner, as: 'Owner2' },
-                // { model: Owner, as: 'Owner3' }
-            ]
-        })
-            .then(tenants => {
-                // console.log(tenants);
+//         Tenant.findAll({
+//             where: {
+//                 isActive: true
+//             },
+//             order: [['createdAt', 'DESC']],
+//             include: [
+//                 { model: Society },
+//                 {
+//                     model: FlatDetail, include: [
+//                         { model: Tower, where: { isActive: true }, attributes: ['towerId', 'towerName'] },
+//                         { model: Floor, where: { isActive: true }, attributes: ['floorId', 'floorName'] }
+//                     ]
+//                 },
+//             ]
+//         })
+//             .then(tenants => {
+//                 // console.log(tenants);
+//                 tenants.map(async item => {
+//                     let rfid = await UserRFID.findOne({
+//                         where: {
+//                             userId: item.tenantId,
+//                             isActive: true
+//                         },
+//                         include: [
+//                             {model: RFID, where: {isActive: true},attributes:['rfidId','rfid']}
+//                         ]
+//                     })
+//                     // console.log('RFID',rfid);
+//                     item.firstName = decrypt(item.firstName);
+//                     item.lastName = decrypt(item.lastName);
+//                     item.userName = decrypt(item.userName);
+//                     item.email = decrypt(item.email);
+//                     item.contact = decrypt(item.contact);
+//                     item.aadhaarNumber = decrypt(item.aadhaarNumber);
+//                     item.picture = decrypt(item.picture);
+//                     item.permanentAddress = decrypt(item.permanentAddress);
+//                     item.correspondenceAddress = decrypt(item.correspondenceAddress);
+//                     item.gender = decrypt(item.gender);
+//                     item.panCardNumber = decrypt(item.panCardNumber);
+//                     item.rfid_master = rfid;
+//                     tenantsArr.push(item);
+//                 })
+//                 return tenantsArr;
+//             })
+//             .then(tenants => {
+//                 return res.status(httpStatus.OK).json({
+//                     message: "Tenant Content Page",
+//                     tenants
+//                 });
+//             })
+//             .catch(err => console.log(err))
+//     } catch (error) {
+//         console.log("error==>", error);
+//         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+//     }
+// }
+
+exports.getDecrypted = (req, res, next) => {
+    // const rfidsArr = [];
+    const tenantsArr = [];
+    const tenantIds = [];
+    Tenant.findAll({
+        where: {
+            isActive: true
+        },
+        attributes: ['tenantId']
+    })
+        .then(tenants => {
+            if (tenants.length !== 0) {
                 tenants.map(item => {
-                    item.firstName = decrypt(item.firstName);
-                    item.lastName = decrypt(item.lastName);
-                    item.userName = decrypt(item.userName);
-                    item.email = decrypt(item.email);
-                    item.contact = decrypt(item.contact);
-                    item.aadhaarNumber = decrypt(item.aadhaarNumber);
-                    item.picture = decrypt(item.picture);
-                    item.permanentAddress = decrypt(item.permanentAddress);
-                    item.correspondenceAddress = decrypt(item.correspondenceAddress);
-                    // item.bankName = decrypt(item.bankName);
-                    // item.accountHolderName = decrypt(item.accountHolderName);
-                    // item.accountNumber = decrypt(item.accountNumber);
-                    item.gender = decrypt(item.gender);
-                    item.panCardNumber = decrypt(item.panCardNumber);
-                    // item.IFSCCode = decrypt(item.IFSCCode);
-                    tenantsArr.push(item);
-                    // console.log(tenantsArr);
+                    tenantIds.push(item.tenantId);
                 })
-                return tenantsArr;
-            })
-            .then(tenants => {
-                return res.status(httpStatus.OK).json({
-                    message: "Tenant Content Page",
-                    tenants
-                });
-            })
-            .catch(err => console.log(err))
-        // if (tenantsArr) {
-        //     return res.status(httpStatus.OK).json({
-        //         message: "Tenant Content Page",
-        //         tenantsArr
-        //     });
-        // }
-    } catch (error) {
-        console.log("error==>", error);
-        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
-    }
+                // console.log(tenantIds);
+                tenantIds.map(item => {
+                    Tenant.findOne({
+                        where: {
+                            isActive: true,
+                            tenantId: item
+                        },
+                        order: [['createdAt', 'DESC']],
+                        include: [
+                            { model: Society },
+                            {
+                                model: FlatDetail, include: [
+                                    { model: Tower, where: { isActive: true }, attributes: ['towerId', 'towerName'] },
+                                    { model: Floor, where: { isActive: true }, attributes: ['floorId', 'floorName'] }
+                                ]
+                            },
+                        ]
+                    })
+                        .then(async tenant => {
+                            // console.log(tenant.tenantId);
+                            let rfid = await UserRFID.findOne({
+                                where: {
+                                    userId: tenant.tenantId,
+                                    isActive: true
+                                },
+                                include: [
+                                    { model: RFID, where: { isActive: true }, attributes: ['rfidId', 'rfid'] }
+                                ]
+                            })
+                            // setTimeout(() => console.log(rfid), 1000);
+                            tenant.firstName = decrypt(tenant.firstName);
+                            tenant.lastName = decrypt(tenant.lastName);
+                            tenant.userName = decrypt(tenant.userName);
+                            tenant.email = decrypt(tenant.email);
+                            tenant.contact = decrypt(tenant.contact);
+                            tenant.aadhaarNumber = decrypt(tenant.aadhaarNumber);
+                            if (tenant.picture !== null) {
+                                tenant.picture = decrypt(tenant.picture);
+                            }
+                            tenant.permanentAddress = decrypt(tenant.permanentAddress);
+                            tenant.correspondenceAddress = decrypt(tenant.correspondenceAddress);
+                            tenant.gender = decrypt(tenant.gender);
+                            tenant.panCardNumber = decrypt(tenant.panCardNumber);
+                            // rfidsArr.push(rfid.rfid_master);
+                            tenant = tenant.toJSON();
+                            if (rfid !== null) {
+                                tenant['rfid_master'] = {
+                                    rfidId: rfid.rfid_master.rfidId,
+                                    rfid: rfid.rfid_master.rfid
+                                };
+                            }
+                            else {
+                                tenant['rfid_master'] = null;
+                            }
+                            // console.log(tenant);
+                            return tenant;
+                        })
+                        .then(tenant => {
+                            tenantsArr.push(tenant);
+                        })
+                })
+                setTimeout(() => {
+                    let tenants = tenantsArr;
+                    res.status(httpStatus.OK).json({
+                        message: "Tenant Content Page",
+                        tenants
+                    });
+                }, 1000);
+                // console.log(tenantsArr);
+            } else {
+                res.status(httpStatus.NO_CONTENT).json({
+                    message: 'No data available!'
+                })
+            }
+        })
 }
 
 exports.updateEncrypted = async (req, res, next) => {
@@ -764,6 +822,7 @@ exports.updateEncrypted = async (req, res, next) => {
             towerIdCheck = constraintCheck('towerId', update);
             // flatDetailIdCheck = constraintCheck('flatDetailId', update);
             floorIdCheck = constraintCheck('floorId', update);
+            // rfidIdCheck = constraintCheck('rfidId', update);
 
 
             firstName = constraintReturn(firstNameCheck, update, 'firstName', tenant);
@@ -784,48 +843,8 @@ exports.updateEncrypted = async (req, res, next) => {
             towerId = referenceConstraintReturn(towerIdCheck, update, 'towerId', tenant);
             // flatDetailId = referenceConstraintReturn(flatDetailIdCheck, update, 'flatDetailId', tenant);
             floorId = referenceConstraintReturn(floorIdCheck, update, 'floorId', tenant);
+            // rfidId = referenceConstraintReturn(rfidIdCheck, update, 'rfidId', tenant);
 
-
-            // await Owner.findAll({
-            //     attributes: ['ownerId'],
-            //     where: {
-            //         flatDetailId: flatDetailId
-            //     }
-            // })
-            //     .then(owners => {
-            //         owners.map(item => {
-            //             ownersArr.push(item.ownerId);
-            //         })
-            //         return ownersArr;
-            //     })
-            //     .then(owners => {
-            //         if (ownersArr.length !== 0) {
-            //             if (ownersArr[0]) {
-            //                 ownerId1 = ownersArr[0];
-            //             }
-            //             else {
-            //                 ownerId1 = null;
-            //             }
-            //             if (ownersArr[1]) {
-            //                 ownerId2 = ownersArr[1];
-            //             }
-            //             else {
-            //                 ownerId2 = null;
-            //             }
-            //             if (ownersArr[2]) {
-            //                 ownerId3 = ownersArr[2];
-            //             }
-            //             else {
-            //                 ownerId3 = null;
-            //             }
-            //             const ownersIds = {
-            //                 ownerId1: ownerId1,
-            //                 ownerId2: ownerId2,
-            //                 ownerId3: ownerId3
-            //             };
-            //             Tenant.update(ownersIds, { where: { tenantId: id } });
-            //         }
-            //     })
             if ((update.picture !== '') && (update.picture !== null) && (update.picture !== undefined)) {
                 tenantImage = await Tenant.find({ where: { tenantId: id }, attributes: ['picture'] });
                 fs.unlink((decrypt(tenantImage.picture)).replace('../../', ''), err => {
@@ -866,7 +885,7 @@ exports.updateEncrypted = async (req, res, next) => {
                 userId: req.userId,
                 societyId: societyId,
                 towerId: towerId,
-                // flatDetailId: flatDetailId
+                // rfidId: update.rfidId,
             };
 
             Tenant.find({
@@ -875,23 +894,21 @@ exports.updateEncrypted = async (req, res, next) => {
                 }
             })
                 .then(tenant => {
-                    User.update(updates, { where: { userName: tenant.userName } });
+                    UserRFID.findOne({ where: { userId: tenant.tenantId, isActive: true } })
+                        .then(tenantRfid => {
+                            if (tenantRfid !== null) {
+                                tenantRfid.updateAttributes({ rfidId: update.rfidId })
+                            } else {
+                                UserRFID.create({
+                                    userId: tenant.tenantId,
+                                    rfidId: update.rfidId
+                                })
+                            }
+                        })
+                    User.update(updates, { where: { userName: tenant.userName, isActive: true } });
                     return tenant.updateAttributes(updates);
                 })
                 .then(tenant => {
-                    // tenant.tenantName = decrypt(tenant.tenantName);
-                    // tenant.userName = decrypt(tenant.userName);
-                    // tenant.email = decrypt(tenant.email);
-                    // tenant.contact = decrypt(tenant.contact);
-                    // tenant.aadhaarNumber = decrypt(tenant.aadhaarNumber);
-                    // tenant.picture = decrypt(tenant.picture);
-                    // tenant.permanentAddress = decrypt(tenant.permanentAddress);
-                    // tenant.bankName = decrypt(tenant.bankName);
-                    // tenant.accountHolderName = decrypt(tenant.accountHolderName);
-                    // tenant.accountNumber = decrypt(tenant.accountNumber);
-                    // tenant.gender = decrypt(tenant.gender);
-                    // tenant.panCardNumber = decrypt(tenant.panCardNumber);
-                    // tenant.IFSCCode = decrypt(tenant.IFSCCode);
                     return res.status(httpStatus.CREATED).json({
                         message: "Tenant successfully updated",
                         // tenant: tenant
@@ -911,41 +928,86 @@ exports.updateEncrypted = async (req, res, next) => {
 exports.getTenantMembers = async (req, res, next) => {
     const tenantId = req.params.id;
     const membersArr = [];
+    const memberIds = [];
     console.log('Tenant-ID ===>', tenantId);
-
-    // const tenant = Tenant.findOne({
-    //     where: {
-    //         tenantId: tenantId
-    //     }
-    // });
 
     if (!tenantId) {
         return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
     }
 
-    const tenantMembers = await TenantMembersDetail.findAll({
+    TenantMembersDetail.findAll({
         where: {
-            tenantId: tenantId,
-            isActive: true
+            isActive: true,
+            tenantId: tenantId
         },
-        include: {
-            model: Relation,
-            attributes: ['relationName']
-        }
-    });
+        attributes: ['memberId']
+    })
+        .then(members => {
+            members.map(item => {
+                memberIds.push(item.memberId);
+            })
+            memberIds.map(item => {
+                TenantMembersDetail.findOne({
+                    where: {
+                        isActive: true,
+                        memberId: item
+                    },
+                    order: [['createdAt', 'DESC']],
+                    include: [
+                        { model: Relation },
+                        { model: FlatDetail }
+                    ]
+                })
+                    .then(async member => {
+                        let rfid = await UserRFID.findOne({
+                            where: {
+                                userId: member.memberId,
+                                isActive: true
+                            },
+                            include: [
+                                { model: RFID, where: { isActive: true }, attributes: ['rfidId', 'rfid'] }
+                            ]
+                        })
+
+                        member.firstName = decrypt(member.firstName);
+                        member.lastName = decrypt(member.lastName);
+                        member.userName = decrypt(member.userName);
+                        member.email = decrypt(member.email);
+                        member.contact = decrypt(member.contact);
+                        member.aadhaarNumber = decrypt(member.aadhaarNumber);
+                        // member.picture = decrypt(member.picture);
+                        // member.permanentAddress = decrypt(member.permanentAddress);
+                        // member.correspondenceAddress = decrypt(member.correspondenceAddress);
+                        member.gender = decrypt(member.gender);
+                        // member.panCardNumber = decrypt(member.panCardNumber);
+
+                        member = member.toJSON();
+                        if (rfid !== null) {
+                            member['rfid_master'] = {
+                                rfidId: rfid.rfid_master.rfidId,
+                                rfid: rfid.rfid_master.rfid
+                            };
+                        }
+                        else {
+                            member['rfid_master'] = null;
+                        }
+
+                        return member;
+                    })
+                    .then(member => {
+                        membersArr.push(member);
+                    })
+            })
+        })
     // console.log(tenantMembers)
 
-
-
-    tenantMembers.map(item => {
-        item.memberName = decrypt(item.memberName);
-        item.gender = decrypt(item.gender);
-    })
-
-    res.status(httpStatus.OK).json({
-        message: "Tenant Members Details",
-        members: tenantMembers
-    });
+    setTimeout(() => {
+        let members = membersArr;
+        res.status(httpStatus.OK).json({
+            message: "Tenant Members Details",
+            members
+        });
+    }, 1000);
 }
 
 exports.deleteTenantMember = async (req, res, next) => {
@@ -964,39 +1026,102 @@ exports.deleteTenantMember = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
 
-        const member = await TenantMembersDetail.find({ where: { memberId: id } });
-
-        const updatedMember = await member.updateAttributes(update);
-
-        updatedMember.memberName = decrypt(updatedMember.memberName);
-        updatedMember.gender = decrypt(updatedMember.gender);
-
-        if (updatedMember) {
-            return res.status(httpStatus.OK).json({
-                message: "Member deleted successfully",
-                member: updatedMember
-            });
-        }
+        TenantMembersDetail.findOne({
+            where: {
+                memberId: id
+            }
+        })
+            .then(member => {
+                member.updateAttributes({ isActive: false });
+                User.update({ isActive: false }, { where: { userId: member.memberId } });
+                UserRoles.update({ isActive: false }, { where: { userId: member.memberId } });
+                UserRFID.update({ isActive: false }, { where: { userId: member.memberId } });
+                return res.status(httpStatus.OK).json({
+                    message: "Member deleted successfully"
+                });
+            })
     } catch (error) {
         console.log("error ===>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
-exports.addTenantMembers = (req, res, next) => {
+exports.addTenantMembers = async (req, res, next) => {
     const member = req.body;
+    const flatIds = [];
     member.userId = req.userId;
 
-    member.memberName = encrypt(member.memberName);
+    let randomNumber;
+    randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+    const tenantExists = await TenantMembersDetail.findOne({ where: { isActive: true, memberId: randomNumber } });
+    const userExists = await User.findOne({ where: { isActive: true, userId: randomNumber } });
+    if (tenantExists !== null || userExists !== null) {
+        console.log("duplicate random number")
+        randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+    }
+    let uniqueId = generateRandomId();
+    let userName = member.firstName.replace(/ /g, '') + 'T' + uniqueId.toString(36);
+    member.userName = userName;
+    const password = passwordGenerator.generate({
+        length: 10,
+        numbers: true
+    });
+    member.firstName = encrypt(member.firstName);
+    member.lastName = encrypt(member.lastName);
+    member.userName = encrypt(member.userName);
+    member.email = encrypt(member.email);
+    member.contact = encrypt(member.contact);
+    member.aadhaarNumber = encrypt(member.aadhaarNumber);
     member.gender = encrypt(member.gender);
+    member.password = password;
+    member.memberId = randomNumber;
+    member.isActive = false;
 
     TenantMembersDetail.create(member)
-        .then(member => {
-            member.memberName = decrypt(member.memberName);
-            member.gender = decrypt(member.gender);
+        .then(async memberCreated => {
+            member.password = bcrypt.hashSync(member.password, 8);
+            member.userId = member.memberId;
+            User.create(member)
+                .then(user => {
+                    UserRoles.create({
+                        userId: member.userId,
+                        roleId: 4,
+                        isActive: false
+                    })
+                    UserRFID.create({
+                        userId: member.userId,
+                        rfidId: member.rfidId,
+                        isActive: false
+                    })
+                })
+
+            const flats = await TenantFlatDetail.findAll({
+                where: {
+                    isActive: true,
+                    tenantId: member.tenantId
+                },
+                attributes: ['flatDetailId']
+            })
+
+            flats.map(item => {
+                flatIds.push(item.flatDetailId);
+            })
+
+            const owners = await OwnerFlatDetail.findAll({
+                where: {
+                    isActive: true,
+                    flatDetailId: {
+                        [Op.in]: flatIds
+                    }
+                },
+                attributes: ['ownerId']
+            })
+            owners.map(item => {
+                ownerId = item.ownerId;
+                mailToOwner1(ownerId, member.email, member.memberId, member.userName);
+            });
             return res.status(httpStatus.CREATED).json({
-                message: 'Member created successfully',
-                member
+                message: 'Member created successfully. Please check email and contact to your flat owner for account activation.'
             });
         })
         .catch(err => {
@@ -1012,26 +1137,51 @@ exports.editTenantMembers = async (req, res, next) => {
         return res.status(httpStatus.UNPROCESSABLE_ENTITY).json('Id is missing');
     }
 
+    console.log('ID ===>', id);
+
     const update = req.body;
 
     if (!update) {
         return res.status(httpStatus.UNPROCESSABLE_ENTITY).json('Please try again');
     }
 
+    console.log('Body ===>', update);
+
     member = await TenantMembersDetail.findOne({ where: { memberId: id } });
 
-    memberNameCheck = constraintCheck('memberName', update);
+    firstNameCheck = constraintCheck('firstName', update);
+    lastNameCheck = constraintCheck('lastName', update);
+    emailCheck = constraintCheck('email', update);
+    contactCheck = constraintCheck('contact', update);
+    aadhaarNumberCheck = constraintCheck('aadhaarNumber', update);
     genderCheck = constraintCheck('gender', update);
 
-    update.memberName = constraintReturn(memberNameCheck, update, 'memberName', member);
+    update.firstName = constraintReturn(firstNameCheck, update, 'firstName', member);
+    update.lastName = constraintReturn(lastNameCheck, update, 'lastName', member);
+    update.email = constraintReturn(emailCheck, update, 'email', member);
+    update.contact = constraintReturn(contactCheck, update, 'contact', member);
+    update.aadhaarNumber = constraintReturn(aadhaarNumberCheck, update, 'aadhaarNumber', member);
     update.gender = constraintReturn(genderCheck, update, 'gender', member);
 
-    TenantMembersDetail.update(update, {
+    TenantMembersDetail.findOne({
         where: {
             memberId: id
         }
     })
         .then(member => {
+            member.updateAttributes(update);
+            User.update(update, { where: { userId: member.memberId } })
+            UserRFID.findOne({ where: { userId: member.memberId, isActive: true } })
+                .then(memberRfid => {
+                    if (memberRfid !== null) {
+                        memberRfid.updateAttributes({ rfidId: update.rfidId })
+                    } else {
+                        UserRFID.create({
+                            userId: member.memberId,
+                            rfidId: update.rfidId
+                        })
+                    }
+                })
             return res.status(httpStatus.CREATED).json({
                 message: 'Member updated successfully',
             })
@@ -1051,7 +1201,7 @@ exports.deleteSelectedTenantMembers = (req, res, next) => {
 
     const deleteUpdate = { isActive: false };
 
-    TenantMembersDetail.update(deleteUpdate, {
+    TenantMembersDetail.findAll({
         where: {
             memberId: {
                 [Op.or]: ids
@@ -1059,6 +1209,12 @@ exports.deleteSelectedTenantMembers = (req, res, next) => {
         }
     })
         .then(members => {
+            members.map(item => {
+                item.updateAttributes(deleteUpdate);
+                User.update(deleteUpdate, { where: { userId: item.memberId } });
+                UserRoles.update(deleteUpdate, { where: { userId: item.memberId } });
+                UserRFID.update(deleteUpdate, { where: { userId: item.memberId } });
+            })
             return res.status(httpStatus.OK).json({
                 message: 'Members deleted successfully'
             });
@@ -1088,22 +1244,38 @@ exports.addFlats = async (req, res, next) => {
             })
         } else {
             if (body !== null) {
-                TenantFlatDetail.create(body)
-                    .then(flat => {
-                        if (flat !== null) {
+                TenantFlatDetail.findOne({
+                    where: {
+                        tenantId: body.tenantId,
+                        flatDetailId: body.flatDetailId
+                    }
+                })
+                    .then(tenant => {
+                        if (tenant !== null) {
+                            tenant.updateAttributes({ isActive: true });
                             res.status(httpStatus.CREATED).json({
                                 message: 'Flat added successfully'
                             })
                         } else {
-                            res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                                message: 'Flat not added'
-                            })
+                            TenantFlatDetail.create(body)
+                                .then(flat => {
+                                    if (flat !== null) {
+                                        res.status(httpStatus.CREATED).json({
+                                            message: 'Flat added successfully'
+                                        })
+                                    } else {
+                                        res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                                            message: 'Flat not added'
+                                        })
+                                    }
+                                })
+                                .catch(err => {
+                                    console.log('Error ===>', err);
+                                    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+                                })
                         }
                     })
-                    .catch(err => {
-                        console.log('Error ===>', err);
-                        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-                    })
+
             } else {
                 res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
                     message: 'Please provide required data'
@@ -1180,10 +1352,26 @@ exports.editFlat = (req, res, next) => {
                                 message: 'Flat details already exist for same tenant'
                             })
                         } else {
-                            flat.updateAttributes({ flatDetailId: body.flatDetailId });
-                            res.status(httpStatus.CREATED).json({
-                                message: 'Flat details updated successfully'
+                            TenantFlatDetail.findOne({
+                                where: {
+                                    tenantId: body.tenantId,
+                                    flatDetailId: body.flatDetailId
+                                }
                             })
+                                .then(flatExistingNotActive => {
+                                    if (flatExistingNotActive !== null) {
+                                        flatExistingNotActive.updateAttributes({ isActive: true });
+                                        flat.updateAttributes({ isActive: false });
+                                        res.status(httpStatus.CREATED).json({
+                                            message: 'Flat details updated successfully'
+                                        });
+                                    } else {
+                                        flat.updateAttributes({ flatDetailId: body.flatDetailId });
+                                        res.status(httpStatus.CREATED).json({
+                                            message: 'Flat details updated successfully'
+                                        });
+                                    }
+                                })
                         }
                     })
                     .catch(err => {
@@ -1216,7 +1404,7 @@ exports.deleteFlat = (req, res, next) => {
         .then(flat => {
             console.log(flat);
             if (flat !== null) {
-                flat.destroy();
+                flat.updateAttributes({ isActive: false });
                 res.status(httpStatus.OK).json({
                     message: 'Flat deleted successfully'
                 })
@@ -1230,4 +1418,36 @@ exports.deleteFlat = (req, res, next) => {
             console.log('Error ===>', err);
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
+}
+
+
+exports.flatsList = async (req, res, next) => {
+    try {
+        const activeFlats = await FlatDetail.findAndCountAll({ where: { isActive: true } });
+        const occupiedFlats = await OwnerFlatDetail.findAndCountAll({ where: { isActive: true } });
+        console.log("active Flats==>", activeFlats.count);
+        console.log("empty flats ==>", occupiedFlats.count);
+        const emptyFlats = activeFlats.count - occupiedFlats.count;
+        console.log(emptyFlats)
+        res.status(httpStatus.OK).json({ activeFlats: occupiedFlats.count, emptyFlats });
+    } catch (error) {
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
+
+exports.rfidCount = async (req, res, next) => {
+    try {
+        const rfidCount = await Tenant.findAndCountAll({
+            where: {
+                rfidId: {
+                    [Op.ne]: null
+                }
+            }
+        });
+        if (rfidCount) {
+            res.status(httpStatus.OK).json({ rfid: rfidCount.count });
+        }
+    } catch (error) {
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
 }

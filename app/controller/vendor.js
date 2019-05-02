@@ -253,7 +253,27 @@ exports.delete = async (req, res, next) => {
         }
         const updatedVendor = await Vendor.find({ where: { vendorId: id } }).then(vendor => {
             return vendor.updateAttributes(update)
-        })
+        });
+
+        const updatedUser = await User.findOne({
+            where: {
+              isActive:true,
+              userId: id
+            }
+          });
+
+          if (updatedUser) {
+            updatedUser.updateAttributes({
+              isActive: false
+            });
+            let updatedUserRoles = await UserRoles.find({
+              where: {
+                userId: id
+              }
+            }).then(userRole => {
+              userRole.updateAttributes(update);
+            })
+          }
 
         // const updatedVendorService = await VendorService.find({ where: { vendorId: id } }).then(vendorService => {
         //     return vendorService.updateAttributes(update)
@@ -281,6 +301,9 @@ exports.deleteSelected = async (req, res, next) => {
         }
         const updatedVendor = await Vendor.update(update, { where: { vendorId: { [Op.in]: deleteSelected } } })
         const updatedServices = await VendorService.update(update, { where: { vendorId: { [Op.in]: deleteSelected } } })
+        const updatedUsers = await User.update(update, { where: { userId: { [Op.in]: deleteSelected } } });
+        const updatedUserRoles = await UserRoles.update(update, { where: { userId: { [Op.in]: deleteSelected } } });
+
 
 
         if (updatedVendor && updatedServices) {
@@ -803,4 +826,6 @@ exports.updateVendorService = async (req, res, next) => {
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
+
+
 

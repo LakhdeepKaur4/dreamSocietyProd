@@ -52,7 +52,7 @@ isAdmin = (req, res, next) => {
 isAdminRole = async (req, res, next) => {
 	
 	let token = req.headers['x-access-token'];
-    console.log(req.userId)
+    console.log(req.userId);
 	const user = await User.findOne({ where: { isActive: true, userId: req.userId } });
 	if (user) {
 		const role = await UserRole.findOne({
@@ -62,6 +62,7 @@ isAdminRole = async (req, res, next) => {
 				}
 			}
 		});
+		console.log(role);
 		if (role) {
 			next();
 			return

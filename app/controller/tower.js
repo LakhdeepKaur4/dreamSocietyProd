@@ -21,7 +21,7 @@ exports.create = async (req, res) => {
                 isActive: true
             }
         })
-
+    
         let error = towers.some(tower => {
             return tower.towerName.toLowerCase().replace(/ /g, '') == req.body.towerName.toLowerCase().replace(/ /g, '');
         });
@@ -163,8 +163,7 @@ exports.getFloorByTowerId = async (req, res) => {
         console.log(error)
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message })
     }
-}
-
+} 
 
 exports.getFloorByTowerIdForTenant = async (req, res, next) => {
     const towerId = req.params.id;
@@ -444,7 +443,7 @@ exports.update = async (req, res) => {
 exports.updateTowerAndFloor = async (req, res) => {
     try {
         const towerId = req.params.id;
-
+        
         let towerIds = [];
         const towerFloor = await TowerFloor.findAll({ where: { isActive: true, towerId: towerId } });
         const towerFloorId = towerFloor.map(towerFloor => {

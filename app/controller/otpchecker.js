@@ -20,6 +20,8 @@ const Tenant = db.tenant;
 const Employee = db.employee;
 const Vendor = db.vendor;
 const IndividualVendor = db.individualVendor;
+const OwnerMembersDetail = db.ownerMembersDetail;
+const TenantMembersDetail = db.tenantMembersDetail;
 
 const User = db.user;
 const Otp = db.otp;
@@ -64,6 +66,52 @@ let testSms = (contact, userName, password) => {
     return;
 
 };
+
+let mailToUser1 = (member) => {
+    let email = decrypt(key, member.memberEmail);
+    let password = member.password;
+    let userName = decrypt(key, member.memberUserName);
+    let contact = decrypt(key, member.memberContact);
+    testSms(contact, userName, password);
+    const request = mailjet.post("send", { 'version': 'v3.1' })
+        .request({
+            "Messages": [
+                {
+                    "From": {
+                        "Email": "rohit.khandelwal@greatwits.com",
+                        "Name": "Greatwits"
+                    },
+                    "To": [
+                        {
+                            "Email": email,
+                            "Name": 'Atin' + ' ' + 'Tanwar'
+                        }
+                    ],
+                    "Subject": "Activation link username and password",
+                    "HTMLPart": `your username is: ${userName} and password is: ${password}. `
+                }
+            ]
+        })
+    request
+        .then((result) => {
+            console.log(result.body)
+            // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
+        })
+        .catch((err) => {
+            console.log(err.statusCode)
+        })
+}
+
+
+
+
+
+
+
+
+
+
+
 
 let mailToUser = (owner) => {
     let email = decrypt(key, owner.email);
@@ -179,11 +227,12 @@ exports.checkOtp = async (req, res, next) => {
             console.log("user==>", user);
             if (user) {
                 let roles = await Role.findOne({
-                    where: { id: 6 }
+                    where: { id: 3 }
                 });
                 console.log("employee role", roles)
                 // user.setRoles(roles);
-                UserRoles.create({ userId: user.userId, roleId: roles.id });
+                let role = await UserRoles.findOne({where:{ userId: user.userId, roleId: roles.id }});
+                role.updateAttributes({isActive:true});
                 user.updateAttributes({ isActive: true });
             }
             return res.status(200).json(
@@ -193,6 +242,68 @@ exports.checkOtp = async (req, res, next) => {
                 });
         }
     }
+
+
+    if (req.query.memberId) {
+        let memberId = decrypt(key, req.query.memberId);
+        console.log(memberId);
+        let ownerMember = await OwnerMembersDetail.findOne({ where: { memberId: memberId, isActive: false } });
+        console.log("ownerMember====>", ownerMember);
+        if (!ownerMember) {
+            return res.status(403).json(
+                {
+                    otpVerified: false,
+                    message: 'OwnerMember does not exist or have already been activated.'
+                });
+            // return console.log("ownerMember does not exist or have already been activated");
+        }
+        let otpToCheck = parseInt(req.body.otp);
+        let ownerKey = ownerMember.memberId;
+        let findOtp = await Otp.findOne({ where: { otpvalue: otpToCheck, memberId: ownerKey } });
+        if (findOtp === null || findOtp === undefined) {
+            //  return console.log(' your otp  is invalid');
+            return res.status(200).json(
+                {
+                    otpVerified: false,
+                    message: 'Otp is invalid.Please contact admin.'
+                });
+
+        }
+        let updatedOwnerMember = await ownerMember.updateAttributes({ isActive: true });
+        if (updatedOwnerMember) {
+            //  console.log('ownerMember Successfully activated');
+            mailToUser1(updatedOwnerMember);
+            let userName = decrypt(key, updatedOwnerMember.memberUserName);
+            // set users
+            let user = await User.findOne({
+                where: {
+                    userName: encrypt1(key, userName),
+                    isActive: false
+                }
+            });
+
+            console.log("user==>", user);
+            if (user) {
+                let roles = await Role.findOne({
+                    where: { id: 3 }
+                });
+                console.log("employee role", roles)
+                // user.setRoles(roles);
+                let role = await UserRoles.findOne({where:{ userId: user.userId, roleId: roles.id }});
+                role.updateAttributes({isActive:true});
+                user.updateAttributes({ isActive: true });
+            }
+            return res.status(200).json(
+                {
+                    otpVerified: true,
+                    message: 'OwnerMember successfully activated. Check your email for username and password.'
+                });
+        }
+    }
+
+
+
+
 
     // added vendor
 
@@ -236,11 +347,12 @@ exports.checkOtp = async (req, res, next) => {
             console.log("user==>", user);
             if (user) {
                 let roles = await Role.findOne({
-                    where: { id: 6 }
+                    where: { id: 5 }
                 });
                 console.log("employee role", roles)
                 // user.setRoles(roles);
-                UserRoles.create({ userId: user.userId, roleId: roles.id });
+                let role = await UserRoles.findOne({where:{ userId: user.userId, roleId: roles.id }});
+                role.updateAttributes({isActive:true});
                 user.updateAttributes({ isActive: true });
             }
             return res.status(200).json(
@@ -292,7 +404,8 @@ exports.checkOtp = async (req, res, next) => {
                 });
                 console.log("employee role", roles)
                 // user.setRoles(roles);
-                UserRoles.create({ userId: user.userId, roleId: roles.id });
+                let role = await UserRoles.findOne({where:{ userId: user.userId, roleId: roles.id }});
+                role.updateAttributes({isActive:true});
                 user.updateAttributes({ isActive: true });
             }
 
@@ -351,7 +464,8 @@ exports.checkOtp = async (req, res, next) => {
                 });
                 console.log("employee role", roles)
                 // user.setRoles(roles);
-                UserRoles.create({ userId: user.userId, roleId: roles.id });
+                let role = await UserRoles.findOne({where:{ userId: user.userId, roleId: roles.id }});
+                role.updateAttributes({isActive:true});
                 user.updateAttributes({ isActive: true });
             }
             return res.status(200).json(
@@ -399,11 +513,12 @@ exports.checkOtp = async (req, res, next) => {
 
             if (user) {
                 let roles = await Role.findOne({
-                    where: { id: 6 }
+                    where: { id: 4 }
                 });
                 console.log("employee role", roles)
                 // user.setRoles(roles);
-                UserRoles.create({ userId: user.userId, roleId: roles.id });
+                let role = await UserRoles.findOne({where:{ userId: user.userId, roleId: roles.id }});
+                role.updateAttributes({isActive:true});
                 user.updateAttributes({ isActive: true });
             }
 
@@ -416,5 +531,75 @@ exports.checkOtp = async (req, res, next) => {
                 });
         }
     }
+
+
+
+
+    
+
+    if (req.query.tenantMemberId) {
+        console.log("here i am . wow!!!!!=====================================>",req.query.tenantMemberId);
+
+        let tenantMemberId = decrypt1(key, req.query.tenantMemberId);
+        console.log(tenantMemberId);
+        let tenantMember = await TenantMembersDetail.findOne({ where: { memberId: tenantMemberId, isActive: false } });
+        if (tenantMember === undefined || tenantMember === null) {
+            return res.status(403).json(
+                {
+                    otpVerified: false,
+                    message: 'Tenant does not exist or have already been activated.'
+                });
+        }
+        let otpToCheck = parseInt(req.body.otp);
+        let tenantKey = tenantMember.memberId;
+        let findOtp = await Otp.findOne({ where: { otpvalue: otpToCheck, tenantMemberId: tenantKey } });
+        if (findOtp === null || findOtp === undefined) {
+            return res.status(200).json(
+                {
+                    otpVerified: false,
+                    message: 'Otp is invalid or expired.Please contact admin.'
+                });
+        }
+        let updatedTenant = await tenantMember.updateAttributes({ isActive: true });
+        console.log(updatedTenant);
+        if (updatedTenant) {
+            mailToUser(updatedTenant);
+
+            // set user
+            let userName = decrypt1(key, updatedTenant.userName);
+            // set users
+            let user = await User.findOne({
+                where: { userName: encrypt1(key, userName),isActive:false }
+            });
+
+            if (user) {
+                console.log("reaching here",user)
+               const test = user.updateAttributes({ isActive: true });
+               console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$",test)
+                let roles = await Role.findOne({
+                    where: { id: 4 }
+                });
+                console.log("employee role", roles)
+                // user.setRoles(roles);
+                let role = await UserRoles.findOne({where:{ userId: user.userId, roleId: roles.id }});
+                role.updateAttributes({isActive:true});
+                // user.updateAttributes({ isActive: true });
+            }
+
+            // set roles
+
+            return res.status(200).json(
+                {
+                    otpVerified: true,
+                    message: 'TenantMember successfully activated.Check your email for your username and password'
+                });
+        }
+    }
+
+
+
+
+
+
 
 }

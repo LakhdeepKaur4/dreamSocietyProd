@@ -15,6 +15,7 @@ const jwt = require('jsonwebtoken');
 const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
 const bcrypt = require('bcryptjs');
 const randomInt = require('random-int');
+const RfId = db.rfid;
 
 const Owner = db.owner;
 
@@ -35,6 +36,9 @@ const OwnerFlatDetail = db.ownerFlatDetail;
 const FlatParkingDetails = db.flatParking;
 const Floor = db.floor;
 const TenantFlatDetail = db.tenantFlatDetail;
+const UserRfId = db.userRfid;
+const Tenant = db.tenant;
+const TenantMembersDetail = db.tenantMembersDetail;
 
 function encrypt(key, data) {
   var cipher = crypto.createCipher("aes-128-cbc", key);
@@ -92,88 +96,6 @@ function saveToDisc(name, fileExt, base64String, callback) {
   });
 }
 
-exports.create = async (req, res, next) => {
-  try {
-    console.log("creating owner");
-    let ownerBody = req.body;
-    let memberBody = req.body;
-    let memberId = [];
-    ownerBody.userId = req.userId;
-    console.log("owner body==>", ownerBody);
-    let customVendorName = ownerBody.ownerName;
-    const userName =
-      customVendorName + "O" + ownerBody.towerId + ownerBody.flatDetailId;
-    console.log("userName==>", userName);
-    ownerBody.userName = userName;
-    const password = passwordGenerator.generate({
-      length: 10,
-      numbers: true
-    });
-    ownerBody.password = password;
-
-    const owner = await Owner.create(ownerBody);
-    const ownerId = owner.ownerId;
-    if (req.body.profilePicture) {
-      saveToDisc(
-        ownerBody.fileName,
-        ownerBody.fileExt,
-        ownerBody.profilePicture,
-        (err, resp) => {
-          if (err) {
-            console.log(err);
-          }
-          console.log(resp);
-          // }
-          const updatedImage = {
-            picture: resp
-          };
-          Owner.update(updatedImage, {
-            where: {
-              ownerId: ownerId
-            }
-          });
-        }
-      );
-    }
-    if (ownerBody.noOfMembers) {
-      memberBody.userId = req.userId;
-      memberBody.ownerId = ownerId;
-      const ownerMember = await OwnerMembersDetail.bulkCreate(
-        ownerBody.member, {
-          returning: true
-        }, {
-          fields: ["memberName", "memberDob", "gender", "relationId"]
-          // updateOnDuplicate: ["name"]
-        }
-      );
-      ownerMember.forEach(item => {
-        memberId.push(item.memberId);
-        console.log("member id0", memberId);
-      });
-      const bodyToUpdate = {
-        ownerId: ownerId,
-        userId: req.userId
-      };
-      console.log("bodytoUpdate ==>", bodyToUpdate);
-      console.log(ownerMember.memberId);
-      const updatedMember = await OwnerMembersDetail.update(bodyToUpdate, {
-        where: {
-          memberId: {
-            [Op.in]: memberId
-          }
-        }
-      });
-    }
-    return res.status(httpStatus.CREATED).json({
-      message: "Owner successfully created",
-      owner
-    });
-  } catch (error) {
-    console.log("error==>", error);
-    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
-  }
-};
-
 let testSms = (contact) => {
   const apikey = 'mJUH4QVvP+E-coDtRnQr7wvdVc8ClAWDcKjPew8Gxl';
   const number = contact;
@@ -186,6 +108,41 @@ let testSms = (contact) => {
   });
   return OTP;
 };
+
+
+let mailToUser1 = (email, memberId) => {
+  const token = jwt.sign({
+      data: 'foo'
+    },
+    'secret', {
+      expiresIn: '1h'
+    });
+  memberId = encrypt(key, memberId.toString());
+  const request = mailjet.post("send", {
+      'version': 'v3.1'
+    })
+    .request({
+      "Messages": [{
+        "From": {
+          "Email": "rohit.khandelwal@greatwits.com",
+          "Name": "Greatwits"
+        },
+        "To": [{
+          "Email": email,
+          "Name": 'Atin' + ' ' + 'Tanwar'
+        }],
+        "Subject": "Activation link",
+        "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?memberId=${memberId}&token=${token}">click here</a>`
+      }]
+    })
+  request.then((result) => {
+      console.log(result.body)
+      // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
+    })
+    .catch((err) => {
+      console.log(err.statusCode)
+    })
+}
 
 
 let mailToUser = (email, ownerId) => {
@@ -262,6 +219,45 @@ exports.create1 = async (req, res, next) => {
         message: "contact already exist"
       });
     }
+
+    req.body.member.map( async (member,index) => {
+      let existingOwner = await OwnerMembersDetail.find({
+        where: {
+          isActive: true,
+          memberEmail: encrypt(key, member.memberEmail)
+        }
+      });
+      let existingUser = await User.find({
+        where: {
+          isActive: true,
+          email: encrypt(key, member.memberEmail)
+        }
+      })
+      if (existingOwner || existingUser) {
+        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+          message: "email already exist for member " + (index + 1)
+        });
+      }
+      let existingOwner1 = await OwnerMembersDetail.find({
+        where: {
+          isActive: true,
+          memberContact: encrypt(key, member.memberContact)
+        }
+      });
+      let existingContact = await User.find({
+        where: {
+          isActive: true,
+          contact: encrypt(key, member.memberContact)
+        }
+      })
+      if (existingOwner1 || existingContact) {
+        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+          message: "contact already exist for member" + (index + 1)
+        });
+      }
+
+    });
+    
     let randomNumber;
     randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
     const OwnerExists = await Owner.findOne({ where: { isActive: true, ownerId: randomNumber } });
@@ -315,6 +311,7 @@ exports.create1 = async (req, res, next) => {
       userId: req.userId,
       societyId: ownerBody.societyId,
       towerId: ownerBody.towerId,
+      rfidId:ownerBody.rfidId,
       // flatDetailId: ownerBody.flatDetailId,
       floorId: ownerBody.floorId
     });
@@ -357,8 +354,23 @@ exports.create1 = async (req, res, next) => {
       memberBody.userId = req.userId;
       memberBody.ownerId = ownerId;
 
-      req.body.member.map(member => {
-        member.memberName = encrypt(key, member.memberName);
+      req.body.member.map( async (member,index) => {
+
+        let randomNumber;
+        randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+        member.memberId = randomNumber;
+        member.password = passwordGenerator.generate({
+          length: 10,
+          numbers: true
+        });
+        member.memberUserName = member.memberFirstName + member.memberLastName + 'OM' + req.body.towerId + shortId.generate()
+        member.memberUserName = encrypt(key,member.memberUserName);
+        member.memberEmail = encrypt(key,member.memberEmail);
+        member.memberContact = encrypt(key,member.memberContact);
+        member.memberFirstName = encrypt(key, member.memberFirstName);
+       
+          member.memberLastName = encrypt(key, member.memberLastName);
+    
         member.gender = encrypt(key, member.gender);
         memberNewArray.push(member);
       });
@@ -367,7 +379,7 @@ exports.create1 = async (req, res, next) => {
         memberNewArray, {
           returning: true
         }, {
-          fields: ["memberName", "memberDob", "gender", "relationId"]
+          fields: ["memberId","memberFirstName", "memberLastName","memberUserName","memberEmail","memberContact","password", "memberDob", "gender", "relationId","memberRfId" ]
           // updateOnDuplicate: ["name"]
         }
       );
@@ -388,8 +400,62 @@ exports.create1 = async (req, res, next) => {
         }
       });
 
-    }
-    if (owner.firstName && owner.lastName !== '') {
+      ownerMember.map( async member => {
+        if(member.memberFirstName !== '' && member.memberLastName !== '' ){
+          firstName = decrypt(key, member.memberFirstName);
+          lastName = decrypt(key, member.memberLastName);
+        } else if(member.memberFirstName && member.memberLastName !== ''){
+          firstName = decrypt(key, member.memberFirstName);
+          lastName = '...'; 
+        }
+
+        let ownerMemberUserName = decrypt(key, member.memberUserName);
+        let email = decrypt(key, member.memberEmail);
+
+        let user = await User.create({
+          userId: member.memberId,
+          firstName: encrypt1(key, firstName),
+          lastName: encrypt1(key, lastName),
+          userName: encrypt1(key, ownerMemberUserName),
+          password: bcrypt.hashSync(member.password, 8),
+          contact: encrypt1(key, member.memberContact),
+          towerId: owner.towerId,
+          email: encrypt1(key, email),
+          isActive: false
+        });
+        if(member.merberRfId !== null && member.memberRfId !== undefined && member.memberRfId !== ''){
+          let userRfId = await UserRfId.create({
+            userId:user.userId,
+            rfidId:member.memberRfId
+          })
+        }
+        // else {
+        //   member.memberRfId = null;
+        //   let userRfId = await UserRfId.create({
+        //     userId:user.userId,
+        //     rfidId:member.memberRfId
+        //   })
+        // }
+        
+        let roles = await Role.findOne({
+          where: {
+            id: 3
+          }
+        });
+    
+        // user.setRoles(roles);
+        console.log("owner role==>", roles);
+        UserRoles.create({
+          userId: user.userId,
+          roleId: roles.id,
+          isActive:false
+        });
+        const message = mailToUser1(email, member.memberId);
+
+      })
+
+    }       
+    if (owner.firstName !== '' && owner.lastName !== '') {
       firstName = decrypt(key, owner.firstName);
       lastName = decrypt(key, owner.lastName)
     } else if (owner.firstName && owner.lastName !== '') {
@@ -413,6 +479,11 @@ exports.create1 = async (req, res, next) => {
       email: encrypt1(key, email),
       isActive: false
     });
+
+    let userRfId = await UserRfId.create({
+      userId:user.userId,
+      rfidId:owner.rfidId
+    })
     // set roles
     console.log(owner.password);
     console.log(user.password);
@@ -426,7 +497,8 @@ exports.create1 = async (req, res, next) => {
     console.log("owner role==>", roles);
     UserRoles.create({
       userId: user.userId,
-      roleId: roles.id
+      roleId: roles.id,
+      isActive:false
     });
     const message = mailToUser(req.body.email, ownerId);
     return res.status(httpStatus.CREATED).json({
@@ -438,31 +510,6 @@ exports.create1 = async (req, res, next) => {
   }
 };
 
-
-exports.get = async (req, res, next) => {
-  try {
-    const owner = await Owner.findAll({
-      // where: { isActive: true },
-      order: [
-        ["createdAt", "DESC"]
-      ]
-      // include: [{
-      //     model: User,
-      //     as: 'organiser',
-      //     attributes: ['userId', 'userName'],
-      // }]
-    });
-    if (owner) {
-      return res.status(httpStatus.CREATED).json({
-        message: "Owner Content Page",
-        owner
-      });
-    }
-  } catch (error) {
-    console.log("error==>", error);
-    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
-  }
-};
 
 exports.get1 = async (req, res, next) => {
   let getOwners = [];
@@ -487,6 +534,9 @@ exports.get1 = async (req, res, next) => {
         },
         {
           model: Tower
+        },
+        {
+          model:RfId
         }
       ]
     });
@@ -577,6 +627,9 @@ exports.get2 = async (req, res, next) => {
         },
         {
           model: Tower
+        },
+        {
+          model:RfId
         }
       ]
     });
@@ -600,7 +653,10 @@ exports.get2 = async (req, res, next) => {
       // owner.picture = owner.picture.replace('../', '');
       owner.adhaarCardNo = decrypt(key, owner.adhaarCardNo);
       owner.owner_members_detail_masters.forEach(x => {
-        x.memberName = decrypt(key, x.memberName);
+        x.memberFirstName = decrypt(key, x.memberFirstName);
+        x.memberLastName = decrypt(key, x.memberLastName);
+        x.memberEmail = decrypt(key,x.memberEmail);
+        x.memberContact = decrypt(key,x.memberContact);
         x.gender = decrypt(key, x.gender);
       });
       owner.society_master.societyName = decrypt1(key, owner.society_master.societyName);
@@ -784,7 +840,7 @@ exports.update1 = async (req, res, next) => {
     "email",
     "contact"
   ]
-  let ids = ["flatDetailId", "societyId", "towerId", "floorId"];
+  let ids = ["flatDetailId", "societyId", "towerId", "floorId","rfidId"];
   let others = ["dob", "noOfMembers"];
   try {
     const id = req.params.id;
@@ -978,7 +1034,7 @@ exports.update2 = async (req, res, next) => {
   ];
 
   let updUserAttr = {};
-  let ids = ["flatDetailId", "societyId", "towerId", "floorId"];
+  let ids = ["flatDetailId", "societyId", "towerId", "floorId" , "rfidId"];
   let others = ["dob", "noOfMembers"];
   try {
     const id = req.params.id;
@@ -1008,10 +1064,19 @@ exports.update2 = async (req, res, next) => {
     });
     const user = await User.findOne({
       where: {
-        email: updatedOwner.email,
+        userId: updatedOwner.ownerId,
         isActive: true
       }
-    })
+    });
+    if(req.body.rfidId){
+      let userRf = await UserRfId.findOne({
+        where:{
+          isActive:true,
+          userId:id
+        }
+      });
+      userRf.updateAttributes({rfidId:req.body.rfidId});
+    }
     attrArr.forEach(attr => {
       if (
         attr in req.body &&
@@ -1092,7 +1157,9 @@ exports.update2 = async (req, res, next) => {
       // updatedOwner1.userName = decrypt(key, updatedOwner1.userName);
       updatedOwner1.firstName = decrypt(key, updatedOwner1.firstName);
       updatedOwner1.lastName = decrypt(key, updatedOwner1.lastName);
-      updatedOwner1.picture = decrypt(key, updatedOwner1.picture);
+      if(updatedOwner1.picture){
+        updatedOwner1.picture = decrypt(key, updatedOwner1.picture);
+      }
       updatedOwner1.email = decrypt(key, updatedOwner1.email);
       updatedOwner1.permanentAddress = decrypt(
         key,
@@ -1133,7 +1200,7 @@ exports.update2 = async (req, res, next) => {
 
 exports.delete = async (req, res, next) => {
   try {
-    console.log("deleting");
+    console.log("deleting=====>",req.params.id);
     const id = req.params.id;
     if (!id) {
       return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
@@ -1156,11 +1223,42 @@ exports.delete = async (req, res, next) => {
       updatedOwner.updateAttributes(update);
 
     }
+    // const updatedUser = await User.findOne({
+    //   where: {
+    //     email: updatedOwner.email
+    //   }
+    // });
+    // console.log("show yourself", updatedUser);
+    // if (updatedUser) {
+    //   updatedUser.updateAttributes({
+    //     isActive: false
+    //   });
+    //   let updatedUserRoles = await UserRoles.find({
+    //     where: {
+    //       userId: updatedUser.userId
+    //     }
+    //   }).then(userRole => {
+    //     userRole.updateAttributes(update);
+    //   })
+    // }
+
     const updatedUser = await User.findOne({
       where: {
-        email: updatedOwner.email
+        isActive:true,
+        userId: updatedOwner.ownerId
       }
     });
+    let urfId = await UserRfId.findOne({
+      where:{
+        isActive:true,
+        userId:id
+      }
+    });
+    console.log("user_rf_id ====>", urfId)
+    if(urfId){
+      urfId.updateAttributes(update);
+    }
+
     console.log("show yourself", updatedUser);
     if (updatedUser) {
       updatedUser.updateAttributes({
@@ -1174,7 +1272,6 @@ exports.delete = async (req, res, next) => {
         userRole.updateAttributes(update);
       })
     }
-
 
     const flatDetails = await OwnerFlatDetail.findAll({
       where: {
@@ -1192,7 +1289,44 @@ exports.delete = async (req, res, next) => {
         });
         if (tenants) {
           // tenants.forEach(tenant => tenant.updateAttributes(update))
-          tenants.forEach(tenant => tenant.destroy())
+          tenants.forEach( async tenant => {
+            let tenantToDeactivate = await Tenant.findOne({where:{isActive:true,tenantId:tenant.tenantId}});
+            let user1 = await User.findOne({where:{isActive:true,userId:tenant.tenantId}});
+            let rfId = await UserRfId.findOne({where:{isActive:true,userId:tenant.tenantId}});
+            let role = await UserRoles.findOne({where:{isActive:true,userId:tenant.tenantId}});
+            let tenantMembers = await TenantMembersDetail.findAll({where:{isActive:true,tenantId:tenant.tenantId}});
+            tenantMembers.forEach(async tenantMember => {
+              let userMember = await User.findOne({where:{isActive:true,userId:tenantMember.memberId}});
+              let memberRfId = await UserRfId.findOne({where:{isActive:true,userId:tenantMember.memberId}});
+              let memberRole = await UserRoles.findOne({where:{isActive:true,userId:tenantMember.memberId}});
+              if(userMember){
+                userMember.updateAttributes({isActive:false});
+              }
+              if(memberRfId){
+                memberRfId.updateAttributes({isActive:false});
+              }
+              if(memberRole){
+                memberRole.updateAttributes({isActive:false});
+              }
+              tenantMember.updateAttributes({isActive:false});
+            })
+            if(tenantToDeactivate){
+              tenantToDeactivate.updateAttributes({isActive:false});
+            }
+            if(user1){
+              user1.updateAttributes({isActive:false});
+            }
+            if(rfId){
+              rfId.updateAttributes({isActive:false});
+            }
+            if(role){
+              role.updateAttributes({isActive:false});         
+            }
+            if(tenant){
+              tenant.updateAttributes({isActive:false});
+            }
+          }
+          )
         }
         return entry.updateAttributes(update);
       })
@@ -1203,11 +1337,38 @@ exports.delete = async (req, res, next) => {
     // const updatedVendorService = await VendorService.find({ where: { vendorId: id } }).then(vendorService => {
     //     return vendorService.updateAttributes(update)
     // })
-    const updatedOwnerMembersDetail = await OwnerMembersDetail.update(update, {
+    const updatedOwnerMembersDetail = await OwnerMembersDetail.findAll({
       where: {
+        isActive:true,
         ownerId: id
       }
+    });
+
+    updatedOwnerMembersDetail.forEach( async member => {
+    let memberUser = await User.findOne({
+      where: {
+        isActive:true,
+        userId:member.memberId
+      }
+    });
+    const uRfId = await UserRfId.findOne({
+      where:{
+        isActive:true,
+        userId:member.memberId
+      }
+    });
+    uRfId.updateAttributes(update);
+    let role = await UserRoles.findOne({
+      where: {
+        userId: member.memberId
+      }
+    });
+    memberUser.updateAttributes(update);
+    role.updateAttributes(update);
+    member.updateAttributes(update);
     })
+
+    
     if (updatedOwner && updatedOwnerMembersDetail) {
       return res.status(httpStatus.OK).json({
         message: "Owner deleted successfully",
@@ -1254,9 +1415,17 @@ exports.deleteSelected = async (req, res, next) => {
         let user = await User.findOne({
           where: {
             isActive: true,
-            email: updatedOwner.email
+            userId: updatedOwner.ownerId
           }
-        })
+        });
+        let urfId = await UserRfId.findOne({
+          where:{
+            isActive:true,
+            userId:updatedOwner.ownerId
+          }
+        });
+        console.log("user_rf_id ====>", urfId)
+        urfId.updateAttributes(update);
         let role = await UserRoles.findOne({
           where: {
             userId: user.userId
@@ -1271,7 +1440,7 @@ exports.deleteSelected = async (req, res, next) => {
     //   await User.update(update,{where:{email:owner.email}})
     // })
 
-    const updatedOwnersMembers = await OwnerMembersDetail.update(update, {
+    const updatedOwnersMembers = await OwnerMembersDetail.findAll( {
       where: {
         ownerId: {
           [Op.in]: deleteSelected
@@ -1279,14 +1448,38 @@ exports.deleteSelected = async (req, res, next) => {
       }
     });
 
-    let flatDetails = await OwnerFlatDetail.update(update, {
-      where: {
-        isActive: true,
-        ownerId: {
-          [Op.in]: deleteSelected
+    updatedOwnersMembers.forEach(async member =>{
+      let memberUser = await User.findOne( {
+        where: {
+          isActive: true,
+          userId:member.memberId
         }
+      });
+      let role = await UserRoles.findOne({
+        where: {
+          userId: member.memberId
+        }
+      });
+      let urfId = await UserRfId.findOne({
+        where:{
+          isActive:true,
+          userId:member.memberId
+        }
+      });
+      console.log("user_rf_id ====>", urfId);
+      if(urfId){
+        urfId.updateAttributes(update);
       }
-    });
+      if(role){
+        role.updateAttributes(update);
+      }
+      if(memberUser){
+        memberUser.updateAttributes(update);
+      }
+      member.updateAttributes(update);
+    })
+
+    
 
     let flats = await OwnerFlatDetail.findAll({
       where: {
@@ -1300,13 +1493,57 @@ exports.deleteSelected = async (req, res, next) => {
       flats.forEach(async flat => {
         let tenants = await TenantFlatDetail.findAll({where:{isActive:true,flatDetailId:flat.flatDetailId}});
         if(tenants){
-          tenants.forEach(tenant => {
-            // tenant.updateAttributes({isActive:false});
-            tenant.destroy();
+          tenants.forEach(async tenant => {
+           
+            let tenantToDeactivate = await Tenant.findOne({where:{isActive:true,tenantId:tenant.tenantId}});
+            let user1 = await User.findOne({where:{isActive:true,userId:tenant.tenantId}});
+            let rfId = await UserRfId.findOne({where:{isActive:true,userId:tenant.tenantId}});
+            let role = await UserRoles.findOne({where:{isActive:true,userId:tenant.tenantId}});
+            let tenantMembers = await TenantMembersDetail.findAll({where:{isActive:true,tenantId:tenant.tenantId}});
+            tenantMembers.forEach(async tenantMember => {
+              let userMember = await User.findOne({where:{isActive:true,userId:tenantMember.memberId}});
+              let memberRfId = await UserRfId.findOne({where:{isActive:true,userId:tenantMember.memberId}});
+              let memberRole = await UserRoles.findOne({where:{isActive:true,userId:tenantMember.memberId}});
+              if(userMember){
+                userMember.updateAttributes({isActive:false});
+              }
+              if(memberRfId){
+                memberRfId.updateAttributes({isActive:false});
+              }
+              if(memberRole){
+                memberRole.updateAttributes({isActive:false});
+              }
+              tenantMember.updateAttributes({isActive:false});
+            })
+            if(tenantToDeactivate){
+              tenantToDeactivate.updateAttributes({isActive:false});
+            }
+            if(user1){
+              user1.updateAttributes({isActive:false});
+            }
+            if(rfId){
+              rfId.updateAttributes({isActive:false});
+            }
+            if(role){
+              role.updateAttributes({isActive:false});         
+            }
+            if(tenant){
+              tenant.updateAttributes({isActive:false});
+            }
+           
           })
         }
       })
     }
+
+    let flatDetails = await OwnerFlatDetail.update(update, {
+      where: {
+        isActive: true,
+        ownerId: {
+          [Op.in]: deleteSelected
+        }
+      }
+    });
 
     if (updatedOwners && updatedOwnersMembers && flatDetails) {
       return res.status(httpStatus.OK).json({
@@ -1340,11 +1577,14 @@ exports.getMembers = async (req, res, next) => {
     });
 
     ownerMembers.map(ownerMember => {
-      ownerMember.memberName = decrypt(key, ownerMember.memberName);
+      ownerMember.memberFirstName = decrypt(key, ownerMember.memberFirstName);
+      ownerMember.memberLastName = decrypt(key, ownerMember.memberLastName);
+      ownerMember.memberEmail = decrypt(key, ownerMember.memberEmail);
+      ownerMember.memberContact = decrypt(key, ownerMember.memberContact);
       ownerMember.gender = decrypt(key, ownerMember.gender);
       memberArr.push(ownerMember);
     })
-
+    console.log("getting members");
     return res.status(httpStatus.OK).json({
       message: "OwnerMembers fetched successfully",
       memberArr
@@ -1367,15 +1607,43 @@ exports.deleteMember = async (req, res, next) => {
     isActive: false
   };
 
-  const updatedOwnerMembersDetail = await OwnerMembersDetail.update(update, {
+  const updatedOwnerMembersDetail = await OwnerMembersDetail.findOne({
     where: {
-      [Op.and]: [{
-        memberId: ownerMemberId
-      }, {
+        memberId: ownerMemberId,
         isActive: true
-      }]
+    }
+  })
+  let memberUser = await User.findOne({
+    where: {
+      isActive: true,
+      userId:updatedOwnerMembersDetail.memberId
     }
   });
+  if(memberUser){
+    memberUser.updateAttributes(update);
+
+  }
+  let role = await UserRoles.findOne({
+    where: {
+      isActive:true,
+      userId: ownerMemberId
+    }
+  });
+  if(role){
+    role.updateAttributes(update);
+  }
+  let urfId = await UserRfId.findOne({
+    where:{
+      isActive:true,
+      userId:ownerMemberId
+    }
+  });
+  console.log("user_rf_id ====>", urfId);
+  if(urfId){
+    urfId.updateAttributes(update);
+  }
+  updatedOwnerMembersDetail.updateAttributes(update);
+
   if (updatedOwnerMembersDetail) {
     return res.status(httpStatus.OK).json({
       message: "OwnerMember deleted successfully",
@@ -1398,18 +1666,49 @@ exports.deleteSelectedMembers = async (req, res, next) => {
     }
     // const updatedOwners = await Owner.update(update, { where: { ownerId: { [Op.in]: deleteSelected } } })
 
-    const updatedOwnersMembers = await OwnerMembersDetail.update(update, {
-      where: {
+    const selectedMembers = await OwnerMembersDetail.findAll({
+      where:{
+        isActive:true,
         memberId: {
           [Op.in]: deleteSelected
         }
       }
     });
-    if (updatedOwnersMembers) {
+
+    selectedMembers.forEach(async member => {
+      let memberUser = await User.findOne({
+          where:{
+            isActive:true,
+            userId:member.memberId
+          }
+        });
+        if(memberUser){
+         await  memberUser.updateAttributes(update);
+        }      
+        let urfId = await UserRfId.findOne({
+          where:{
+            isActive:true,
+            userId:member.memberId
+          }
+        });
+        // console.log("user_rf_id ====>", urfId)
+        if(urfId){
+          await urfId.updateAttributes(update);
+        }
+        let role = await UserRoles.findOne({
+          where: {
+            userId: member.memberId
+          }
+        });
+        if(role){
+          await role.updateAttributes(update);
+        }
+        await member.updateAttributes(update);
+    })
       return res.status(httpStatus.OK).json({
         message: "Owners deleted successfully",
       });
-    };
+
   } catch (error) {
     console.log(error)
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
@@ -1419,13 +1718,64 @@ exports.deleteSelectedMembers = async (req, res, next) => {
 
 exports.updateMember = async (req, res, next) => {
   try {
+
+    if (req.body.memberEmail !== undefined && req.body.memberEmail !== null) {
+      let existingOwnerMember = await OwnerMembersDetail.find({
+        where: {
+          [Op.and]: [{
+            isActive: true
+          }, {
+            memberEmail: encrypt(key, req.body.memberEmail)
+          }, {
+            memberId: {
+              [Op.ne]: req.params.id
+            }
+          }]
+        }
+      });
+      if (existingOwnerMember) {
+        return res
+          .status(httpStatus.UNPROCESSABLE_ENTITY)
+          .json({
+            message: "email already exist"
+          });
+      }
+    }
+  
+    if (req.body.memberContact !== undefined && req.body.memberContact !== null) {
+      let existingOwner1 = await OwnerMembersDetail.find({
+        where: {
+          isActive: true,
+          [Op.and]: [{
+            memberContact: encrypt(key, req.body.memberContact)
+          }, {
+            memberId: {
+              [Op.ne]: req.params.id
+            }
+          }]
+        }
+      });
+      if (existingOwner1) {
+        return res
+          .status(httpStatus.UNPROCESSABLE_ENTITY)
+          .json({
+            message: "contact already exist"
+          });
+      }
+    }
+
+
+
     console.log("updatememberreq====>", req.body);
     let updAttr = {};
     let attrArr = [
-      "memberName",
+      "memberFirstName",
+      "memberLastName",
+      "memberEmail",
+      "memberContact",
       "gender"
     ];
-    let ids = ["relationId"];
+    let ids = ["relationId","memberRfId"];
     let others = ["memberDob"];
 
     console.log("updating ownerMember");
@@ -1453,6 +1803,17 @@ exports.updateMember = async (req, res, next) => {
         memberId: id
       }
     });
+    if(req.body.memberRfId){
+    let uRfId  =  await UserRfId.find({
+        where:{
+          isActive:true,
+          userId: id
+        }
+      });
+      if(uRfId){
+        uRfId.updateAttributes({rfidId:req.body.memberRfId});
+      }
+    };
     attrArr.forEach(attr => {
       if (
         attr in req.body &&
@@ -1495,22 +1856,116 @@ exports.updateMember = async (req, res, next) => {
 };
 
 
-exports.addMember = (req, res, next) => {
+exports.addMember = async (req, res, next) => {
   try {
+
+
+    let existingOwner = await OwnerMembersDetail.find({
+      where: {
+        isActive: true,
+        memberEmail: encrypt(key, req.body.memberEmail)
+      }
+    });
+    let existingUser = await User.find({
+      where: {
+        isActive: true,
+        email: encrypt(key, req.body.memberEmail)
+      }
+    })
+    if (existingOwner || existingUser) {
+      return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+        message: "email already exist for member "
+      });
+    }
+    let existingOwner1 = await OwnerMembersDetail.find({
+      where: {
+        isActive: true,
+        memberContact: encrypt(key, req.body.memberContact)
+      }
+    });
+    let existingContact = await User.find({
+      where: {
+        isActive: true,
+        contact: encrypt(key, req.body.memberContact)
+      }
+    })
+    if (existingOwner1 || existingContact) {
+      return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+        message: "contact already exist for member" 
+      });
+    }
+
+
     console.log("gsdfhgsdahjfgjhadsf", req.body);
-    let ownerId = req.params.id;
+    const password = passwordGenerator.generate({
+      length: 10,
+      numbers: true
+    });
+    let randomNumber;
+    randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+    req.body.memberId = randomNumber;
     req.body.ownerId = req.params.id;
-    req.body.memberName = encrypt(key, req.body.memberName);
+    req.body.memberUserName = req.body.memberFirstName + req.body.memberLastName + 'OM' + req.body.towerId + shortId.generate()
+    req.body.memberUserName = encrypt(key,req.body.memberUserName);
+    req.body.memberFirstName = encrypt(key, req.body.memberFirstName);
+    req.body.memberLastName = encrypt(key, req.body.memberLastName);
+    req.body.memberEmail = encrypt(key, req.body.memberEmail);
+    req.body.memberContact = encrypt(key, req.body.memberContact);
     req.body.gender = encrypt(key, req.body.gender);
+    req.body.password = password;
+    if(req.body.memberRfId === ""){
+      req.body.memberRfId = null
+    }
     let fields = req.body;
     fields.userId = req.userId;
 
     console.log(fields);
 
-    OwnerMembersDetail.create(fields).then(newOwner => res.status(httpStatus.OK).json({
-      message: "OwnerMember created successfully",
-      owner: newOwner
-    }))
+    let member = await OwnerMembersDetail.create(fields);
+      if(member.memberFirstName !== '' && member.memberLastName !== '' ){
+        firstName = decrypt(key, member.memberFirstName);
+        lastName = decrypt(key, member.memberLastName);
+      } else if(member.memberFirstName && member.memberLastName !== ''){
+        firstName = decrypt(key, member.memberFirstName);
+        lastName = '...'; 
+      }
+
+      let ownerMemberUserName = decrypt(key, member.memberUserName);
+      let email = decrypt(key, member.memberEmail);
+
+      let user = await User.create({
+        userId: member.memberId,
+        firstName: encrypt1(key, firstName),
+        lastName: encrypt1(key, lastName),
+        userName: encrypt1(key, ownerMemberUserName),
+        password: bcrypt.hashSync(member.password, 8),
+        contact: encrypt1(key, member.memberContact),
+        towerId: req.body.towerId,
+        email: encrypt1(key, email),
+        isActive: false
+      });
+    
+      let userRfId = await UserRfId.create({
+        userId:user.userId,
+        rfidId:member.memberRfId
+      }) 
+      let roles = await Role.findOne({
+        where: {
+          id: 3
+        }
+      });
+  
+      // user.setRoles(roles);
+      console.log("owner role==>", roles);
+      await UserRoles.create({
+        userId: user.userId,
+        roleId: roles.id
+      });
+      const message = mailToUser1(email, member.memberId);
+      res.status(httpStatus.OK).json({
+        message: "Member Added Sucessfully to respective Owner",
+      })
+
   } catch (error) {
     console.log(error);
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
@@ -1590,6 +2045,7 @@ exports.getflats = async (req, res, next) => {
         }]
       }]
 
+      
     });
     if (flat) {
       console.log("asdf");
@@ -1656,7 +2112,44 @@ exports.deleteFlat = async (req, res, next) => {
     });
     let tenants = await TenantFlatDetail.findAll({where:{isActive:true,flatDetailId:flatDetailId}});
     if(tenants){
-      tenants.forEach(tenant => tenant.destroy())
+      tenants.forEach(async tenant =>{
+        let tenantToDeactivate = await Tenant.findOne({where:{isActive:true,tenantId:tenant.tenantId}});
+        let user1 = await User.findOne({where:{isActive:true,userId:tenant.tenantId}});
+        let rfId = await UserRfId.findOne({where:{isActive:true,userId:tenant.tenantId}});
+        let role = await UserRoles.findOne({where:{isActive:true,userId:tenant.tenantId}});
+        let tenantMembers = await TenantMembersDetail.findAll({where:{isActive:true,tenantId:tenant.tenantId}});
+        tenantMembers.forEach(async tenantMember => {
+          let userMember = await User.findOne({where:{isActive:true,userId:tenantMember.memberId}});
+          let memberRfId = await UserRfId.findOne({where:{isActive:true,userId:tenantMember.memberId}});
+          let memberRole = await UserRoles.findOne({where:{isActive:true,userId:tenantMember.memberId}});
+          if(userMember){
+            userMember.updateAttributes({isActive:false});
+          }
+          if(memberRfId){
+            memberRfId.updateAttributes({isActive:false});
+          }
+          if(memberRole){
+            memberRole.updateAttributes({isActive:false});
+          }
+          tenantMember.updateAttributes({isActive:false});
+        })
+        if(tenantToDeactivate){
+          tenantToDeactivate.updateAttributes({isActive:false});
+        }
+        if(user1){
+          user1.updateAttributes({isActive:false});
+        }
+        if(rfId){
+          rfId.updateAttributes({isActive:false});
+        }
+        if(role){
+          role.updateAttributes({isActive:false});         
+        }
+        if(tenant){
+          tenant.updateAttributes({isActive:false});
+        }
+      }     
+      )
     }
     if (result) {
       res.status(httpStatus.OK).json({
@@ -1693,7 +2186,45 @@ exports.editFlat = async (req,res,next) => {
       deleteFlat.updateAttributes({isActive:false});
       let tenants = await TenantFlatDetail.findAll({where:{isActive:true,flatDetailId:previousFlatId}});
       
-      tenants.forEach(tenant => tenant.destroy());
+      tenants.forEach( async tenant =>{
+        let tenantToDeactivate = await Tenant.findOne({where:{isActive:true,tenantId:tenant.tenantId}});
+        let user1 = await User.findOne({where:{isActive:true,userId:tenant.tenantId}});
+        let rfId = await UserRfId.findOne({where:{isActive:true,userId:tenant.tenantId}});
+        let role = await UserRoles.findOne({where:{isActive:true,userId:tenant.tenantId}});
+        let tenantMembers = await TenantMembersDetail.findAll({where:{isActive:true,tenantId:tenant.tenantId}});
+        tenantMembers.forEach(async tenantMember => {
+          let userMember = await User.findOne({where:{isActive:true,userId:tenantMember.memberId}});
+          let memberRfId = await UserRfId.findOne({where:{isActive:true,userId:tenantMember.memberId}});
+          let memberRole = await UserRoles.findOne({where:{isActive:true,userId:tenantMember.memberId}});
+          if(userMember){
+            userMember.updateAttributes({isActive:false});
+          }
+          if(memberRfId){
+            memberRfId.updateAttributes({isActive:false});
+          }
+          if(memberRole){
+            memberRole.updateAttributes({isActive:false});
+          }
+          tenantMember.updateAttributes({isActive:false});
+        })
+        if(tenantToDeactivate){
+          tenantToDeactivate.updateAttributes({isActive:false});
+        }
+        if(user1){
+          user1.updateAttributes({isActive:false});
+        }
+        if(rfId){
+          rfId.updateAttributes({isActive:false});
+        }
+        if(role){
+          role.updateAttributes({isActive:false});         
+        }
+        if(tenant){
+          tenant.updateAttributes({isActive:false});
+        }
+      }     
+
+      );
       
       let checkprev = await OwnerFlatDetail.findOne({where:{isActive:false,ownerId:ownerId,flatDetailId:newFlatId}});
       if(checkprev){
@@ -1713,11 +2244,27 @@ exports.editFlat = async (req,res,next) => {
           })
         }
       }   
-      
     }
   }catch(error){
     console.log(error);
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
-  
+}
+
+
+exports.rfidCount = async (req, res, next) => {
+  try {
+      const rfidCount = await Owner.findAndCountAll({
+          where: {
+              rfidId: {
+                  [Op.ne]: null
+              }
+          }
+      });
+      if(rfidCount){
+      res.status(httpStatus.OK).json({ rfid:rfidCount.count });
+      }
+  } catch (error) {
+      res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+  }
 }

@@ -5,10 +5,22 @@ const httpStatus = require('http-status');
 const Op = db.Sequelize.Op;
 
 const Machine = db.machine;
+const AreaMachine = db.areaMachine;
 const FlatDetail = db.flatDetail;
 const Tower = db.tower;
 const Floor = db.floor;
 const MachineDetail = db.machineDetail;
+const CommonAreaDetail = db.commonAreaDetail;
+
+let filterItem = (machineDetailIdsArr, arr) => {
+    // console.log(machineDetailIdsArr);
+    const resArr = machineDetailIdsArr.filter(item => {
+        // console.log(1);
+        return arr.includes(item.machineDetailId) === false;
+    });
+    // console.log(resArr);
+    return resArr;
+}
 
 exports.create = (req, res, next) => {
     const body = req.body;
@@ -17,6 +29,7 @@ exports.create = (req, res, next) => {
     Machine.findOne({
         where: {
             machineDetailId: body.machineDetailId,
+            flatDetailId: body.flatDetailId,
             isActive: true
         }
     })
@@ -92,6 +105,7 @@ exports.update = (req, res, next) => {
     Machine.findOne({
         where: {
             machineDetailId: body.machineDetailId,
+            flatDetailId: body.flatDetailId,
             isActive: true,
             machineId: {
                 [Op.ne]: body.machineId
@@ -112,6 +126,12 @@ exports.update = (req, res, next) => {
                 })
                     .then(machine => {
                         if (machine !== null) {
+                            if (body.machineId !== undefined) {
+                                delete body.machineId;
+                            }
+                            if (body.flatDetailId !== undefined && (body.flatDetailId === '' || body.flatDetailId === null)) {
+                                delete body.flatDetailId;
+                            }
                             machine.updateAttributes(body);
                             res.status(httpStatus.CREATED).json({
                                 message: 'Machine updated successfully'
@@ -185,6 +205,88 @@ exports.deleteSelected = (req, res, next) => {
             } else {
                 res.status(httpStatus.NO_CONTENT).json({
                     message: 'No data found'
+                })
+            }
+        })
+        .catch(err => {
+            console.log('Error ===>', err);
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
+}
+
+// exports.getMachineForCommonArea = (req, res, next) => {
+//     const machineDetailIds = [];
+//     MachineDetail.findAll({
+//         where: {
+//             isActive: true
+//         }
+//     })
+//         .then(machines => {
+//             if (machines.length !== 0) {
+//                 CommonAreaDetail.findAll({
+//                     where: {
+//                         isActive: true
+//                     },
+//                     attributes: ['machineDetailId']
+//                 })
+//                     .then(commonAreaMachines => {
+//                         if (commonAreaMachines.length !== 0) {
+//                             commonAreaMachines.map(item => {
+//                                 machineDetailIds.push(item.machineDetailId);
+//                             });
+//                             // console.log(machines);
+//                             SendMachines = filterItem(machines, machineDetailIds);
+//                             // console.log(1);
+//                             res.status(httpStatus.OK).json({
+//                                 machines: SendMachines
+//                             })
+//                         } else {
+//                             // console.log(2);
+//                             res.status(httpStatus.OK).json({
+//                                 machines: machines
+//                             })
+//                         }
+//                     })
+//                     .catch(err => {
+//                         console.log('Error ===>', err);
+//                         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+//                     })
+//             } else {
+//                 res.status(httpStatus.NO_CONTENT).json({
+//                     message: 'No data available!'
+//                 })
+//             }
+//         })
+//         .catch(err => {
+//             console.log('Error ===>', err);
+//             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+//         })
+// }
+
+exports.getMachineForCommonArea = (req, res, next) => {
+    const machineDetailIds = [];
+
+    MachineDetail.findAll({ where: { isActive: true } })
+        .then(async machines => {
+            if (machines.length !== 0) {
+                const commonAreaMachines = await AreaMachine.findAll({ where: { isActive: true }, attributes: ['machineDetailId'] });
+                const flatMachines = await Machine.findAll({ where: { isActive: true }, attributes: ['machineDetailId'] });
+
+                flatMachines.map(item => {
+                    machineDetailIds.push(item.machineDetailId);
+                });
+                commonAreaMachines.map(item => {
+                    machineDetailIds.push(item.machineDetailId);
+                })
+
+                SendMachines = filterItem(machines, machineDetailIds);
+
+                res.status(httpStatus.OK).json({
+                    machines: SendMachines
+                })
+            } else {
+                res.status(httpStatus.NO_CONTENT).json({
+                    message: 'No data available!'
                 })
             }
         })

@@ -741,6 +741,7 @@ exports.updateEncrypt = async (req, res, next) => {
     }
 }
 
+
 // exports.test = async(req,res)=>{
 //     try{
 //          /* run the job at 18:55:30 on Dec. 14 2018*/

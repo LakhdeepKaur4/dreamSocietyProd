@@ -15,6 +15,9 @@ const Tenant = db.tenant;
 const Vendor = db.vendor;
 const Employee = db.employee;
 const IndividualVendor = db.individualVendor;
+const OwnerMembersDetail = db.ownerMembersDetail;
+const TenantMembersDetail = db.tenantMembersDetail;
+const User = db.user;
 
 const Otp = db.otp;
 
@@ -54,7 +57,7 @@ let testSms = (contact) => {
 exports.checkToken = async (req, res, next) => {
     if (req.query.ownerId) {
         let ownerId = decrypt(key, req.query.ownerId);
-        let owner = await Owner.findOne({ where: { ownerId: ownerId, isActive: true } });
+        let owner = await User.findOne({ where: { userId: ownerId, isActive: true } });
         if (owner) {
             return res.status(200).json(
                 {
@@ -65,9 +68,26 @@ exports.checkToken = async (req, res, next) => {
         }
     }
 
+
+    if (req.query.memberId) {
+        let memberId = decrypt(key, req.query.memberId);
+        let ownerMember = await User.findOne({ where: { userId: memberId, isActive: true } });
+        if (ownerMember) {
+            return res.status(200).json(
+                {
+                    alreadyActivated: true,
+                    tokenVerified: false,
+                    message: 'you are already activated. check your email for userName and password.'
+                });
+        }
+    }
+
+
+
+
     if (req.query.employeeId) {
         let employeeId = decrypt1(key, req.query.employeeId);
-        let employee = await Employee.findOne({ where: { employeeId: employeeId, isActive: true } });
+        let employee = await User.findOne({ where: { userId: employeeId, isActive: true } });
         if (employee) {
             return res.status(200).json(
                 {
@@ -80,7 +100,7 @@ exports.checkToken = async (req, res, next) => {
 
     if (req.query.vendorId) {
         let vendorId = decrypt(key, req.query.vendorId);
-        let vendor = await Vendor.findOne({ where: { vendorId: vendorId, isActive: true } });
+        let vendor = await User.findOne({ where: { userId: vendorId, isActive: true } });
         if (vendor) {
             return res.status(200).json(
                 {
@@ -93,7 +113,21 @@ exports.checkToken = async (req, res, next) => {
 
     if (req.query.tenantId) {
         let tenantId = decrypt1(key, req.query.tenantId);
-        let tenant = await Tenant.findOne({ where: { tenantId: tenantId, isActive: true } });
+        let tenant = await User.findOne({ where: { userId: tenantId, isActive: true } });
+        if (tenant) {
+            return res.status(200).json(
+                {
+                    alreadyActivated: true,
+                    tokenVerified: false,
+                    message: 'You are already activated. Check your email for userName and password.'
+                });
+        }
+    }
+
+
+    if (req.query.tenantMemberId) {
+        let tenantMemberId = decrypt1(key, req.query.tenantMemberId);
+        let tenant = await User.findOne({ where: { userId: tenantMemberId, isActive: true } });
         if (tenant) {
             return res.status(200).json(
                 {
@@ -106,7 +140,7 @@ exports.checkToken = async (req, res, next) => {
 
     if (req.query.individualVendorId) {
         let individualVendorId = decrypt1(key, req.query.individualVendorId);
-        let individualVendor = await IndividualVendor.findOne({ where: { individualVendorId: individualVendorId, isActive: true } });
+        let individualVendor = await User.findOne({ where: { userId: individualVendorId, isActive: true } });
         if (individualVendor) {
             return res.status(200).json(
                 {
@@ -139,7 +173,22 @@ exports.checkToken = async (req, res, next) => {
                     otpvalue: otp,
                     ownerId: owner.ownerId
                 })
+            }    
+
+
+            if (req.query.memberId) {
+                let memberId = decrypt(key, req.query.memberId);
+                let ownerMember = await OwnerMembersDetail.findOne({ where: { memberId: memberId } });
+                let contact = decrypt(key, ownerMember.memberContact);
+                let otp = testSms(contact);
+                let dbotp = await Otp.create({
+                    otpvalue: otp,
+                    memberId: ownerMember.memberId
+                })
             }
+
+
+
 
             if (req.query.employeeId) {
                 let employeeId = decrypt1(key, req.query.employeeId);
@@ -170,6 +219,19 @@ exports.checkToken = async (req, res, next) => {
                 let dbotp = await Otp.create({
                     otpvalue: otp,
                     tenantId: tenant.tenantId
+                })
+
+            }
+
+
+            if (req.query.tenantMemberId) {
+                let tenantMemberId = decrypt1(key, req.query.tenantMemberId);
+                let tenantMember = await TenantMembersDetail.findOne({ where: { memberId: tenantMemberId } });
+                let contact = decrypt1(key, tenantMember.contact);
+                let otp = testSms(contact);
+                let dbotp = await Otp.create({
+                    otpvalue: otp,
+                    tenantMemberId: tenantMember.memberId
                 })
 
             }

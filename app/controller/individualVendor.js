@@ -275,7 +275,7 @@ exports.create = async (req, res, next) => {
                         })
                             .then(user => {
                                 // user.setRoles(roles);
-                                UserRoles.create({ userId: user.userId, roleId: roles.id });
+                                UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false });
                             })
                         if (vendor.profilePicture) {
                             await saveToDisc(vendor.fileName1, vendor.fileExt1, vendor.profilePicture, (err, res) => {
@@ -384,7 +384,9 @@ exports.get = (req, res, next) => {
                 item.permanentAddress = decrypt(item.permanentAddress);
                 item.currentAddress = decrypt(item.currentAddress);
                 item.rate = decrypt(item.rate);
-                item.profilePicture = decrypt(item.profilePicture);
+                if (item.profilePicture !== null) {
+                    item.profilePicture = decrypt(item.profilePicture);   
+                }
                 item.documentOne = decrypt(item.documentOne);
                 item.documentOne = item.documentOne.replace('../../', '');
                 item.documentTwo = decrypt(item.documentTwo);
@@ -448,7 +450,9 @@ exports.getById = (req, res, next) => {
             vendor.permanentAddress = decrypt(vendor.permanentAddress);
             vendor.currentAddress = decrypt(vendor.currentAddress);
             vendor.rate = decrypt(vendor.rate);
-            vendor.profilePicture = decrypt(vendor.profilePicture);
+            if (item.profilePicture !== null) {
+                item.profilePicture = decrypt(item.profilePicture);
+            }
             vendor.documentOne = decrypt(vendor.documentOne);
             vendor.documentTwo = decrypt(vendor.documentTwo);
 
@@ -661,6 +665,7 @@ exports.update = async (req, res, next) => {
                 }
             })
                 .then(vendor => {
+                    User.update(updates, { where: { userName: vendor.userName, isActive: true } });
                     return vendor.updateAttributes(updates);
                 })
                 .then(vendor => {
@@ -692,6 +697,8 @@ exports.delete = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
         const updatedVendor = await IndividualVendor.find({ where: { individualVendorId: id } }).then(individualVendor => {
+            User.update({ isActive: false }, { where: { userId: id } });
+            UserRoles.update({ isActive: false }, { where: { userId: id } });
             return individualVendor.updateAttributes(update)
         })
         if (updatedVendor) {
@@ -716,6 +723,8 @@ exports.deleteSelected = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
         const updatedVendor = await IndividualVendor.update(update, { where: { individualVendorId: { [Op.in]: deleteSelected } } })
+        User.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } } });
+        UserRoles.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } } });
         if (updatedVendor) {
             return res.status(httpStatus.OK).json({
                 message: "Vendors deleted successfully",
