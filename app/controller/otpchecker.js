@@ -539,15 +539,10 @@ exports.checkOtp = async (req, res, next) => {
         }
     }
 
-
-
-
-
-
     if (req.query.tenantMemberId) {
         console.log("here i am . wow!!!!!=====================================>", req.query.tenantMemberId);
 
-        let tenantMemberId = decrypt1(key, req.query.tenantMemberId);
+        let tenantMemberId = decrypt(key, req.query.tenantMemberId);
         console.log(tenantMemberId);
         let tenantMember = await TenantMembersDetail.findOne({ where: { memberId: tenantMemberId, isActive: false } });
         if (tenantMember === undefined || tenantMember === null) {
@@ -576,28 +571,26 @@ exports.checkOtp = async (req, res, next) => {
             mailToUser(updatedTenant);
 
             // set user
-            let userName = decrypt1(key, updatedTenant.userName);
+            let userName = decrypt(key, updatedTenant.userName);
             // set users
             let user = await User.findOne({
-                where: { userName: encrypt1(key, userName), isActive: false }
+                where: { userName: encrypt1(key, userName),
+                     isActive: false }
             });
+            console.log("user-->",user)
 
             if (user) {
                 console.log("reaching here", user)
-                const test = user.updateAttributes({ isActive: true });
-                console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$", test)
                 let roles = await Role.findOne({
                     where: { id: 4 }
                 });
-                console.log("employee role", roles)
+                console.log("tenant role", roles)
                 // user.setRoles(roles);
                 let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
                 role.updateAttributes({ isActive: true });
-                // user.updateAttributes({ isActive: true });
+                user.updateAttributes({ isActive: true });
             }
-
             // set roles
-
             return res.status(200).json(
                 {
                     otpVerified: true,
