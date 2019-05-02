@@ -178,6 +178,8 @@ exports.delete = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
         const updatedEmployee = await Employee.find({ where: { employeeId: id } }).then(employee => {
+            User.update({ isActive: false }, { where: { userId: id } });
+            UserRoles.update({ isActive: false }, { where: { userId: id } });
             return employee.updateAttributes(update)
         })
         if (updatedEmployee) {
@@ -202,6 +204,8 @@ exports.deleteSelected = async (req, res, next) => {
         }
         const updatedEmployee = await Employee.update(update, { where: { employeeId: { [Op.in]: deleteSelected } } })
         if (updatedEmployee) {
+            User.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected}}});
+            UserRoles.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } } });
             return res.status(httpStatus.OK).json({
                 message: "Employees deleted successfully",
             });
@@ -269,7 +273,7 @@ exports.createEncrypt = async (req, res, next) => {
         randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
         const employeeExists = await Employee.findOne({ where: { isActive: true, employeeId: randomNumber } });
         const userExists = await User.findOne({ where: { isActive: true, userId: randomNumber } });
-        if (employeeExists !== null ||  userExists !== null) {
+        if (employeeExists !== null || userExists !== null) {
             console.log("duplicate random number")
             randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
         }
@@ -445,14 +449,14 @@ exports.createEncrypt = async (req, res, next) => {
                             isActive: false
                         });
                         // set roles
-                        console.log(employee.password);
-                        console.log(employee.password);
+                        // console.log(employee.password);
+                        // console.log(employee.password);
                         let roles = await Role.findOne({
                             where: { id: 6 }
                         });
-                        console.log("employee role",roles)
+                        console.log("employee role", roles)
                         // user.setRoles(roles);
-                        UserRoles.create({userId:user.userId,roleId:roles.id});
+                        UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false });
                         const message = mailToUser(req.body.email, employeeId);
                         return res.status(httpStatus.CREATED).json({
                             message: "Employee successfully created. please activate your account. click on the link delievered to your given email"
@@ -549,9 +553,15 @@ exports.updateEncrypt = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
 
+        user1 = await User.findOne({ where: { [Op.and]: [{ email: encrypt(update.email) }, { isActive: true }, { userId: { [Op.ne]: id } }] } });
+
+        user2 = await User.findOne({ where: { [Op.and]: [{ contact: encrypt(update.contact) }, { isActive: true }, { userId: { [Op.ne]: id } }] } });
+
+
         if (update['email'] !== undefined) {
             employeeEmailErr = await Employee.findOne({ where: { email: encrypt(update.email), employeeId: { [Op.ne]: id } } });
         } else {
+            userId
             employeeEmailErr = null;
         }
         if (update['contact'] !== undefined) {
@@ -578,163 +588,173 @@ exports.updateEncrypt = async (req, res, next) => {
             messageContactErr: messageContactErr
         };
 
-        if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
-            await Employee.find({
-                where: {
-                    employeeId: id
-                }
-            })
-                .then(emp => {
-                    employee = emp;
+        if (user1 === null && user2 === null) {
+            if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
+                await Employee.find({
+                    where: {
+                        employeeId: id
+                    }
                 })
-            if (req.files) {
-                console.log(employee);
-                if (("profilePicture" in req.files) && (req.files.profilePicture !== undefined)) {
-                    profileImage = decrypt(employee.picture)
-                    fs.unlink(profileImage, err => {
-                        if (err) {
-                            console.log("File Missing ===>", err);
-                            profileImage = encrypt(req.files.profilePicture[0].path);
-                        }
-                        console.log('success');
+                    .then(emp => {
+                        employee = emp;
                     })
-                    profileImage = encrypt(req.files.profilePicture[0].path);
+                if (req.files) {
+                    console.log(employee);
+                    if (("profilePicture" in req.files) && (req.files.profilePicture !== undefined)) {
+                        profileImage = decrypt(employee.picture)
+                        fs.unlink(profileImage, err => {
+                            if (err) {
+                                console.log("File Missing ===>", err);
+                                profileImage = encrypt(req.files.profilePicture[0].path);
+                            }
+                            console.log('success');
+                        })
+                        profileImage = encrypt(req.files.profilePicture[0].path);
+                    }
+                    else {
+                        profileImage = employee.picture;
+                    }
+                    if (("documentOne" in req.files) && (req.files.documentOne !== undefined)) {
+                        documentOne = decrypt(employee.documentOne)
+                        fs.unlink(documentOne, err => {
+                            if (err) {
+                                console.log("File Missing ===>", err);
+                                documentOne = encrypt(req.files.documentOne[0].path);
+                            }
+                            console.log('success');
+                        })
+                        documentOne = encrypt(req.files.documentOne[0].path);
+                    }
+                    else {
+                        documentOne = employee.documentOne;
+                    }
+                    if (("documentTwo" in req.files) && (req.files.documentTwo !== undefined)) {
+                        documentTwo = decrypt(employee.documentTwo)
+                        fs.unlink(documentTwo, err => {
+                            if (err) {
+                                console.log("File Missing ===>", err);
+                                documentTwo = encrypt(req.files.documentTwo[0].path);
+                            }
+                            console.log('success');
+                        })
+                        documentTwo = encrypt(req.files.documentTwo[0].path);
+                    }
+                    else {
+                        documentTwo = employee.documentTwo;
+                    }
                 }
                 else {
                     profileImage = employee.picture;
-                }
-                if (("documentOne" in req.files) && (req.files.documentOne !== undefined)) {
-                    documentOne = decrypt(employee.documentOne)
-                    fs.unlink(documentOne, err => {
-                        if (err) {
-                            console.log("File Missing ===>", err);
-                            documentOne = encrypt(req.files.documentOne[0].path);
-                        }
-                        console.log('success');
-                    })
-                    documentOne = encrypt(req.files.documentOne[0].path);
-                }
-                else {
                     documentOne = employee.documentOne;
-                }
-                if (("documentTwo" in req.files) && (req.files.documentTwo !== undefined)) {
-                    documentTwo = decrypt(employee.documentTwo)
-                    fs.unlink(documentTwo, err => {
-                        if (err) {
-                            console.log("File Missing ===>", err);
-                            documentTwo = encrypt(req.files.documentTwo[0].path);
-                        }
-                        console.log('success');
-                    })
-                    documentTwo = encrypt(req.files.documentTwo[0].path);
-                }
-                else {
                     documentTwo = employee.documentTwo;
                 }
-            }
-            else {
-                profileImage = employee.picture;
-                documentOne = employee.documentOne;
-                documentTwo = employee.documentTwo;
-            }
-            firstNameCheck = constraintCheck('firstName', update);
-            middleNameCheck = constraintCheck('middleName', update);
-            lastNameCheck = constraintCheck('lastName', update);
-            emailCheck = constraintCheck('email', update);
-            contactCheck = constraintCheck('contact', update);
-            salaryCheck = constraintCheck('salary', update);
-            permanentAddressCheck = constraintCheck('permanentAddress', update);
-            currentAddressCheck = constraintCheck('currentAddress', update);
-            startDateCheck = constraintCheck('startDate', update);
-            employeeDetailIdCheck = constraintCheck('employeeDetailId', update);
-            // // endDateCheck = constraintCheck('endDate', update);
-            // countryId1Check = constraintCheck('countryId1', update);
-            // stateId1Check = constraintCheck('stateId1', update);
-            // cityId1Check = constraintCheck('cityId1', update);
-            // locationId1Check = constraintCheck('locationId1', update);
-            // countryId2Check = constraintCheck('countryId2', update);
-            // stateId2Check = constraintCheck('stateId2', update);
-            // cityId2Check = constraintCheck('cityId2', update);
-            // locationId2Check = constraintCheck('locationId2', update);
+                firstNameCheck = constraintCheck('firstName', update);
+                middleNameCheck = constraintCheck('middleName', update);
+                lastNameCheck = constraintCheck('lastName', update);
+                emailCheck = constraintCheck('email', update);
+                contactCheck = constraintCheck('contact', update);
+                salaryCheck = constraintCheck('salary', update);
+                permanentAddressCheck = constraintCheck('permanentAddress', update);
+                currentAddressCheck = constraintCheck('currentAddress', update);
+                startDateCheck = constraintCheck('startDate', update);
+                employeeDetailIdCheck = constraintCheck('employeeDetailId', update);
+                // // endDateCheck = constraintCheck('endDate', update);
+                // countryId1Check = constraintCheck('countryId1', update);
+                // stateId1Check = constraintCheck('stateId1', update);
+                // cityId1Check = constraintCheck('cityId1', update);
+                // locationId1Check = constraintCheck('locationId1', update);
+                // countryId2Check = constraintCheck('countryId2', update);
+                // stateId2Check = constraintCheck('stateId2', update);
+                // cityId2Check = constraintCheck('cityId2', update);
+                // locationId2Check = constraintCheck('locationId2', update);
 
-            firstName = constraintReturn(firstNameCheck, update, 'firstName', employee);
-            middleName = constraintReturn(middleNameCheck, update, 'middleName', employee);
-            lastName = constraintReturn(lastNameCheck, update, 'lastName', employee);
-            email = constraintReturn(emailCheck, update, 'email', employee);
-            contact = constraintReturn(contactCheck, update, 'contact', employee);
-            salary = constraintReturn(salaryCheck, update, 'salary', employee);
-            permanentAddress = constraintReturn(permanentAddressCheck, update, 'permanentAddress', employee);
-            currentAddress = constraintReturn(currentAddressCheck, update, 'currentAddress', employee);
-            startDate = constraintReturn(startDateCheck, update, 'startDate', employee);
-            employeeDetailId = referenceConstraintReturn(employeeDetailIdCheck, update, 'employeeDetailId', employee);
-            // // // endDate = constraintReturn(endDateCheck, update, 'endDate', employee);
-            // countryId1 = referenceConstraintReturn(countryId1Check, update, 'countryId1', employee);
-            // stateId1 = referenceConstraintReturn(stateId1Check, update, 'stateId1', employee);
-            // cityId1 = referenceConstraintReturn(cityId1Check, update, 'cityId1', employee);
-            // locationId1 = referenceConstraintReturn(locationId1Check, update, 'locationId1', employee);
-            // countryId2 = referenceConstraintReturn(countryId2Check, update, 'countryId2', employee);
-            // stateId2 = referenceConstraintReturn(stateId2Check, update, 'stateId2', employee);
-            // cityId2 = referenceConstraintReturn(cityId2Check, update, 'cityId2', employee);
-            // locationId2 = referenceConstraintReturn(locationId2Check, update, 'locationId2', employee);
+                firstName = constraintReturn(firstNameCheck, update, 'firstName', employee);
+                middleName = constraintReturn(middleNameCheck, update, 'middleName', employee);
+                lastName = constraintReturn(lastNameCheck, update, 'lastName', employee);
+                email = constraintReturn(emailCheck, update, 'email', employee);
+                contact = constraintReturn(contactCheck, update, 'contact', employee);
+                salary = constraintReturn(salaryCheck, update, 'salary', employee);
+                permanentAddress = constraintReturn(permanentAddressCheck, update, 'permanentAddress', employee);
+                currentAddress = constraintReturn(currentAddressCheck, update, 'currentAddress', employee);
+                startDate = constraintReturn(startDateCheck, update, 'startDate', employee);
+                employeeDetailId = referenceConstraintReturn(employeeDetailIdCheck, update, 'employeeDetailId', employee);
+                // // // endDate = constraintReturn(endDateCheck, update, 'endDate', employee);
+                // countryId1 = referenceConstraintReturn(countryId1Check, update, 'countryId1', employee);
+                // stateId1 = referenceConstraintReturn(stateId1Check, update, 'stateId1', employee);
+                // cityId1 = referenceConstraintReturn(cityId1Check, update, 'cityId1', employee);
+                // locationId1 = referenceConstraintReturn(locationId1Check, update, 'locationId1', employee);
+                // countryId2 = referenceConstraintReturn(countryId2Check, update, 'countryId2', employee);
+                // stateId2 = referenceConstraintReturn(stateId2Check, update, 'stateId2', employee);
+                // cityId2 = referenceConstraintReturn(cityId2Check, update, 'cityId2', employee);
+                // locationId2 = referenceConstraintReturn(locationId2Check, update, 'locationId2', employee);
 
-            const toBeUpdated = {
-                firstName: firstName,
-                middleName: middleName,
-                lastName: lastName,
-                email: email,
-                contact: contact,
-                salary: salary,
-                permanentAddress: permanentAddress,
-                currentAddress: currentAddress,
-                startDate: startDate,
-                employeeDetailId: employeeDetailId,
-                // // endDate: endDate,
-                userId: update.userId,
-                // countryId1: countryId1,
-                // stateId1: stateId1,
-                // cityId1: cityId1,
-                // locationId1: locationId1,
-                // countryId2: countryId2,
-                // stateId2: stateId2,
-                // cityId2: cityId2,
-                // locationId2: locationId2,
-                picture: profileImage,
-                documentOne: documentOne,
-                documentTwo: documentTwo
-            };
-            Employee.find({
-                where: {
-                    employeeId: id
-                }
-            })
-                .then(employee => {
-                    return employee.updateAttributes(toBeUpdated);
+                const toBeUpdated = {
+                    firstName: firstName,
+                    middleName: middleName,
+                    lastName: lastName,
+                    email: email,
+                    contact: contact,
+                    salary: salary,
+                    permanentAddress: permanentAddress,
+                    currentAddress: currentAddress,
+                    startDate: startDate,
+                    employeeDetailId: employeeDetailId,
+                    // // endDate: endDate,
+                    userId: update.userId,
+                    // countryId1: countryId1,
+                    // stateId1: stateId1,
+                    // cityId1: cityId1,
+                    // locationId1: locationId1,
+                    // countryId2: countryId2,
+                    // stateId2: stateId2,
+                    // cityId2: cityId2,
+                    // locationId2: locationId2,
+                    picture: profileImage,
+                    documentOne: documentOne,
+                    documentTwo: documentTwo
+                };
+                Employee.find({
+                    where: {
+                        employeeId: id
+                    }
                 })
-                .then(employee => {
-                    employee.userName = decrypt(employee.userName);
-                    employee.firstName = decrypt(employee.firstName);
-                    employee.middleName = decrypt(employee.middleName);
-                    employee.lastName = decrypt(employee.lastName);
-                    employee.email = decrypt(employee.email);
-                    employee.contact = decrypt(employee.contact);
-                    employee.salary = decrypt(employee.salary);
-                    employee.permanentAddress = decrypt(employee.permanentAddress);
-                    employee.currentAddress = decrypt(employee.currentAddress);
-                    // employee.serviceType = decrypt(employee.serviceType);
-                    employee.startDate = decrypt(employee.startDate);
-                    // // employee.endDate = decrypt(employee.endDate);
-                    employee.picture = decrypt(employee.picture);
-                    employee.documentOne = decrypt(employee.documentOne);
-                    employee.documentTwo = decrypt(employee.documentTwo);
-                    return res.status(httpStatus.OK).json({
-                        message: "Employee Updated Page",
-                        employee
-                    });
-                })
-                .catch(err => console.log(err))
+                    .then(employee => {
+                        return employee.updateAttributes(toBeUpdated);
+                    })
+                    .then(employee => {
+                        toBeUpdated.userId = employee.employeeId;
+                        User.update(toBeUpdated, { where: { isActive: true, userId: employee.employeeId } });
+                        employee.userName = decrypt(employee.userName);
+                        employee.firstName = decrypt(employee.firstName);
+                        employee.middleName = decrypt(employee.middleName);
+                        employee.lastName = decrypt(employee.lastName);
+                        employee.email = decrypt(employee.email);
+                        employee.contact = decrypt(employee.contact);
+                        employee.salary = decrypt(employee.salary);
+                        employee.permanentAddress = decrypt(employee.permanentAddress);
+                        employee.currentAddress = decrypt(employee.currentAddress);
+                        // employee.serviceType = decrypt(employee.serviceType);
+                        employee.startDate = decrypt(employee.startDate);
+                        // // employee.endDate = decrypt(employee.endDate);
+                        employee.picture = decrypt(employee.picture);
+                        employee.documentOne = decrypt(employee.documentOne);
+                        employee.documentTwo = decrypt(employee.documentTwo);
+                        return res.status(httpStatus.OK).json({
+                            message: "Employee Updated Page",
+                            employee
+                        });
+                    })
+                    .catch(err => console.log(err))
+            } else {
+                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
+            }
         } else {
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                message: 'User already exist for same email and contact'
+            });
         }
+
+
     } catch (error) {
         console.log(error);
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);

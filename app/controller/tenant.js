@@ -445,7 +445,7 @@ exports.createEncrypted = async (req, res, next) => {
                             TenantFlatDetail.create({
                                 flatDetailId: tenant.flatDetailId,
                                 tenantId: entry.tenantId,
-                                isActive: false
+                                // isActive: false
                             })
                         }
 
@@ -471,7 +471,7 @@ exports.createEncrypted = async (req, res, next) => {
                             .then(user => {
                                 // user.setRoles(roles);
                                 UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false });
-                                UserRFID.create({ userId: tenant.tenantId, rfidId: tenant.rfidId, isActive: false });
+                                UserRFID.create({ userId: tenant.tenantId, rfidId: tenant.rfidId, isActive: true });
                             })
                         if (tenant.profilePicture) {
                             await saveToDisc(tenant.fileName, tenant.fileExt, tenant.profilePicture, (err, res) => {
@@ -541,7 +541,7 @@ exports.createEncrypted = async (req, res, next) => {
                                     .then(user => {
                                         // user.setRoles(roles);
                                         UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false });
-                                        UserRFID.create({ userId: user.userId, rfidId: item.rfidId, isActive: false });
+                                        UserRFID.create({ userId: user.userId, rfidId: item.rfidId, isActive: true });
                                     })
                             })
                         }
@@ -1091,7 +1091,7 @@ exports.addTenantMembers = async (req, res, next) => {
                     UserRFID.create({
                         userId: member.userId,
                         rfidId: member.rfidId,
-                        isActive: false
+                        // isActive: false
                     })
                 })
 
