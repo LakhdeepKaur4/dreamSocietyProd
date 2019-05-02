@@ -22,6 +22,8 @@ const Vendor = db.vendor;
 const IndividualVendor = db.individualVendor;
 const OwnerMembersDetail = db.ownerMembersDetail;
 const TenantMembersDetail = db.tenantMembersDetail;
+const TenantFlatDetail = db.tenantFlatDetail;
+const UserRfId = db.userRfid;
 
 const User = db.user;
 const Otp = db.otp;
@@ -231,8 +233,8 @@ exports.checkOtp = async (req, res, next) => {
                 });
                 console.log("employee role", roles)
                 // user.setRoles(roles);
-                let role = await UserRoles.findOne({where:{ userId: user.userId, roleId: roles.id }});
-                role.updateAttributes({isActive:true});
+                let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
+                role.updateAttributes({ isActive: true });
                 user.updateAttributes({ isActive: true });
             }
             return res.status(200).json(
@@ -289,8 +291,8 @@ exports.checkOtp = async (req, res, next) => {
                 });
                 console.log("employee role", roles)
                 // user.setRoles(roles);
-                let role = await UserRoles.findOne({where:{ userId: user.userId, roleId: roles.id }});
-                role.updateAttributes({isActive:true});
+                let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
+                role.updateAttributes({ isActive: true });
                 user.updateAttributes({ isActive: true });
             }
             return res.status(200).json(
@@ -351,8 +353,8 @@ exports.checkOtp = async (req, res, next) => {
                 });
                 console.log("employee role", roles)
                 // user.setRoles(roles);
-                let role = await UserRoles.findOne({where:{ userId: user.userId, roleId: roles.id }});
-                role.updateAttributes({isActive:true});
+                let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
+                role.updateAttributes({ isActive: true });
                 user.updateAttributes({ isActive: true });
             }
             return res.status(200).json(
@@ -404,8 +406,8 @@ exports.checkOtp = async (req, res, next) => {
                 });
                 console.log("employee role", roles)
                 // user.setRoles(roles);
-                let role = await UserRoles.findOne({where:{ userId: user.userId, roleId: roles.id }});
-                role.updateAttributes({isActive:true});
+                let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
+                role.updateAttributes({ isActive: true });
                 user.updateAttributes({ isActive: true });
             }
 
@@ -464,8 +466,8 @@ exports.checkOtp = async (req, res, next) => {
                 });
                 console.log("employee role", roles)
                 // user.setRoles(roles);
-                let role = await UserRoles.findOne({where:{ userId: user.userId, roleId: roles.id }});
-                role.updateAttributes({isActive:true});
+                let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
+                role.updateAttributes({ isActive: true });
                 user.updateAttributes({ isActive: true });
             }
             return res.status(200).json(
@@ -500,6 +502,11 @@ exports.checkOtp = async (req, res, next) => {
                 });
         }
         let updatedTenant = await tenant.updateAttributes({ isActive: true });
+        // let x = await TenantFlatDetail.findAll({where:{tenantId:updatedTenant.tenantId,isActive:false}});
+        // x.forEach(tenantFlat => tenantFlat.updateAttributes({isActive:true}));
+        // let y = await UserRfId.findOne({where:{isActive:false,userId:updatedTenant.tenantId}});
+        // y.updateAttributes({isActive:true});
+
         console.log(updatedTenant);
         if (updatedTenant) {
             mailToUser(updatedTenant);
@@ -517,8 +524,8 @@ exports.checkOtp = async (req, res, next) => {
                 });
                 console.log("employee role", roles)
                 // user.setRoles(roles);
-                let role = await UserRoles.findOne({where:{ userId: user.userId, roleId: roles.id }});
-                role.updateAttributes({isActive:true});
+                let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
+                role.updateAttributes({ isActive: true });
                 user.updateAttributes({ isActive: true });
             }
 
@@ -535,10 +542,10 @@ exports.checkOtp = async (req, res, next) => {
 
 
 
-    
+
 
     if (req.query.tenantMemberId) {
-        console.log("here i am . wow!!!!!=====================================>",req.query.tenantMemberId);
+        console.log("here i am . wow!!!!!=====================================>", req.query.tenantMemberId);
 
         let tenantMemberId = decrypt1(key, req.query.tenantMemberId);
         console.log(tenantMemberId);
@@ -561,6 +568,9 @@ exports.checkOtp = async (req, res, next) => {
                 });
         }
         let updatedTenant = await tenantMember.updateAttributes({ isActive: true });
+
+        // let y = await UserRfId.findOne({where:{isActive:false,userId:updatedTenant.memberId}});
+        // y.updateAttributes({isActive:true});
         console.log(updatedTenant);
         if (updatedTenant) {
             mailToUser(updatedTenant);
@@ -569,20 +579,20 @@ exports.checkOtp = async (req, res, next) => {
             let userName = decrypt1(key, updatedTenant.userName);
             // set users
             let user = await User.findOne({
-                where: { userName: encrypt1(key, userName),isActive:false }
+                where: { userName: encrypt1(key, userName), isActive: false }
             });
 
             if (user) {
-                console.log("reaching here",user)
-               const test = user.updateAttributes({ isActive: true });
-               console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$",test)
+                console.log("reaching here", user)
+                const test = user.updateAttributes({ isActive: true });
+                console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$", test)
                 let roles = await Role.findOne({
                     where: { id: 4 }
                 });
                 console.log("employee role", roles)
                 // user.setRoles(roles);
-                let role = await UserRoles.findOne({where:{ userId: user.userId, roleId: roles.id }});
-                role.updateAttributes({isActive:true});
+                let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
+                role.updateAttributes({ isActive: true });
                 // user.updateAttributes({ isActive: true });
             }
 
