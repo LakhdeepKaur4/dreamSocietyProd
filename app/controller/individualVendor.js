@@ -385,7 +385,7 @@ exports.get = (req, res, next) => {
                 item.currentAddress = decrypt(item.currentAddress);
                 item.rate = decrypt(item.rate);
                 if (item.profilePicture !== null) {
-                    item.profilePicture = decrypt(item.profilePicture);   
+                    item.profilePicture = decrypt(item.profilePicture);
                 }
                 item.documentOne = decrypt(item.documentOne);
                 item.documentOne = item.documentOne.replace('../../', '');
@@ -412,8 +412,8 @@ exports.getById = (req, res, next) => {
 
     IndividualVendor.findOne(
         {
-            where: { [Op.and]: [{ individualVendorId: id }, { isActive: true }] },
-            order: [['createdAt', 'DESC']],
+            where: { individualVendorId: id, isActive: true },
+            // order: [['createdAt', 'DESC']],
             include: [
                 {
                     model: City,
@@ -450,17 +450,17 @@ exports.getById = (req, res, next) => {
             vendor.permanentAddress = decrypt(vendor.permanentAddress);
             vendor.currentAddress = decrypt(vendor.currentAddress);
             vendor.rate = decrypt(vendor.rate);
-            if (item.profilePicture !== null) {
-                item.profilePicture = decrypt(item.profilePicture);
+            if (vendor.profilePicture !== null) {
+                vendor.profilePicture = decrypt(vendor.profilePicture);
             }
             vendor.documentOne = decrypt(vendor.documentOne);
             vendor.documentTwo = decrypt(vendor.documentTwo);
 
             return vendor;
         })
-        .then(vendors => {
+        .then(vendor => {
             res.status(httpStatus.OK).json({
-                vendor: vendors
+                vendor: vendor
             })
         })
         .catch(err => {
@@ -735,7 +735,3 @@ exports.deleteSelected = async (req, res, next) => {
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
-
-
-
-
