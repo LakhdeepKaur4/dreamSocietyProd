@@ -7,6 +7,7 @@ var generator = require('generate-password');
 const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
 var schedule = require('node-schedule');
 const key = config.secret;
+const randomInt = require('random-int');
 
 const User = db.user;
 const Role = db.role;
@@ -904,11 +905,21 @@ exports.signupEncrypted = async (req, res, next) => {
 	let userEmailErr;
 	let userUserNameErr;
 	const roleName = [];
+	
 	if (rolesBody) {
 		roleName.push(rolesBody);
 	}
 
 	console.log(roleName);
+	let randomNumber;
+	randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+	const userExists = await User.findOne({ where: { isActive: true, userId: randomNumber } });
+	if (userExists !== null) {
+		console.log("duplicate random number")
+		randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+	}
+	userBody.userId = randomNumber;
+	console.log(userBody)
 
 	if (!userBody.userName || !userBody.email || !userBody.roles) {
 		return res.json({
@@ -925,6 +936,7 @@ exports.signupEncrypted = async (req, res, next) => {
 
 		if ((userBody['firstName'] !== undefined) && (userBody['lastName'] !== undefined) && (userBody['contact'] !== undefined)) {
 			create = {
+				userId:userBody.userId,
 				firstName: encrypt(userBody.firstName),
 				lastName: encrypt(userBody.lastName),
 				userName: encrypt(userBody.userName),
@@ -939,6 +951,7 @@ exports.signupEncrypted = async (req, res, next) => {
 			}
 		} else {
 			create = {
+				userId:userBody.userId,
 				// firstName: encrypt(userBody.firstName),
 				// lastName: encrypt(userBody.lastName),
 				userName: encrypt(userBody.userName),
@@ -1084,7 +1097,7 @@ exports.signupEncrypted = async (req, res, next) => {
 					});
 				})
 				.catch(err => {
-					console.log("err ===>", err.name)
+					console.log("err ===>", err)
 					res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
 						status: 500,
 						message: err.name
