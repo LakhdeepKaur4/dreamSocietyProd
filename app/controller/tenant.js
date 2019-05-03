@@ -301,13 +301,8 @@ exports.delete = async (req, res, next) => {
             return tenant.updateAttributes(update)
         })
         if (updatedTenant) {
-            User.update({ isActive: false }, { where: { userName: tenant.userName } })
-                .then(user => {
-                    User.find({ where: { userName: tenant.userName } })
-                        .then(user => {
-                            UserRoles.update({ isActive: false }, { where: { userId: user.userId, roleId: 4 } });
-                        })
-                })
+            User.update({ isActive: false }, { where: { userId: id } })
+            UserRoles.update({ isActive: false }, { where: { userId: id, roleId: 4 } });
             UserRFID.update({ isActive: false }, { where: { userId: id } });
             TenantFlatDetail.findAll({ where: { tenantId: id } })
                 .then(flats => {
