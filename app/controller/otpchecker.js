@@ -582,9 +582,10 @@ exports.checkOtp = async (req, res, next) => {
                     isActive: false
                 }
             });
-            console.log("******************************************************")
+            console.log("###############################################")
             console.log("user-->", user)
-            console.log("******************************************************")
+            console.log("###############################################")
+
             if (user) {
                 console.log("reaching here", user)
                 let roles = await Role.findOne({
