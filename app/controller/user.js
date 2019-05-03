@@ -1410,6 +1410,7 @@ exports.signinDecrypted = async (req, res, next) => {
 			message: "Password cannot be empty"
 		})
 	}
+	console.log("userName",encrypt(req.body.userName))
 	User.findOne({
 		nested: true,
 		where: {
@@ -1427,8 +1428,7 @@ exports.signinDecrypted = async (req, res, next) => {
 		}
 		]
 	}).then(user => {
-
-
+		console.log("user--->",user)
 		if (user === null) {
 			console.log("------user-------");
 			return res.status(httpStatus.OK).send({

@@ -164,7 +164,7 @@ let mailToOwner = async (ownerId, email, id, userName) => {
                         }
                     ],
                     "Subject": "Tenant tried to register in Dream Society",
-                    "HTMLPart": `${userName1} is registering in Dream society <b>Click on the given link to verify your tenant</b> <a href="http://192.168.1.111:3000/login/tenantVerification?ownerId=${ownerId}&tenantId=${tenantId}">click here</a>`
+                    "HTMLPart": `${userName1} is registering in Dream society <b>Click on the given link to verify your tenant</b> <a href="http://mydreamsociety.com/login/tenantVerification?ownerId=${ownerId}&tenantId=${tenantId}">click here</a>`
                     //   "HTMLPart": `your username is: ${userName} and password is: ${password}. `
                 }
             ]
@@ -206,7 +206,7 @@ let mailToOwner1 = async (ownerId, email, id, userName) => {
                         }
                     ],
                     "Subject": "Tenant tried to register in Dream Society",
-                    "HTMLPart": `${userName1} is registering in Dream society <b>Click on the given link to verify your tenant</b> <a href="http://192.168.1.111:3000/login/tenantVerification?ownerId=${ownerId}&tenantMemberId=${tenantId}">click here</a>`
+                    "HTMLPart": `${userName1} is registering in Dream society <b>Click on the given link to verify your tenant</b> <a href="http://mydreamsociety.com/login/tenantVerification?ownerId=${ownerId}&tenantMemberId=${tenantId}">click here</a>`
                     //   "HTMLPart": `your username is: ${userName} and password is: ${password}. `
                 }
             ]
@@ -488,6 +488,7 @@ exports.createEncrypted = async (req, res, next) => {
 
                                 item.memberId = randomNumber;
                                 let memberUserName = item.firstName.replace(/ /g, '') + 'T' + uniqueId.toString(36);
+                                console.log("tenant member userNAme ",memberUserName)
                                 const password = passwordGenerator.generate({
                                     length: 10,
                                     numbers: true
@@ -522,11 +523,11 @@ exports.createEncrypted = async (req, res, next) => {
                                     });
                                 User.create({
                                     userId: item.memberId,
-                                    firstName: encrypt(item.firstName),
-                                    lastName: encrypt(item.lastName),
-                                    userName: encrypt(item.userName),
-                                    contact: encrypt(item.contact),
-                                    email: encrypt(item.email),
+                                    firstName: item.firstName,
+                                    lastName: item.lastName,
+                                    userName: item.userName,
+                                    contact: item.contact,
+                                    email: item.email,
                                     password: bcrypt.hashSync(item.password, 8),
                                     // familyMember: encrypt(tenant.noOfMembers.toString()),
                                     // parking: encrypt('...'),
