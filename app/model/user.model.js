@@ -13,15 +13,15 @@ module.exports = (sequelize, Sequelize) => {
 		},
 		userName: {
 			type: Sequelize.STRING,
-			unique: 'compositeIndex'
+			// unique: 'compositeIndex'
 		},
 		contact: {
 			type: Sequelize.STRING,
-			unique: true
+			// unique: true
 		},
 		email: {
 			type: Sequelize.STRING,
-			unique: true
+			// unique: true
 		},
 		password: {
 			type: Sequelize.STRING
