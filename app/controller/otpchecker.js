@@ -545,6 +545,7 @@ exports.checkOtp = async (req, res, next) => {
         let tenantMemberId = decrypt(key, req.query.tenantMemberId);
         console.log(tenantMemberId);
         let tenantMember = await TenantMembersDetail.findOne({ where: { memberId: tenantMemberId, isActive: false } });
+        console.log("^^^^^^^^^^^^^^^^^tenannt mamber########################",tenantMember)
         if (tenantMember === undefined || tenantMember === null) {
             return res.status(403).json(
                 {
@@ -571,14 +572,19 @@ exports.checkOtp = async (req, res, next) => {
             mailToUser(updatedTenant);
 
             // set user
+            console.log("###############################################")
             let userName = decrypt(key, updatedTenant.userName);
             // set users
             let user = await User.findOne({
-                where: { userName: encrypt1(key, userName),
-                     isActive: false }
+                where: {
+                    // userName: encrypt1(key, userName),
+                    userId: tenantMember.memberId,
+                    isActive: false
+                }
             });
-            console.log("user-->",user)
-
+            console.log("******************************************************")
+            console.log("user-->", user)
+            console.log("******************************************************")
             if (user) {
                 console.log("reaching here", user)
                 let roles = await Role.findOne({
