@@ -905,7 +905,7 @@ exports.signupEncrypted = async (req, res, next) => {
 	let userEmailErr;
 	let userUserNameErr;
 	const roleName = [];
-	
+
 	if (rolesBody) {
 		roleName.push(rolesBody);
 	}
@@ -936,7 +936,7 @@ exports.signupEncrypted = async (req, res, next) => {
 
 		if ((userBody['firstName'] !== undefined) && (userBody['lastName'] !== undefined) && (userBody['contact'] !== undefined)) {
 			create = {
-				userId:userBody.userId,
+				userId: userBody.userId,
 				firstName: encrypt(userBody.firstName),
 				lastName: encrypt(userBody.lastName),
 				userName: encrypt(userBody.userName),
@@ -951,7 +951,7 @@ exports.signupEncrypted = async (req, res, next) => {
 			}
 		} else {
 			create = {
-				userId:userBody.userId,
+				userId: userBody.userId,
 				// firstName: encrypt(userBody.firstName),
 				// lastName: encrypt(userBody.lastName),
 				userName: encrypt(userBody.userName),
@@ -3155,6 +3155,113 @@ exports.checkContact = (req, res, next) => {
 			console.log('Error ===>', err);
 			res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
 		})
+}
+
+exports.releaseUsersResources = async (req, res, next) => {
+	try {
+		const userId = req.body.userId;
+		console.log(userId)
+		const type = req.body.type;
+		const update = { isActive: false };
+		switch (type) {
+			case "ActiveOwner":
+				const owner = await Owner.findOne({ where: { ownerId: userId, isActive: false } });
+				console.log(owner)
+				if (owner && owner != null) {
+					await Owner.update(update, { where: { ownerId: userId } });
+					await UserRfid.update(update, { where: { userId: userId } });
+					await OwnerFlatDetail.findAll({
+						where: {
+							ownerId: userId,
+							isActive: true
+						}
+					}).then(entries => {
+						return entries.forEach(async function (entry) {
+							// Deactivate Tenant Here
+							let tenants = await TenantFlatDetail.findAll({
+								where: {
+									isActive: true,
+									flatDetailId: entry.flatDetailId
+								}
+							});
+							if (tenants) {
+								tenants.forEach(async tenant => {
+									let tenantToDeactivate = await Tenant.findOne({ where: { isActive: false, tenantId: tenant.tenantId } });
+									let rfId = await UserRfId.findOne({ where: { isActive: true, userId: tenant.tenantId } });
+
+									let tenantMembers = await TenantMembersDetail.findAll({ where: { isActive: false, tenantId: tenant.tenantId } });
+									tenantMembers.forEach(async tenantMember => {
+
+										let memberRfId = await UserRfId.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
+
+										if (memberRfId) {
+											memberRfId.updateAttributes({ isActive: false });
+										}
+
+										tenantMember.updateAttributes({ isActive: false });
+									})
+									if (tenantToDeactivate) {
+										tenantToDeactivate.updateAttributes({ isActive: false });
+									}
+
+									if (rfId) {
+										rfId.updateAttributes({ isActive: false });
+									}
+
+									if (tenant) {
+										tenant.updateAttributes({ isActive: false });
+									}
+								}
+								)
+							}
+							return entry.updateAttributes(update);
+						})
+					});
+					// }
+					const ownerMember = await OwnerMembersDetail.findAll({ where: { isActive: false, ownerId: userId } });
+					ownerMember.map(members => { userIds.push(members.memberId) });
+					console.log(userIds);
+					if (ownerMember.length > 0) {
+						await UserRfid.update(update, { where: { userId: { [Op.in]: userIds } } });
+					}
+
+					const tenant = await Tenant.findOne({ where: { ownerId: userId, isActive: false } });
+					if (tenant) {
+						await Tenant.update(update, { where: { ownerId: userId } });
+						await UserRfid.update(update, { where: { userId: userId } });
+
+						const tenantMember = await TenantMembersDetail.findAll({ where: { isActive: true, tenantId: userId } });
+						tenantMember.map(members => { userIds.push(members.memberId) });
+						if (tenantMember.length > 0) {
+							await TenantMembersDetail.update(update, { where: { tenantId: { [Op.in]: userIds } } });
+							await UserRfid.update(update, { where: { userId: { [Op.in]: userIds } } });
+						}
+					}
+					res.status(httpStatus.OK).json({ message: "Owner flats released successfully", owner, tenant });
+				}
+				break;
+			case "ActiveTenant":
+				const tenant = await Tenant.findOne({ where: { tenantId: userId, isActive: false } });
+				if (tenant) {
+					await Tenant.update(update, { where: { tenantId: userId } });
+						await UserRfid.update(update, { where: { userId: userId } });
+						await TenantFlatDetail.update(update, { where: { tenantId: userId } });
+					
+					const tenantMember = await TenantMembersDetail.findAll({ where: { isActive: true, tenantId: userId } });
+					tenantMember.map(members => { userIds.push(members.memberId) });
+					if (tenantMember.length > 0) {
+						await TenantMembersDetail.update(update, { where: { tenantId: { [Op.in]: userIds } } });
+						await UserRfid.update(update, { where: { userId: { [Op.in]: userIds } } });
+					}
+					res.status(httpStatus.OK).json({ message: "Tenant flats released successfully",owner,tenant });
+				}
+				break;
+
+		}
+	} catch (error) {
+		console.log('Error ===>', error);
+		res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+	}
 }
 
 // function getAge(DOB) {
