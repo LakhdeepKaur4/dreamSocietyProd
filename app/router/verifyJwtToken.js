@@ -131,6 +131,21 @@ isOwnerOrTenant = (req, res, next) => {
 		})
 }
 
+isVendorRole = async (req, res, next) => {
+	let token = req.headers['x-access-token'];
+
+	const user = await User.findOne({ where: { isActive: true, userId: req.userId } });
+	if (user) {
+		const role = await UserRole.findOne({ where: { isActive: true, userId: req.userId, roleId: 5 } });
+		if (role) {
+			next();
+			return
+		}
+		res.status(httpStatus.FORBIDDEN).send("Require Super Admin Role!");
+		return;
+	}
+}
+
 const authJwt = {};
 authJwt.verifyToken = verifyToken;
 authJwt.isAdmin = isAdmin;
@@ -138,5 +153,6 @@ authJwt.isAdminRole = isAdminRole;
 authJwt.isSuperAdminRole = isSuperAdminRole;
 authJwt.isOwnerOrTenant = isOwnerOrTenant;
 authJwt.isOwnerOrTenantRole = isOwnerOrTenantRole;
+authJwt.isVendorRole = isVendorRole;
 
 module.exports = authJwt;

@@ -3,11 +3,15 @@ const config = require('../config/config.js');
 const httpStatus = require('http-status');
 const crypto = require('crypto');
 
+const Op = db.Sequelize.Op;
+
 const Complaint = db.complaint;
 const ComplaintStatus = db.complaintStatus;
 const Service = db.service;
 const FlatDetail = db.flatDetail;
 const Vendor = db.vendor;
+const VendorComplaints = db.vendorComplaints;
+const VendorService = db.vendorService;
 
 
 let encrypt = (text) => {
@@ -30,6 +34,7 @@ let decrypt = (text) => {
 
 exports.create = (req, res, next) => {
     const complaintBody = req.body;
+    const vendorIds = [];
 
     console.log('Complaint ===>', complaintBody);
 
@@ -40,6 +45,40 @@ exports.create = (req, res, next) => {
         Complaint.create(complaintBody)
             .then(complaint => {
                 if (complaint !== null) {
+                    VendorService.findAll({
+                        where: {
+                            serviceId: complaint.serviceId,
+                            isActive: true
+                        },
+                        attributes: ['vendorId']
+                    })
+                        .then(vendorIdsRes => {
+                            if (vendorIdsRes.length !== 0) {
+                                vendorIdsRes.map(item => {
+                                    vendorIds.push(item.vendorId);
+                                })
+                                Vendor.findAll({
+                                    where: {
+                                        vendorId: {
+                                            [Op.in]: vendorIds
+                                        },
+                                        isActive: true
+                                    },
+                                    attributes: ['vendorId']
+                                })
+                                    .then(vendorIdsRec => {
+                                        if (vendorIdsRec.length !== 0) {
+                                            vendorIdsRec.map(item => {
+                                                VendorComplaints.create({
+                                                    vendorId: item.vendorId,
+                                                    complaintId: complaint.complaintId
+                                                })
+                                            })
+                                        }
+                                    })
+                            }
+
+                        })
                     res.status(httpStatus.CREATED).json({
                         message: 'Compalint registered successfully'
                     })
@@ -145,4 +184,26 @@ exports.getByUserId = (req, res, next) => {
             console.log('Error ===>', err);
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
+}
+
+exports.cancelRequestByUser = (req,res,next) => {
+    const complaintId = req.body.complaintId;
+    console.log('Complaint ID ===>', complaintId);
+
+    Complaint.update({complaintStatusId: 5},{where: {complaintId: complaintId, isActive: true}})
+    .then(complaintCancelled => {
+        if (complaintCancelled[0] === 1) {
+            res.status(httpStatus.CREATED).json({
+                message: 'Complaint cancelled successfully'
+            })
+        } else {
+            res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                message: 'Complaint not cancelled'
+            })
+        }
+    })
+    .catch(err => {
+        console.log('Error ===>', err);
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    })
 }

@@ -81,14 +81,16 @@ db.electricityConsumer = require('../model/electricityConsumer.model')(sequelize
 db.commonAreaDetail = require('../model/commonAreaDetail.model')(sequelize, Sequelize);
 db.areaMachine = require('../model/AreaMachine.model')(sequelize, Sequelize);
 db.userRfid = require('../model/userRfid.model')(sequelize, Sequelize);
+db.vendorComplaints = require('../model/vendorComplaints.model')(sequelize, Sequelize);
+
 
 db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
 db.otp.belongsTo(db.tenant, { foreignKey: 'tenantId' });
 db.otp.belongsTo(db.employee, { foreignKey: 'employeeId' });
 db.otp.belongsTo(db.vendor, { foreignKey: 'vendorId' });
 db.otp.belongsTo(db.individualVendor, { foreignKey: 'individualVendorId' });
-db.otp.belongsTo(db.ownerMembersDetail, { foreignKey: 'memberId'});
-db.otp.belongsTo(db.tenantMembersDetail, { foreignKey: 'tenantMemberId'});
+db.otp.belongsTo(db.ownerMembersDetail, { foreignKey: 'memberId' });
+db.otp.belongsTo(db.tenantMembersDetail, { foreignKey: 'tenantMemberId' });
 
 // db.role.belongsToMany(db.user, { through: 'user_roles', foreignKey: 'roleId', otherKey: 'userId' });
 // db.user.belongsToMany(db.role, { through: 'user_roles', foreignKey: 'userId', otherKey: 'roleId' });
@@ -159,6 +161,9 @@ db.ownerMembersDetail.belongsTo(db.relation, { foreignKey: 'relationId' });
 db.ownerMembersDetail.belongsTo(db.user, { foreignKey: 'userId' });
 db.ownerMembersDetail.belongsTo(db.rfid, { foreignKey: 'memberRfId' });
 db.owner.belongsTo(db.user, { foreignKey: 'userId' });
+db.rfid.belongsTo(db.user, { foreignKey: 'userId' });
+db.machine.belongsTo(db.user, { foreignKey: 'userId' });
+db.machineDetail.belongsTo(db.user, { foreignKey: 'userId' });
 db.owner.belongsTo(db.society, { foreignKey: 'societyId' });
 db.owner.belongsTo(db.tower, { foreignKey: 'towerId' });
 // db.owner.belongsTo(db.flatDetail, { foreignKey: 'flatDetailId' });
@@ -227,5 +232,8 @@ db.machineDetail.belongsToMany(db.commonAreaDetail, { as: 'CommonArea', through:
 db.commonAreaDetail.belongsTo(db.commonArea, { foreignKey: 'commonAreaId' });
 db.userRfid.belongsTo(db.user, { foreignKey: 'userId' });
 db.userRfid.belongsTo(db.rfid, { foreignKey: 'rfidId' });
+db.fingerprintData.belongsTo(db.user, { foreignKey: 'userId',as:'user' })
+db.vendor.belongsToMany(db.complaint, { through: 'vendor_complaints_master', foreignKey: 'vendorId' });
+db.complaint.belongsToMany(db.vendor, { through: 'vendor_complaints_master', foreignKey: 'complaintId' });
 
 module.exports = db;
