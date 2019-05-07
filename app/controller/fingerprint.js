@@ -114,7 +114,7 @@ exports.notNullFingerPrintData = async (req, res, next) => {
 exports.nullFilterOnflats = async (req, res, next) => {
     try {
         const type = req.params.type;
-        console.log(type)
+        console.log(type);
         let ownerIds = [];
         let ownerMemberIds =[];
         let tenantIds = [];

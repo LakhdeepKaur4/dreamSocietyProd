@@ -380,7 +380,7 @@ exports.create1 = async (req, res, next) => {
         memberNewArray, {
           returning: true
         }, {
-          fields: ["memberId", "memberFirstName", "memberLastName", "memberUserName", "memberEmail", "memberContact", "password", "memberDob", "gender", "relationId", "memberRfId"]
+          fields: ["memberId", "memberFirstName", "memberLastName", "memberUserName", "memberEmail", "memberContact", "password", "memberDob", "gender", "relationId", "memberRfId", "flatDetailId"]
           // updateOnDuplicate: ["name"]
         }
       );
@@ -425,10 +425,10 @@ exports.create1 = async (req, res, next) => {
           isActive: false
         });
         // if (member.merberRfId !== null && member.memberRfId !== undefined && member.memberRfId !== '') {
-          let userRfId = await UserRfId.create({
-            userId: user.userId,
-            rfidId: member.memberRfId
-          })
+        let userRfId = await UserRfId.create({
+          userId: user.userId,
+          rfidId: member.memberRfId
+        })
         // }
         // else {
         //   member.memberRfId = null;
@@ -1574,7 +1574,8 @@ exports.getMembers = async (req, res, next) => {
       include: [{
         model: Relation,
         attributes: ["relationId", "relationName"]
-      }]
+      },
+      { model: FlatDetail }]
     });
 
     ownerMembers.map(ownerMember => {
@@ -1776,7 +1777,7 @@ exports.updateMember = async (req, res, next) => {
       "memberContact",
       "gender"
     ];
-    let ids = ["relationId", "memberRfId"];
+    let ids = ["relationId", "memberRfId","flatDetailId"];
     let others = ["memberDob"];
 
     console.log("updating ownerMember");
