@@ -12,6 +12,7 @@ const FlatDetail = db.flatDetail;
 const Vendor = db.vendor;
 const VendorComplaints = db.vendorComplaints;
 const VendorService = db.vendorService;
+const Feedback = db.feedback;
 
 
 let encrypt = (text) => {
@@ -186,24 +187,135 @@ exports.getByUserId = (req, res, next) => {
         })
 }
 
-exports.cancelRequestByUser = (req,res,next) => {
+exports.cancelRequestByUser = (req, res, next) => {
     const complaintId = req.body.complaintId;
     console.log('Complaint ID ===>', complaintId);
 
-    Complaint.update({complaintStatusId: 5},{where: {complaintId: complaintId, isActive: true}})
-    .then(complaintCancelled => {
-        if (complaintCancelled[0] === 1) {
+    Complaint.update({ complaintStatusId: 5 }, { where: { complaintId: complaintId, isActive: true } })
+        .then(complaintCancelled => {
+            if (complaintCancelled[0] === 1) {
+                res.status(httpStatus.CREATED).json({
+                    message: 'Complaint cancelled successfully'
+                })
+            } else {
+                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                    message: 'Complaint not cancelled'
+                })
+            }
+        })
+        .catch(err => {
+            console.log('Error ===>', err);
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
+}
+
+exports.feedback = (req, res, next) => {
+    const feedback = req.body;
+    feedback.userId = req.userId;
+    console.log('Feedback ===>', feedback);
+
+    Feedback.create(feedback)
+        .then(feedbackCreated => {
+            if (feedbackCreated.status === 'Reopen') {
+                Complaint.findOne({
+                    where: {
+                        complaintId: feedbackCreated.complaintId,
+                        isActive: true
+                    }
+                })
+                    .then(complaint => {
+                        complaint = complaint.toJSON();
+                        delete complaint.complaintId;
+                        delete complaint.createdAt;
+                        delete complaint.updatedAt;
+                        delete complaint.vendorId;
+                        delete complaint.selectedSlot;
+                        complaint.isAccepted = false;
+                        complaint.complaintStatusId = 1;
+                        complaint.userId = req.userId;
+                        Complaint.create(complaint)
+                            .then(complaintCreated => {
+                                if (complaintCreated !== null) {
+                                    delete feedback.complaintId;
+                                    delete feedback.vendorId;
+                                    delete feedback.userId;
+                                    delete feedback.rating;
+                                    delete feedback.status;
+                                    delete feedback.feedback;
+                                    Complaint.update({ feedback }, { where: { complaintId: complaintCreated.complaintId } });
+                                    VendorService.findAll({
+                                        where: {
+                                            serviceId: complaintCreated.serviceId,
+                                            isActive: true
+                                        },
+                                        attributes: ['vendorId']
+                                    })
+                                        .then(vendorIdsRes => {
+                                            if (vendorIdsRes.length !== 0) {
+                                                vendorIdsRes.map(item => {
+                                                    vendorIds.push(item.vendorId);
+                                                })
+                                                Vendor.findAll({
+                                                    where: {
+                                                        vendorId: {
+                                                            [Op.in]: vendorIds
+                                                        },
+                                                        isActive: true
+                                                    },
+                                                    attributes: ['vendorId']
+                                                })
+                                                    .then(vendorIdsRec => {
+                                                        if (vendorIdsRec.length !== 0) {
+                                                            vendorIdsRec.map(item => {
+                                                                VendorComplaints.create({
+                                                                    vendorId: item.vendorId,
+                                                                    complaintId: complaintCreated.complaintId
+                                                                })
+                                                            })
+                                                        }
+                                                    })
+                                            }
+
+                                        })
+                                    res.status(httpStatus.CREATED).json({
+                                        message: 'Compalint registered successfully'
+                                    })
+                                }
+                            })
+                    })
+            }
             res.status(httpStatus.CREATED).json({
-                message: 'Complaint cancelled successfully'
+                message: 'Feedback submitted successfully'
             })
-        } else {
-            res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                message: 'Complaint not cancelled'
-            })
+        })
+        .catch(err => {
+            console.log('Error ===>', err);
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
+}
+
+exports.deleteComplaints = (req, res, next) => {
+    const ids = req.body.complaintIds;
+    console.log('Comaplaint IDs ===>', ids);
+
+    Complaint.findAll({
+        where: {
+            isActive: true,
+            complaintId: {
+                [Op.in]: ids
+            }
         }
     })
-    .catch(err => {
-        console.log('Error ===>', err);
-        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-    })
+        .then(complaints => {
+            complaints.map(item => {
+                item.updateAttributes({ isActive: false })
+            })
+            res.status(httpStatus.OK).json({
+                message: 'Deleted successfully'
+            })
+        })
+        .catch(err => {
+            console.log('Error ===>', err);
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
 }

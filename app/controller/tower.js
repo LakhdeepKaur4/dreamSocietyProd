@@ -33,7 +33,6 @@ exports.create = async (req, res) => {
         const towerId = tower.towerId;
 
         const result = body.floors.forEach(function (element) { element.towerId = towerId });
-
         const updatedTowerFloor = await TowerFloor.bulkCreate(body.floors, { returning: true }, {
             fields: ["floorId", "towerId"],
         },
@@ -121,6 +120,49 @@ exports.getTowerAndFloor = async (req, res) => {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message })
     }
 }
+
+exports.getFloorByTowerId = async (req, res) => {
+    try {
+        const towerId = req.params.id;
+        const flatIds = [];
+        const floorIds = [];
+        const floors = await TowerFloor.findAll({ where: { isActive: true, towerId: towerId } });
+        console.log(floors.map(floor => {
+            floorIds.push(floor.floorId);
+        }))
+        console.log(floorIds);
+        const tower = await Tower.findOne({
+            where: { isActive: true, towerId: towerId },
+            include: [{
+                model: Floor,
+                as: 'Floors',
+                attributes: ['floorId', 'floorName'],
+                through: {
+                    attributes: ['floorId', 'floorName'],
+                }
+            }
+            ]
+            , order: [['createdAt', 'DESC']]
+        });
+        // const owners = await Owner.findAll({ where: { isActive: true }});
+        // owners.map(owner => {
+        //     return flatIds.push(owner.flatDetailId);
+        // })
+        let ownerFlatDetails = await OwnerFlatDetail.findAll({ where: { isActive: true } });
+        ownerFlatDetails.map(ownerFlat => {
+            return flatIds.push(ownerFlat.flatDetailId);
+        })
+
+        const flatDetail = await FlatDetail.findAll({ where: { towerId: towerId, floorId: { [Op.in]: floorIds }, flatDetailId: { [Op.notIn]: flatIds } } })
+
+        if (tower && flatDetail) {
+            res.status(httpStatus.OK).json({ message: 'Tower Floor Page', tower: tower, flatDetail: flatDetail })
+        }
+    } catch (error) {
+        console.log(error)
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message })
+    }
+} 
 
 exports.getFloorByTowerId = async (req, res) => {
     try {

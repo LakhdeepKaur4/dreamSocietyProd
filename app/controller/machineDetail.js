@@ -8,6 +8,7 @@ const MachineDetail = db.machineDetail;
 
 exports.create = (req, res, next) => {
     const body = req.body;
+    body.userId = req.userId;
     console.log('Body ===>', body);
 
     MachineDetail.findOne({

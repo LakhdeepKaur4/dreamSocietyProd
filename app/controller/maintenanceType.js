@@ -15,15 +15,19 @@ exports.create = async (req, res, next) => {
 
         const maintenanceTypes = await MaintenanceType.findAll({
             where: {
-                isActive: true
+                isActive: true,
+                startDate:body.startDate,
+                endDate:body.endDate
             }
         })
-        let error = maintenanceTypes.some(maintenance => {
-            if (maintenance.maintenanceId == req.body.maintenanceId && maintenance.sizeId == req.body.sizeId)
-                return true;
-        });
-        if (error) {
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Maintainance Name already Exists" })
+        if(maintenanceTypes){
+            let error = maintenanceTypes.some(maintenance => {
+                if (maintenance.maintenanceId == req.body.maintenanceId && maintenance.sizeId == req.body.sizeId)
+                    return true;
+            });
+            if (error) {
+                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Maintainance Name already Exists" })
+            }
         }
         const maintenance = await MaintenanceType.create(body);
         if (maintenance) {
@@ -34,6 +38,30 @@ exports.create = async (req, res, next) => {
         }
     } catch (error) {
         console.log("error==>", error);
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
+
+exports.getMaintenanceForElectricity = async (req, res, next) => {
+    try {
+        const maintenanceType = await MaintenanceType.findAll({
+            where: { isActive: true ,
+            maintenanceId:98
+            },
+            order: [['createdAt', 'DESC']],
+            include: [
+                { model: Size },
+                { model: Maintenance }
+            ]
+        });
+        if (maintenanceType) {
+            return res.status(httpStatus.CREATED).json({
+                message: "Maintenance Type Content Page",
+                maintenanceType: maintenanceType
+            });
+        }
+    } catch (error) {
+        console.log("error==>", error)
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -62,7 +90,7 @@ exports.get = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
     try {
-        console.log("maintenannce>")
+        console.log("maintenannce>>")
         const id = req.params.id;
         console.log("id==>", id)
         if (!id) {
@@ -73,7 +101,7 @@ exports.update = async (req, res, next) => {
         if (!update) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
-        const alreadyExist = await MaintenanceType.findOne({ where: { isActive: true, maintenanceId: update.maintenanceId, sizeId: update.sizeId, maintenanceTypeId: { [Op.ne]: id } } });
+        const alreadyExist = await MaintenanceType.findOne({ where: { isActive: true, maintenanceId: update.maintenanceId, sizeId: update.sizeId, startDate:update.startDate,endDate:update.endDate,maintenanceTypeId: { [Op.ne]: id } } });
 
         if (alreadyExist !== null) {
             console.log(alreadyExist.rate)
@@ -99,7 +127,6 @@ exports.update = async (req, res, next) => {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
-
 
 exports.delete = async (req, res, next) => {
     try {

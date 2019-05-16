@@ -12,6 +12,12 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.BOOLEAN,
             defaultValue: true
         },
+        startDate:{
+            type: Sequelize.DATEONLY,
+        },
+        endDate:{
+            type: Sequelize.DATEONLY,
+        },
         createdAt: {
             allowNull: false,
             type: Sequelize.DATE

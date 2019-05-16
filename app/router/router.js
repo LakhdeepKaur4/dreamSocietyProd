@@ -54,6 +54,7 @@ module.exports = function (app) {
 	const commonAreaDetailController = require('../controller/commonAreaDetail');
 	const fingerPrintController = require('../controller/fingerprint');
 	const vendorComplaintsController = require('../controller/vendorComplaints');
+	const purchaseOrderController = require('../controller/purchaseOrder');
 
 
 	app.get('/', userController.start);
@@ -64,7 +65,7 @@ module.exports = function (app) {
 
 	app.post('/api/auth/signin', userController.signinDecrypted);
 
-	app.get('/api/user', userController.getUserDecrypted);
+	app.get('/api/user', [authJwt.verifyToken, authJwt.isAdminRole], userController.getUserDecrypted);
 
 	app.get('/api/rolesAssigned', [authJwt.verifyToken, authJwt.isAdminRole], userController.getUserRoleDecrypted);
 
@@ -72,7 +73,7 @@ module.exports = function (app) {
 
 	app.get('/api/person', [authJwt.verifyToken, authJwt.isAdminRole], userController.getPersonDecrypted);
 
-	app.get('/api/user/search', userController.search);
+	app.get('/api/user/search', [authJwt.verifyToken, authJwt.isAdminRole], userController.search);
 
 	// app.get('/api/user/test', [authJwt.verifyToken], userController.userContent);
 
@@ -290,7 +291,7 @@ module.exports = function (app) {
 
 	app.post('/api/vendor', [authJwt.verifyToken, authJwt.isAdminRole], fileUploadConfig.fields([{ name: 'profilePicture', maxCount: 1 }, { name: 'documentOne', maxCount: 1 }, { name: 'documentTwo', maxCount: 1 }]), vendorController.create1);
 
-	app.get('/api/vendor', [authJwt.verifyToken, authJwt.isAdminRole], vendorController.get1);
+	app.get('/api/vendor', vendorController.get1);
 
 	app.put('/api/vendor/:id', [authJwt.verifyToken], fileUploadConfig.fields([{ name: 'profilePicture', maxCount: 1 }, { name: 'documentOne', maxCount: 1 }, { name: 'documentTwo', maxCount: 1 }]), vendorController.update1);
 
@@ -353,6 +354,8 @@ module.exports = function (app) {
 	app.post('/api/maintenance', [authJwt.verifyToken, authJwt.isAdminRole], maintenanceController.create);
 
 	app.get('/api/maintenance', [authJwt.verifyToken, authJwt.isAdminRole], maintenanceController.get);
+
+	app.get('/api/electricity/rate', [authJwt.verifyToken, authJwt.isAdminRole], maintenanceTypeController.getMaintenanceForElectricity);
 
 	app.put('/api/maintenance/:id', [authJwt.verifyToken, authJwt.isAdminRole], maintenanceController.update);
 
@@ -460,19 +463,19 @@ module.exports = function (app) {
 
 	app.post('/api/owner/ownerMember/:id', [authJwt.verifyToken, authJwt.isAdminRole], owner.addMember);
 
-	app.get('/api/owner',  owner.get2);
+	app.get('/api/owner', [authJwt.verifyToken, authJwt.isAdminRole], owner.get2);
 
 	app.put('/api/owner/:id', [authJwt.verifyToken, authJwt.isAdminRole], owner.update2);
 
 	app.get('/api/owner/:id', [authJwt.verifyToken, authJwt.isAdminRole], owner.getFlatNo);
 
-	app.get('/api/owner/ownerMember/:id', [authJwt.verifyToken, authJwt.isAdminRole], owner.getMembers);
+	app.get('/api/owner/ownerMember/:id', owner.getMembers);
 
 	app.get('/api/owner/getFlatDetail/:id', [authJwt.verifyToken, authJwt.isAdminRole], owner.getFlatDetail);
 
 	app.put('/api/owner/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], owner.deleteSelected);
 
-	app.put('/api/ownerMember/delete/deleteSelected',  owner.deleteSelectedMembers);
+	app.put('/api/ownerMember/delete/deleteSelected', owner.deleteSelectedMembers);
 
 	app.put('/api/owner/ownerMember/update/:id', [authJwt.verifyToken, authJwt.isAdminRole], owner.updateMember);
 
@@ -552,7 +555,7 @@ module.exports = function (app) {
 
 	app.post('/api/ownerActivation', otpChecker.checkOtp);
 
-	app.post('/api/checkToken', checkToken.checkToken);	
+	app.post('/api/checkToken', checkToken.checkToken);
 
 	app.post('/api/createEventBooking', [authJwt.verifyToken, authJwt.isAdminRole], eventBooking.create);
 
@@ -581,6 +584,10 @@ module.exports = function (app) {
 	app.post('/api/complaintRegister', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], complaint.create);
 
 	app.get('/api/complaintRegister', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], complaint.get);
+
+	app.post('/api/complaintRegister/feedback', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], complaint.feedback);
+
+	app.put('/api/complaintRegister/delete', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], complaint.deleteComplaints);
 
 	app.get('/api/userComplaints', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], complaint.getByUserId);
 
@@ -644,6 +651,12 @@ module.exports = function (app) {
 
 	app.post('/api/electricityConsumer', [authJwt.verifyToken, authJwt.isAdminRole], electricityConsumerController.create);
 
+	app.get('/api/electricityConsumer/date/:from/:to', [authJwt.verifyToken, authJwt.isAdminRole], electricityConsumerController.dateFilter);
+
+	app.get('/api/electricityConsumer/flat/:id', [authJwt.verifyToken, authJwt.isAdminRole], electricityConsumerController.getByFlatNo);
+
+	app.put('/api/electricityConsumer/calculate/charges', [authJwt.verifyToken, authJwt.isAdminRole], electricityConsumerController.calculateMonthlyCharges);
+
 	app.get('/api/electricityConsumer', [authJwt.verifyToken, authJwt.isAdminRole], electricityConsumerController.get);
 
 	app.put('/api/electricityConsumer/:id', [authJwt.verifyToken, authJwt.isAdminRole], electricityConsumerController.update);
@@ -664,20 +677,53 @@ module.exports = function (app) {
 
 	app.put('/api/commonAreaDetail/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaDetailController.delete);
 
-	app.post('/api/fingerPrint',[authJwt.verifyToken],fingerPrintController.addFingerPrintData);
+	app.get('/api/fingerPrint/test', [authJwt.verifyToken], fingerPrintController.test);
 
-	app.get('/api/fingerPrint',[authJwt.verifyToken],fingerPrintController.getFingerPrintData);
+	app.get('/api/fingerPrint/roles', [authJwt.verifyToken], fingerPrintController.getRoles);
 
-	app.put('/api/fingerPrint/:userId',[authJwt.verifyToken],fingerPrintController.updateFingerPrintData);
+	app.post('/api/fingerPrint', [authJwt.verifyToken], fingerPrintController.addFingerPrintData);
 
-	app.get('/api/filterOnNull/fingerPrint',[authJwt.verifyToken],fingerPrintController.nullFingerPrintData);
+	app.get('/api/fingerPrint', [authJwt.verifyToken], fingerPrintController.getFingerPrintData);
 
-	app.get('/api/filterOnNotNull/fingerPrint',[authJwt.verifyToken],fingerPrintController.notNullFingerPrintData);
+	app.put('/api/fingerPrint/:userId', [authJwt.verifyToken], fingerPrintController.updateFingerPrintData);
 
-	app.get('/api/filterOnNull/flats/fingerPrint/:type',[authJwt.verifyToken],fingerPrintController.nullFilterOnflats);
+	app.get('/api/filterOnNull/fingerPrint', [authJwt.verifyToken], fingerPrintController.nullFingerPrintData);
 
-	app.get('/api/filterOnNotNull/flats/fingerPrint/:type',[authJwt.verifyToken],fingerPrintController.notNullFilterOnflats);
+	app.get('/api/filterOnNotNull/fingerPrint', [authJwt.verifyToken], fingerPrintController.notNullFingerPrintData);
+
+	app.get('/api/filterOnNull/flats/fingerPrint/:id', [authJwt.verifyToken], fingerPrintController.nullFilterOnflats);
+
+	app.get('/api/filterOnNotNull/flats/fingerPrint/:id', [authJwt.verifyToken], fingerPrintController.notNullFilterOnflats);
 
 	app.get('/api/vendorComplaints', [authJwt.verifyToken, authJwt.isVendorRole], vendorComplaintsController.getById);
+
+	app.put('/api/vendorComplaints/reject', [authJwt.verifyToken, authJwt.isVendorRole], vendorComplaintsController.rejectComplaint);
+
+	app.put('/api/vendorComplaints/accept', [authJwt.verifyToken, authJwt.isVendorRole], vendorComplaintsController.acceptComplaint);
+
+	app.get('/api/vendorComplaints/feedback/:id', [authJwt.verifyToken, authJwt.isVendorRole], vendorComplaintsController.getFeedback);
+
+	app.put('/api/vendorComplaints/delete', [authJwt.verifyToken, authJwt.isVendorRole], vendorComplaintsController.deleteComplaints);
+
+	app.put('/api/vendorComplaints/selectTime', [authJwt.verifyToken, authJwt.isVendorRole], vendorComplaintsController.selectSlot);
+
+	app.put('/api/vendorComplaints/complete', [authJwt.verifyToken, authJwt.isVendorRole], vendorComplaintsController.completedComplaint);
+
+	app.post('/api/purchaseOrder', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.create);
+
+	app.get('/api/purchaseOrder', purchaseOrderController.get);
+
+	app.get('/api/downloadPdfClient/:id', purchaseOrderController.downloadPdfClient);
+
+	app.put('/api/updatePurchaseOrder/:id', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.updatePurchaseOrder);
+
+	app.put('/api/updatePurchaseOrderDetails/:id', [authJwt.verifyToken, authJwt.isAdminRole],purchaseOrderController.updatePurchaseOrderDetails);
+	
+	app.put('/api/deletePurchaseOrder/:id',  purchaseOrderController.delete);
+
+	app.put('/api/deletePurchaseOrders', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.deleteSelected);
+
+
+
 
 }

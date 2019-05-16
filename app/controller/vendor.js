@@ -9,6 +9,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
 const randomInt = require('random-int');
+const RfId = db.rfid;
+const UserRfId = db.userRfid;
+const URL = config.activationLink;
 
 const nexmo = new Nexmo(
     {
@@ -266,6 +269,16 @@ exports.delete = async (req, res, next) => {
             updatedUser.updateAttributes({
               isActive: false
             });
+            let urfId = await UserRfId.findOne({
+                where: {
+                  isActive: true,
+                  userId: id
+                }
+              });
+              console.log("user_rf_id ====>", urfId);
+              if (urfId) {
+                urfId.updateAttributes(update);
+              }
             let updatedUserRoles = await UserRoles.find({
               where: {
                 userId: id
@@ -303,6 +316,7 @@ exports.deleteSelected = async (req, res, next) => {
         const updatedServices = await VendorService.update(update, { where: { vendorId: { [Op.in]: deleteSelected } } })
         const updatedUsers = await User.update(update, { where: { userId: { [Op.in]: deleteSelected } } });
         const updatedUserRoles = await UserRoles.update(update, { where: { userId: { [Op.in]: deleteSelected } } });
+        const updatedUserRfId = await UserRfId.update(update, { where: { userId: { [Op.in]: deleteSelected } } });
 
 
 
@@ -340,7 +354,7 @@ let mailToUser = (email, vendorId) => {
                         }
                     ],
                     "Subject": "Activation link",
-                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?vendorId=${vendorId}&token=${token}">click here</a>`
+                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="${URL}/login/tokenVerification?vendorId=${vendorId}&token=${token}">click here</a>`
                 }
             ]
         })
@@ -412,7 +426,8 @@ exports.create1 = async (req, res, next) => {
             currentAddress: encrypt(key, body.currentAddress),
             contact: encrypt(key, body.contact),
             email: encrypt(key, body.email),
-            userId: req.userId
+            userId: req.userId,
+            rfidId:body.rfidId
             // document: body.document
         });
         const vendorId = vendor.vendorId;
@@ -506,6 +521,10 @@ exports.create1 = async (req, res, next) => {
             email: encrypt1(key, email),
             isActive: false
         });
+        let userRfId = await UserRfId.create({
+            userId: user.userId,
+            rfidId: vendor.rfidId
+          })
         // set roles
         console.log(vendor.password);
         console.log(user.password);
@@ -534,7 +553,7 @@ exports.get1 = async (req, res, next) => {
             where: { isActive: true },
             order: [['createdAt', 'DESC']],
             include: [
-                { model: VendorService, where: { isActive: true }, include: [{ model: Rate }, { model: Service }] }]
+                { model: VendorService, where: { isActive: true }, include: [{ model: Rate }, { model: Service }] },{model: RfId}]
         });
         if (vendors) {
             vendors.map(vendor => {
@@ -617,6 +636,7 @@ exports.update1 = async (req, res, next) => {
     let updAttr = {};
     let attrArr = ['userName', 'firstName', 'lastName', 'permanentAddress', 'currentAddress', 'contact', 'email'];
     let attrFiles = ['profilePicture', 'documentOne', 'documentTwo'];
+    let attrIds = ["rfidId"];
     try {
         let existingContact = await Vendor.findOne({
             where: {
@@ -650,6 +670,11 @@ exports.update1 = async (req, res, next) => {
             attrArr.forEach(attr => {
                 if (attr in req.body && req.body[attr] !== undefined && req.body[attr] !== null) {
                     updAttr[attr] = encrypt(key, req.body[attr]);
+                }
+            });
+            attrIds.forEach(attr => {
+                if (attr in req.body && req.body[attr] !== undefined && req.body[attr] !== null) {
+                    updAttr[attr] = req.body[attr];
                 }
             })
             attrFiles.forEach(attr => {

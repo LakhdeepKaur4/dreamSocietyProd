@@ -22,6 +22,9 @@ const Otp = db.otp;
 const Role = db.role;
 const EmployeeDetail = db.employeeDetail;
 const UserRoles = db.userRole;
+const UserRFID = db.userRfid;
+const RFID = db.rfid;
+const URL = config.activationLink;
 
 let mailToUser = (email, employeeId) => {
     const token = jwt.sign(
@@ -43,7 +46,7 @@ let mailToUser = (email, employeeId) => {
                         }
                     ],
                     "Subject": "Activation link",
-                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?employeeId=${employeeId}&token=${token}">click here</a>`
+                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="${URL}/login/tokenVerification?employeeId=${employeeId}&token=${token}">click here</a>`
                 }
             ]
         })
@@ -180,6 +183,7 @@ exports.delete = async (req, res, next) => {
         const updatedEmployee = await Employee.find({ where: { employeeId: id } }).then(employee => {
             User.update({ isActive: false }, { where: { userId: id } });
             UserRoles.update({ isActive: false }, { where: { userId: id } });
+            UserRFID.update({ isActive: false }, { where: { userId: id } });
             return employee.updateAttributes(update)
         })
         if (updatedEmployee) {
@@ -206,6 +210,7 @@ exports.deleteSelected = async (req, res, next) => {
         if (updatedEmployee) {
             User.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected}}});
             UserRoles.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } } });
+            UserRFID.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } } });
             return res.status(httpStatus.OK).json({
                 message: "Employees deleted successfully",
             });
@@ -457,6 +462,7 @@ exports.createEncrypt = async (req, res, next) => {
                         console.log("employee role", roles)
                         // user.setRoles(roles);
                         UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false });
+                        UserRFID.create({ userId: user.userId, rfidId: body.rfidId});
                         const message = mailToUser(req.body.email, employeeId);
                         return res.status(httpStatus.CREATED).json({
                             message: "Employee successfully created. please activate your account. click on the link delievered to your given email"
@@ -497,7 +503,16 @@ exports.getDecrypt = async (req, res, next) => {
         })
             .then(async emp => {
                 // console.log(emp);
-                await emp.map(item => {
+                await emp.map(async item => {
+                    const rfid = await UserRFID.findOne({
+                        where: {
+                            userId: item.employeeId,
+                            isActive: true
+                        },
+                        include: [
+                            { model: RFID, where: { isActive: true }, attributes: ['rfidId', 'rfid'] }
+                        ]
+                    });
                     item.userName = decrypt(item.userName);
                     item.firstName = decrypt(item.firstName);
                     item.middleName = decrypt(item.middleName);
@@ -513,14 +528,29 @@ exports.getDecrypt = async (req, res, next) => {
                     item.picture = decrypt(item.picture);
                     item.documentOne = decrypt(item.documentOne);
                     item.documentTwo = decrypt(item.documentTwo);
+
+                    item = item.toJSON();
+
+                    if (rfid !== null) {
+                        item.rfid_master = {
+                            rfidId: rfid.rfid_master.rfidId,
+                            rfid: rfid.rfid_master.rfid
+                        }
+                    }
+                    else {
+                        item.rfid_master = rfid;
+                    }
+
                     employee.push(item);
                 })
-                if (employee) {
-                    return res.status(httpStatus.OK).json({
-                        message: "Employee Content Page",
-                        employee
-                    });
-                }
+                setTimeout(() => {
+                    if (employee) {
+                        return res.status(httpStatus.OK).json({
+                            message: "Employee Content Page",
+                            employee
+                        });
+                    } 
+                }, 1000);
             })
             .catch(err => console.log(err))
     } catch (error) {
@@ -724,6 +754,17 @@ exports.updateEncrypt = async (req, res, next) => {
                     .then(employee => {
                         toBeUpdated.userId = employee.employeeId;
                         User.update(toBeUpdated, { where: { isActive: true, userId: employee.employeeId } });
+                        UserRFID.findOne({ where: { userId: id, isActive: true } })
+                            .then(emplpoyeeRfid => {
+                                if (emplpoyeeRfid !== null) {
+                                    emplpoyeeRfid.updateAttributes({ rfidId: update.rfidId })
+                                } else {
+                                    UserRFID.create({
+                                        userId: id,
+                                        rfidId: update.rfidId
+                                    })
+                                }
+                            })
                         employee.userName = decrypt(employee.userName);
                         employee.firstName = decrypt(employee.firstName);
                         employee.middleName = decrypt(employee.middleName);

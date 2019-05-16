@@ -23,6 +23,7 @@ let filterItem = (rfids, arr) => {
 
 exports.create = (req, res, next) => {
     const body = req.body;
+    body.userId = req.userId;
     console.log('Body ===>', body);
 
     RFID.findOne({

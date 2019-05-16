@@ -8,7 +8,7 @@ const http = require('http');
 const crypto = require("crypto");
 const jwt = require('jsonwebtoken');
 const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
-
+const URL = config.activationLink;
 
 const Owner = db.owner;
 const Tenant = db.tenant;
@@ -49,7 +49,7 @@ let mailToUser = (email, tenantId) => {
                         }
                     ],
                     "Subject": "Activation link",
-                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?tenantId=${tenantId}&token=${token}">click here</a>`
+                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="${URL}/login/tokenVerification?tenantId=${tenantId}&token=${token}">click here</a>`
                 }
             ]
         })
@@ -85,7 +85,7 @@ let mailToUser1 = (email, tenantMemberId) => {
                         }
                     ],
                     "Subject": "Activation link",
-                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?tenantMemberId=${tenantMemberId}&token=${token}">click here</a>`
+                    "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="${URL}/login/tokenVerification?tenantMemberId=${tenantMemberId}&token=${token}">click here</a>`
                 }
             ]
         })

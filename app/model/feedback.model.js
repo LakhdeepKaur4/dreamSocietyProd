@@ -1,12 +1,18 @@
 module.exports = (sequelize, Sequelize) => {
-    const Fingerprint = sequelize.define('fingerprint_data_master', {
-        fingerprintId: {
+    const Feedback = sequelize.define('feedback_master', {
+        feedbackId: {
             type: Sequelize.INTEGER,
             autoIncrement: true,
             primaryKey: true
         },
-        fingerprintData: {
-            type: Sequelize.STRING(2500),
+        status: {
+            type: Sequelize.STRING,
+        },
+        rating: {
+            type: Sequelize.STRING,
+        },
+        feedback: {
+            type: Sequelize.STRING(2000),
         },
         isActive: {
             type: Sequelize.BOOLEAN,
@@ -24,5 +30,5 @@ module.exports = (sequelize, Sequelize) => {
             freezeTableName: true
         });
 
-    return Fingerprint;
+    return Feedback;
 }

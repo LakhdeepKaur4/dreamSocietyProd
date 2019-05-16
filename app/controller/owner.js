@@ -16,9 +16,8 @@ const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921a
 const bcrypt = require('bcryptjs');
 const randomInt = require('random-int');
 const RfId = db.rfid;
-
 const Owner = db.owner;
-
+const URL = config.activationLink;
 const OwnerMembersDetail = db.ownerMembersDetail;
 const FlatDetail = db.flatDetail;
 const Flat = db.flat;
@@ -132,7 +131,7 @@ let mailToUser1 = (email, memberId) => {
           "Name": 'Atin' + ' ' + 'Tanwar'
         }],
         "Subject": "Activation link",
-        "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?memberId=${memberId}&token=${token}">click here</a>`
+        "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="${URL}/login/tokenVerification?memberId=${memberId}&token=${token}">click here</a>`
       }]
     })
   request.then((result) => {
@@ -167,7 +166,7 @@ let mailToUser = (email, ownerId) => {
           "Name": 'Atin' + ' ' + 'Tanwar'
         }],
         "Subject": "Activation link",
-        "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="http://mydreamsociety.com/login/tokenVerification?ownerId=${ownerId}&token=${token}">click here</a>`
+        "HTMLPart": `<b>Click on the given link to activate your account</b> <a href="${URL}/login/tokenVerification?ownerId=${ownerId}&token=${token}">click here</a>`
       }]
     })
   request.then((result) => {
@@ -364,13 +363,14 @@ exports.create1 = async (req, res, next) => {
           numbers: true
         });
         member.memberUserName = member.memberFirstName + member.memberLastName + 'OM' + req.body.towerId + shortId.generate()
-        member.memberUserName = encrypt(key, member.memberUserName);
-        member.memberEmail = encrypt(key, member.memberEmail);
-        member.memberContact = encrypt(key, member.memberContact);
-        member.memberFirstName = encrypt(key, member.memberFirstName);
+        member.memberUserName = encrypt(key,member.memberUserName);
+        member.memberEmail = encrypt(key,member.memberEmail);
+        member.memberContact = encrypt(key,member.memberContact);
+        member.memberFirstName = encrypt(key, member.memberFirstName);       
         member.memberLastName = encrypt(key, member.memberLastName);
         member.gender = encrypt(key, member.gender);
-        if (member.memberRfId === "") {
+        member.userId = req.userId;
+        if(member.memberRfId === ""){
           member.memberRfId = null;
         }
         memberNewArray.push(member);
@@ -380,7 +380,7 @@ exports.create1 = async (req, res, next) => {
         memberNewArray, {
           returning: true
         }, {
-          fields: ["memberId", "memberFirstName", "memberLastName", "memberUserName", "memberEmail", "memberContact", "password", "memberDob", "gender", "relationId", "memberRfId", "flatDetailId"]
+          fields: ["memberId","memberFirstName", "memberLastName","memberUserName","memberEmail","memberContact","password", "memberDob", "gender", "relationId","memberRfId","flatDetailId" ]
           // updateOnDuplicate: ["name"]
         }
       );
@@ -1777,7 +1777,7 @@ exports.updateMember = async (req, res, next) => {
       "memberContact",
       "gender"
     ];
-    let ids = ["relationId", "memberRfId","flatDetailId"];
+    let ids = ["relationId","memberRfId","flatDetailId"];
     let others = ["memberDob"];
 
     console.log("updating ownerMember");
@@ -2268,3 +2268,13 @@ exports.rfidCount = async (req, res, next) => {
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
 }
+
+// exports.flatsForMembers = async (req,res,next) => {
+//   try{
+//     let flats = await OwnerFlatDetail.findAll({
+//       where:{isActive:true,ownerId:req.body.ownerId}
+//     })
+//   } catch (error) {
+//     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+//   }
+// }
