@@ -86,6 +86,8 @@ exports.update = async (req, res, next) => {
         console.log("id==>", id);
         const update = req.body;
         console.log("update body",update);
+        var date = nowDate.getFullYear() + '/' + (nowDate.getMonth() + 1) + '/' + nowDate.getDate();
+        update.entryDate = date;
         if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
         }
