@@ -501,7 +501,7 @@ exports.createEncrypted = async (req, res, next) => {
                                 item.firstName = encrypt(item.firstName);
                                 item.lastName = encrypt(item.lastName);
                                 item.aadhaarNumber = encrypt(item.aadhaarNumber);
-                                item.userName = encrypt(item.email);
+                                item.userName = item.email;
                                 item.gender = encrypt(item.gender);
                                 item.userId = req.userId;
                                 item.tenantId = entry.tenantId;
