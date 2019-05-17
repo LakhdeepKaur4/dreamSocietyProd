@@ -939,7 +939,7 @@ exports.signupEncrypted = async (req, res, next) => {
 				userId: userBody.userId,
 				firstName: encrypt(userBody.firstName),
 				lastName: encrypt(userBody.lastName),
-				userName: encrypt(userBody.userName),
+				userName: encrypt(userBody.email),
 				email: encrypt(userBody.email),
 				contact: encrypt(userBody.contact),
 				password: bcrypt.hashSync(userBody.password, 8),

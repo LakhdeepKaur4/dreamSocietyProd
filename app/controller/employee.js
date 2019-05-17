@@ -326,7 +326,7 @@ exports.createEncrypt = async (req, res, next) => {
         console.log(uniqueId);
         body.uniqueId = uniqueId;
         body.employeeId = randomNumber;
-        userName = body.firstName + body.uniqueId.toString(36);
+        // userName = body.firstName + body.uniqueId.toString(36);
         console.log("atin------>", userName);
 
         if (user1 === null && user2 === null) {
@@ -335,7 +335,7 @@ exports.createEncrypt = async (req, res, next) => {
                     .create({
                         employeeId: body.employeeId,
                         uniqueId: uniqueId,
-                        userName: encrypt(userName),
+                        userName: encrypt(body.email),
                         firstName: encrypt(body.firstName),
                         middleName: encrypt(body.middleName),
                         email: encrypt(body.email),
@@ -440,14 +440,14 @@ exports.createEncrypt = async (req, res, next) => {
                         }
 
 
-                        let employeeUserName = employee.userName;
+                        // let employeeUserName = employee.userName;
                         // let email =  employee.email;
                         // set users
                         let user = await User.create({
                             userId: employee.employeeId,
                             firstName: encrypt(firstName),
                             lastName: encrypt(lastName),
-                            userName: encrypt(employeeUserName),
+                            userName: encrypt(employee.email),
                             password: bcrypt.hashSync(employee.password, 8),
                             contact: encrypt(employee.contact),
                             email: encrypt(employee.email),
@@ -503,7 +503,7 @@ exports.getDecrypt = async (req, res, next) => {
         })
             .then(async emp => {
                 // console.log(emp);
-                await emp.map(async item => {
+                const promise = await emp.map(async item => {
                     const rfid = await UserRFID.findOne({
                         where: {
                             userId: item.employeeId,
@@ -543,14 +543,21 @@ exports.getDecrypt = async (req, res, next) => {
 
                     employee.push(item);
                 })
-                setTimeout(() => {
-                    if (employee) {
-                        return res.status(httpStatus.OK).json({
-                            message: "Employee Content Page",
-                            employee
-                        });
-                    } 
-                }, 1000);
+                Promise.all(promise)
+                    .then(result => {
+                        if (employee) {
+                            employee.sort(function (a, b) {
+                                return Number(a.employeeId) - Number(b.employeeId)
+                            });
+                            return res.status(httpStatus.OK).json({
+                                message: "Employee Content Page",
+                                employee
+                            });
+                        } 
+                    })
+                    .catch(err => {
+                        console.log(err)
+                    })
             })
             .catch(err => console.log(err))
     } catch (error) {

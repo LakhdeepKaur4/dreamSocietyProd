@@ -270,10 +270,10 @@ exports.create1 = async (req, res, next) => {
     let memberId = [];
     ownerBody.userId = 1;
     let customVendorName = req.body.firstName + req.body.lastName;
-    let userName = customVendorName + 'O' + req.body.towerId + shortId.generate();
+    // let userName = customVendorName + 'O' + req.body.towerId + shortId.generate();
     // console.log("userName==>", userName);
-    userName = userName.replace(/ /g, '').toLowerCase();
-    console.log("my name is", userName);
+    // userName = userName.replace(/ /g, '').toLowerCase();
+    // console.log("my name is", userName);
     let existingOwner2 = await Owner.find({
       where: {
         isActive: true,
@@ -285,7 +285,8 @@ exports.create1 = async (req, res, next) => {
         message: "The specific owner already exist"
       });
     }
-    ownerBody.userName = userName;
+    // ownerBody.userName = userName;
+    ownerBody.email = email;
     const password = passwordGenerator.generate({
       length: 10,
       numbers: true
@@ -297,7 +298,7 @@ exports.create1 = async (req, res, next) => {
       ownerId: ownerBody.ownerId,
       firstName: encrypt(key, ownerBody.firstName),
       lastName: encrypt(key, ownerBody.lastName),
-      userName: encrypt(key, ownerBody.userName),
+      userName: encrypt(key, ownerBody.email),
       dob: ownerBody.dob,
       email: encrypt(key, ownerBody.email),
       contact: encrypt(key, ownerBody.contact),
@@ -362,15 +363,15 @@ exports.create1 = async (req, res, next) => {
           length: 10,
           numbers: true
         });
-        member.memberUserName = member.memberFirstName + member.memberLastName + 'OM' + req.body.towerId + shortId.generate()
-        member.memberUserName = encrypt(key,member.memberUserName);
-        member.memberEmail = encrypt(key,member.memberEmail);
-        member.memberContact = encrypt(key,member.memberContact);
-        member.memberFirstName = encrypt(key, member.memberFirstName);       
+        // member.memberUserName = member.memberFirstName + member.memberLastName + 'OM' + req.body.towerId + shortId.generate()
+        member.memberUserName = encrypt(key, member.memberEmail);
+        member.memberEmail = encrypt(key, member.memberEmail);
+        member.memberContact = encrypt(key, member.memberContact);
+        member.memberFirstName = encrypt(key, member.memberFirstName);
         member.memberLastName = encrypt(key, member.memberLastName);
         member.gender = encrypt(key, member.gender);
         member.userId = req.userId;
-        if(member.memberRfId === ""){
+        if (member.memberRfId === "") {
           member.memberRfId = null;
         }
         memberNewArray.push(member);
@@ -380,7 +381,7 @@ exports.create1 = async (req, res, next) => {
         memberNewArray, {
           returning: true
         }, {
-          fields: ["memberId","memberFirstName", "memberLastName","memberUserName","memberEmail","memberContact","password", "memberDob", "gender", "relationId","memberRfId","flatDetailId" ]
+          fields: ["memberId", "memberFirstName", "memberLastName", "memberUserName", "memberEmail", "memberContact", "password", "memberDob", "gender", "relationId", "memberRfId", "flatDetailId"]
           // updateOnDuplicate: ["name"]
         }
       );
@@ -417,7 +418,7 @@ exports.create1 = async (req, res, next) => {
           userId: member.memberId,
           firstName: encrypt1(key, firstName),
           lastName: encrypt1(key, lastName),
-          userName: encrypt1(key, ownerMemberUserName),
+          userName: encrypt1(key, email),
           password: bcrypt.hashSync(member.password, 8),
           contact: encrypt1(key, member.memberContact),
           towerId: owner.towerId,
@@ -473,7 +474,7 @@ exports.create1 = async (req, res, next) => {
       userId: ownerBody.ownerId,
       firstName: encrypt1(key, firstName),
       lastName: encrypt1(key, lastName),
-      userName: encrypt1(key, ownerUserName),
+      userName: encrypt1(key, email),
       password: bcrypt.hashSync(owner.password, 8),
       contact: encrypt1(key, owner.contact),
       towerId: owner.towerId,
@@ -1777,7 +1778,7 @@ exports.updateMember = async (req, res, next) => {
       "memberContact",
       "gender"
     ];
-    let ids = ["relationId","memberRfId","flatDetailId"];
+    let ids = ["relationId", "memberRfId", "flatDetailId"];
     let others = ["memberDob"];
 
     console.log("updating ownerMember");
@@ -1905,8 +1906,8 @@ exports.addMember = async (req, res, next) => {
     randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
     req.body.memberId = randomNumber;
     req.body.ownerId = req.params.id;
-    req.body.memberUserName = req.body.memberFirstName + req.body.memberLastName + 'OM' + req.body.towerId + shortId.generate()
-    req.body.memberUserName = encrypt(key, req.body.memberUserName);
+    // req.body.memberUserName = req.body.memberFirstName + req.body.memberLastName + 'OM' + req.body.towerId + shortId.generate()
+    req.body.memberUserName = encrypt(key, req.body.memberEmail);
     req.body.memberFirstName = encrypt(key, req.body.memberFirstName);
     req.body.memberLastName = encrypt(key, req.body.memberLastName);
     req.body.memberEmail = encrypt(key, req.body.memberEmail);
@@ -1930,14 +1931,14 @@ exports.addMember = async (req, res, next) => {
       lastName = '...';
     }
 
-    let ownerMemberUserName = decrypt(key, member.memberUserName);
+    // let ownerMemberUserName = decrypt(key, member.memberUserName);
     let email = decrypt(key, member.memberEmail);
 
     let user = await User.create({
       userId: member.memberId,
       firstName: encrypt1(key, firstName),
       lastName: encrypt1(key, lastName),
-      userName: encrypt1(key, ownerMemberUserName),
+      userName: encrypt1(key, email),
       password: bcrypt.hashSync(member.password, 8),
       contact: encrypt1(key, member.memberContact),
       towerId: req.body.towerId,

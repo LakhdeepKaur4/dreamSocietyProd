@@ -356,8 +356,8 @@ exports.createEncrypted = async (req, res, next) => {
         let tenantCreated;
         tenant.userId = req.userId;
         uniqueId = generateRandomId();
-        let userName = tenant.firstName.replace(/ /g, '') + 'T' + uniqueId.toString(36);
-        tenant.userName = userName;
+        // let userName = tenant.firstName.replace(/ /g, '') + 'T' + uniqueId.toString(36);
+        // tenant.userName = userName;
         index = tenant.fileName.lastIndexOf('.');
         tenant.fileExt = tenant.fileName.slice(index + 1);
         tenant.fileName = tenant.fileName.slice(0, index);
@@ -416,7 +416,7 @@ exports.createEncrypted = async (req, res, next) => {
                     tenantId: tenant.tenantId,
                     firstName: encrypt(tenant.firstName),
                     lastName: encrypt(tenant.lastName),
-                    userName: encrypt(tenant.userName),
+                    userName: encrypt(tenant.email),
                     dob: tenant.dob,
                     email: encrypt(tenant.email),
                     contact: encrypt(tenant.contact),
@@ -455,7 +455,7 @@ exports.createEncrypted = async (req, res, next) => {
                             userId: tenant.tenantId,
                             firstName: encrypt(tenant.firstName),
                             lastName: encrypt(tenant.lastName),
-                            userName: encrypt(tenant.userName),
+                            userName: encrypt(tenant.email),
                             contact: encrypt(tenant.contact),
                             email: encrypt(tenant.email),
                             password: bcrypt.hashSync(tenant.password, 8),
@@ -488,8 +488,8 @@ exports.createEncrypted = async (req, res, next) => {
                                 randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
 
                                 item.memberId = randomNumber;
-                                let memberUserName = item.firstName.replace(/ /g, '') + 'T' + uniqueId.toString(36);
-                                console.log("tenant member userNAme ", memberUserName)
+                                // let memberUserName = item.firstName.replace(/ /g, '') + 'T' + uniqueId.toString(36);
+                                // console.log("tenant member userNAme ", memberUserName)
                                 const password = passwordGenerator.generate({
                                     length: 10,
                                     numbers: true
@@ -501,7 +501,7 @@ exports.createEncrypted = async (req, res, next) => {
                                 item.firstName = encrypt(item.firstName);
                                 item.lastName = encrypt(item.lastName);
                                 item.aadhaarNumber = encrypt(item.aadhaarNumber);
-                                item.userName = encrypt(memberUserName);
+                                item.userName = encrypt(item.email);
                                 item.gender = encrypt(item.gender);
                                 item.userId = req.userId;
                                 item.tenantId = entry.tenantId;
@@ -526,7 +526,7 @@ exports.createEncrypted = async (req, res, next) => {
                                     userId: item.memberId,
                                     firstName: item.firstName,
                                     lastName: item.lastName,
-                                    userName: item.userName,
+                                    userName: item.email,
                                     contact: item.contact,
                                     email: item.email,
                                     password: bcrypt.hashSync(item.password, 8),
@@ -667,8 +667,8 @@ exports.getDecrypted = (req, res, next) => {
                     tenantIds.push(item.tenantId);
                 })
                 // console.log(tenantIds);
-                tenantIds.map(item => {
-                    Tenant.findOne({
+                const promise =  tenantIds.map(async item => {
+                    await Tenant.findOne({
                         where: {
                             isActive: true,
                             tenantId: item
@@ -695,7 +695,7 @@ exports.getDecrypted = (req, res, next) => {
                                     { model: RFID, where: { isActive: true }, attributes: ['rfidId', 'rfid'] }
                                 ]
                             })
-                            // setTimeout(() => console.log(rfid), 1000);
+                            
                             tenant.firstName = decrypt(tenant.firstName);
                             tenant.lastName = decrypt(tenant.lastName);
                             tenant.userName = decrypt(tenant.userName);
@@ -727,14 +727,20 @@ exports.getDecrypted = (req, res, next) => {
                             tenantsArr.push(tenant);
                         })
                 })
-                setTimeout(() => {
+                Promise.all(promise)
+                .then(result => {
                     let tenants = tenantsArr;
+                    tenants.sort(function (a, b) {
+                        return Number(a.tenantId) - Number(b.tenantId)
+                    });
                     res.status(httpStatus.OK).json({
                         message: "Tenant Content Page",
                         tenants
                     });
-                }, 1000);
-                // console.log(tenantsArr);
+                })
+                    .catch(err => {
+                        console.log(err)
+                    })
             } else {
                 res.status(httpStatus.NO_CONTENT).json({
                     message: 'No data available!'
@@ -944,8 +950,8 @@ exports.getTenantMembers = async (req, res, next) => {
             members.map(item => {
                 memberIds.push(item.memberId);
             })
-            memberIds.map(item => {
-                TenantMembersDetail.findOne({
+            const promise = memberIds.map(async item => {
+                await TenantMembersDetail.findOne({
                     where: {
                         isActive: true,
                         memberId: item
@@ -996,16 +1002,21 @@ exports.getTenantMembers = async (req, res, next) => {
                         membersArr.push(member);
                     })
             })
+            Promise.all(promise)
+            .then(result => {
+                let members = membersArr;
+                members.sort(function (a, b) {
+                    return Number(a.memberId) - Number(b.memberId)
+                });
+                res.status(httpStatus.OK).json({
+                    message: "Tenant Members Details",
+                    members
+                });
+            })
+            .catch(err => {
+                console.log(err);
+            })
         })
-    // console.log(tenantMembers)
-
-    setTimeout(() => {
-        let members = membersArr;
-        res.status(httpStatus.OK).json({
-            message: "Tenant Members Details",
-            members
-        });
-    }, 1000);
 }
 
 exports.deleteTenantMember = async (req, res, next) => {
@@ -1058,15 +1069,15 @@ exports.addTenantMembers = async (req, res, next) => {
         randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
     }
     let uniqueId = generateRandomId();
-    let userName = member.firstName.replace(/ /g, '') + 'T' + uniqueId.toString(36);
-    member.userName = userName;
+    // let userName = member.firstName.replace(/ /g, '') + 'T' + uniqueId.toString(36);
+    // member.userName = userName;
     const password = passwordGenerator.generate({
         length: 10,
         numbers: true
     });
     member.firstName = encrypt(member.firstName);
     member.lastName = encrypt(member.lastName);
-    member.userName = encrypt(member.userName);
+    member.userName = encrypt(member.email);
     member.email = encrypt(member.email);
     member.contact = encrypt(member.contact);
     member.aadhaarNumber = encrypt(member.aadhaarNumber);

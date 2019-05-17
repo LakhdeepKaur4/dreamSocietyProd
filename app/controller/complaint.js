@@ -130,6 +130,7 @@ exports.get = (req, res, next) => {
 
 exports.getByUserId = (req, res, next) => {
     const complaintsSend = [];
+
     Complaint.findAll({
         where: {
             isActive: true,
@@ -144,37 +145,58 @@ exports.getByUserId = (req, res, next) => {
     })
         .then(complaints => {
             if (complaints.length !== 0) {
-                complaints.map(async item => {
+                const promise = complaints.map(async item => {
                     if (item.vendorId !== null) {
-                        await Vendor.findOne({
+                        const vendor = await Vendor.findOne({
                             where: {
                                 isActive: true,
                                 vendorId: item.vendorId
                             }
                         })
-                            .then(vendor => {
-                                vendor.firstName = decrypt(vendor.firstName);
-                                vendor.lastName = decrypt(vendor.lastName);
-                                vendor.contact = decrypt(vendor.contact);
-                                item = item.toJSON();
-                                item.vendor_master = {
-                                    vendorId: vendor.vendorId,
-                                    firstName: vendor.firstName,
-                                    lastName: vendor.lastName,
-                                    contact: vendor.contact
-                                }
-                                complaintsSend.push(item);
-                            })
+                        vendor.firstName = decrypt(vendor.firstName);
+                        vendor.lastName = decrypt(vendor.lastName);
+                        vendor.contact = decrypt(vendor.contact);
+                        item = item.toJSON();
+                        item.vendor_master = {
+                            vendorId: vendor.vendorId,
+                            firstName: vendor.firstName,
+                            lastName: vendor.lastName,
+                            contact: vendor.contact
+                        }
+
+                        const feedback = await Feedback.findOne({
+                            where: {
+                                complaintId: item.complaintId,
+                                isActive: true
+                            }
+                        })
+
+                        if (feedback !== null) {
+                            item.feedbackDisable = true;
+                        } else {
+                            item.feedbackDisable = false;
+                        }
+                        complaintsSend.push(item);
+
                     }
                     else {
+                        item = item.toJSON();
+                        item.feedbackDisable = false;
                         complaintsSend.push(item);
                     }
                 })
-                setTimeout(() => {
-                    res.status(httpStatus.OK).json({
-                        complaints: complaintsSend
+                Promise.all(promise)
+                    .then(result => {
+                        complaintsSend.sort(function (a, b) {
+                            return Number(a.complaintId) - Number(b.complaintId)
+                        });
+                        res.status(httpStatus.OK).json({
+                            complaints: complaintsSend
+                        })
                     })
-                }, 1000);
+                    .catch(err => {
+                        console.log(err)
+                    })
             } else {
                 res.status(httpStatus.NO_CONTENT).json({
                     message: 'No Data Found'

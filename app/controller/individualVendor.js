@@ -161,7 +161,7 @@ exports.create = async (req, res, next) => {
 
     const uniqueId = generateRandomId();
 
-    const userName = vendor.firstName.replace(/ /g, '') + 'V' + uniqueId.toString(36);
+    // const userName = vendor.firstName.replace(/ /g, '') + 'V' + uniqueId.toString(36);
 
     const password = passwordGenerator.generate({
         length: 10,
@@ -181,7 +181,7 @@ exports.create = async (req, res, next) => {
     vendor.fileName3 = vendor.fileName3.slice(0, index);
     vendor.documentTwo = vendor.documentTwo.split(',')[1];
 
-    vendor.userName = userName;
+    // vendor.userName = userName;
     vendor.password = password;
 
     user1 = await User.findOne({ where: { [Op.and]: [{ email: encrypt(vendor.email) }, { isActive: true }] } });
@@ -233,7 +233,7 @@ exports.create = async (req, res, next) => {
                 individualVendorId: randomNumber,
                 firstName: encrypt(vendor.firstName),
                 lastName: encrypt(vendor.lastName),
-                userName: encrypt(vendor.userName),
+                userName: encrypt(vendor.email),
                 contact: encrypt(vendor.contact),
                 email: encrypt(vendor.email),
                 password: vendor.password,
@@ -268,7 +268,7 @@ exports.create = async (req, res, next) => {
                             userId: randomNumber,
                             firstName: encrypt(vendor.firstName),
                             lastName: encrypt(vendor.lastName),
-                            userName: encrypt(vendor.userName),
+                            userName: encrypt(vendor.email),
                             contact: encrypt(vendor.contact),
                             email: encrypt(vendor.email),
                             password: bcrypt.hashSync(vendor.password, 8),
@@ -379,7 +379,7 @@ exports.get = (req, res, next) => {
             ]
         })
         .then(vendor => {
-            vendor.map(async item => {
+            const promise = vendor.map(async item => {
                 const rfid = await UserRFID.findOne({
                     where: {
                         userId: item.individualVendorId,
@@ -419,14 +419,18 @@ exports.get = (req, res, next) => {
 
                 vendorArr.push(item);
             })
-            return vendorArr;
-        })
-        .then(() => {
-            setTimeout(() => {
-                res.status(httpStatus.OK).json({
-                    vendors: vendorArr
+            Promise.all(promise)
+                .then(result => {
+                    vendorArr.sort(function (a, b) {
+                        return Number(a.individualVendorId) - Number(b.individualVendorId)
+                    });
+                    res.status(httpStatus.OK).json({
+                        vendors: vendorArr
+                    })
                 })
-            }, 1000);
+                .catch(err => {
+                    console.log(err)
+                })
         })
         .catch(err => {
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);

@@ -260,33 +260,33 @@ exports.delete = async (req, res, next) => {
 
         const updatedUser = await User.findOne({
             where: {
-              isActive:true,
-              userId: id
+                isActive: true,
+                userId: id
             }
-          });
+        });
 
-          if (updatedUser) {
+        if (updatedUser) {
             updatedUser.updateAttributes({
-              isActive: false
+                isActive: false
             });
             let urfId = await UserRfId.findOne({
                 where: {
-                  isActive: true,
-                  userId: id
+                    isActive: true,
+                    userId: id
                 }
-              });
-              console.log("user_rf_id ====>", urfId);
-              if (urfId) {
+            });
+            console.log("user_rf_id ====>", urfId);
+            if (urfId) {
                 urfId.updateAttributes(update);
-              }
+            }
             let updatedUserRoles = await UserRoles.find({
-              where: {
-                userId: id
-              }
+                where: {
+                    userId: id
+                }
             }).then(userRole => {
-              userRole.updateAttributes(update);
+                userRole.updateAttributes(update);
             })
-          }
+        }
 
         // const updatedVendorService = await VendorService.find({ where: { vendorId: id } }).then(vendorService => {
         //     return vendorService.updateAttributes(update)
@@ -408,17 +408,17 @@ exports.create1 = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'Contact already exists' })
         }
 
-        
 
-        let customVendorName = body.firstName + body.lastName;
-        const userName = customVendorName += 'v' + Math.floor((Math.random() * 100) + 1);
+
+        // let customVendorName = body.firstName + body.lastName;
+        // const userName = customVendorName += 'v' + Math.floor((Math.random() * 100) + 1);
         const password = passwordGenerator.generate({
             length: 10,
             numbers: true
         });
         const vendor = await Vendor.create({
             vendorId: randomNumber,
-            userName: encrypt(key, userName),
+            userName: encrypt(key, body.email),
             password: password,
             firstName: encrypt(key, body.firstName),
             lastName: encrypt(key, body.lastName),
@@ -427,7 +427,7 @@ exports.create1 = async (req, res, next) => {
             contact: encrypt(key, body.contact),
             email: encrypt(key, body.email),
             userId: req.userId,
-            rfidId:body.rfidId
+            rfidId: body.rfidId
             // document: body.document
         });
         const vendorId = vendor.vendorId;
@@ -490,7 +490,7 @@ exports.create1 = async (req, res, next) => {
         const message1 = `Welcome to Dream society your username is ${userName} and password is ${password}.Do not share with anyone.`
         console.log("vendor ==>", vendor);
         decryptedVendor = {
-            userName: decrypt(key, vendor.userName),
+            userName: decrypt(key, vendor.email),
             firstName: decrypt(key, vendor.firstName),
             lastName: decrypt(key, vendor.lastName),
             permanentAddress: decrypt(key, vendor.permanentAddress),
@@ -524,7 +524,7 @@ exports.create1 = async (req, res, next) => {
         let userRfId = await UserRfId.create({
             userId: user.userId,
             rfidId: vendor.rfidId
-          })
+        })
         // set roles
         console.log(vendor.password);
         console.log(user.password);
@@ -553,7 +553,7 @@ exports.get1 = async (req, res, next) => {
             where: { isActive: true },
             order: [['createdAt', 'DESC']],
             include: [
-                { model: VendorService, where: { isActive: true }, include: [{ model: Rate }, { model: Service }] },{model: RfId}]
+                { model: VendorService, where: { isActive: true }, include: [{ model: Rate }, { model: Service }] }, { model: RfId }]
         });
         if (vendors) {
             vendors.map(vendor => {
