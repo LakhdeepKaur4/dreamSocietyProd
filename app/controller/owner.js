@@ -277,7 +277,7 @@ exports.create1 = async (req, res, next) => {
     let existingOwner2 = await Owner.find({
       where: {
         isActive: true,
-        userName: encrypt(key, userName)
+        userName: encrypt(key, req.body.email)
       }
     });
     if (existingOwner2) {

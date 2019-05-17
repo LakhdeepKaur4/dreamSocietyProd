@@ -44,9 +44,18 @@ exports.create = async (req, res, next) => {
 
 exports.getMaintenanceForElectricity = async (req, res, next) => {
     try {
+        const maintenance = await Maintenance.findOne({
+         where:{
+             isActive:true,
+             category:{
+                 [Op.like]: '%Electricity%'
+             }
+         }   
+        })
+    
         const maintenanceType = await MaintenanceType.findAll({
             where: { isActive: true ,
-            maintenanceId:98
+            maintenanceId:maintenance.maintenanceId
             },
             order: [['createdAt', 'DESC']],
             include: [
