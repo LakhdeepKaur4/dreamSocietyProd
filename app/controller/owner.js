@@ -286,7 +286,7 @@ exports.create1 = async (req, res, next) => {
       });
     }
     // ownerBody.userName = userName;
-    ownerBody.email = email;
+    ownerBody.email = req.body.email;
     const password = passwordGenerator.generate({
       length: 10,
       numbers: true
