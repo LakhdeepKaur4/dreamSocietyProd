@@ -327,7 +327,7 @@ exports.createEncrypt = async (req, res, next) => {
         body.uniqueId = uniqueId;
         body.employeeId = randomNumber;
         // userName = body.firstName + body.uniqueId.toString(36);
-        console.log("atin------>", userName);
+        // console.log("atin------>", userName);
 
         if (user1 === null && user2 === null) {
             if ((messageErr.messageEmailErr === '') && (messageErr.messageContactErr === '')) {
