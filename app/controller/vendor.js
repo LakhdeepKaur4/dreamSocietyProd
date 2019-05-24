@@ -487,7 +487,7 @@ exports.create1 = async (req, res, next) => {
                 return vendor.updateAttributes(updateDocument)
             })
         }
-        const message1 = `Welcome to Dream society your username is ${userName} and password is ${password}.Do not share with anyone.`
+        // const message1 = `Welcome to Dream society your username is ${userName} and password is ${password}.Do not share with anyone.`
         console.log("vendor ==>", vendor);
         decryptedVendor = {
             userName: decrypt(key, vendor.email),
