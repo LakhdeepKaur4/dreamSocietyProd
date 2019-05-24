@@ -482,7 +482,6 @@ exports.create1 = async (req, res, next) => {
                 documentOne: encrypt(key, documentOne),
                 documentTwo: encrypt(key, documentTwo)
             };
-
             const documentUpdate = await Vendor.find({ where: { vendorId: vendorId } }).then(vendor => {
                 return vendor.updateAttributes(updateDocument)
             })

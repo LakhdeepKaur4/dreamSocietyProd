@@ -92,7 +92,8 @@ exports.update = async (req, res, next) => {
         if (!update) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
-        var date = nowDate.getFullYear() + '/' + (nowDate.getMonth() + 1) + '/' + nowDate.getDate();
+        let nowDate = new Date();
+        let date = nowDate.getFullYear() + '/' + (nowDate.getMonth() + 1) + '/' + nowDate.getDate();
         update.entryDate = date;
         const updatedElectricityConsumer = await ElectricityConsumer.find({ where: { electricityConsumerId: id } }).then(electricity => {
             return electricity.updateAttributes(update)
