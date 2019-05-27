@@ -323,6 +323,8 @@ module.exports = function (app) {
 
 	app.get('/api/assetsType/', [authJwt.verifyToken, authJwt.isAdminRole], assetsTypeController.get);
 
+	app.get('/api/assetsTypeByAssetId/:id',   assetsTypeController.getAssetsTypeById);
+
 	app.get('/api/assetsType/:page', [authJwt.verifyToken, authJwt.isAdminRole], assetsTypeController.getAssetsTypeByPageNumber);
 
 	app.put('/api/assetsType/:id', [authJwt.verifyToken, authJwt.isAdminRole], assetsTypeController.update);
@@ -469,13 +471,13 @@ module.exports = function (app) {
 
 	app.get('/api/owner/:id', [authJwt.verifyToken, authJwt.isAdminRole], owner.getFlatNo);
 
-	app.get('/api/owner/ownerMember/:id', owner.getMembers);
+	app.get('/api/owner/ownerMember/:id',[authJwt.verifyToken, authJwt.isAdminRole], owner.getMembers);
 
 	app.get('/api/owner/getFlatDetail/:id', [authJwt.verifyToken, authJwt.isAdminRole], owner.getFlatDetail);
 
 	app.put('/api/owner/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], owner.deleteSelected);
 
-	app.put('/api/ownerMember/delete/deleteSelected', owner.deleteSelectedMembers);
+	app.put('/api/ownerMember/delete/deleteSelected',[authJwt.verifyToken, authJwt.isAdminRole], owner.deleteSelectedMembers);
 
 	app.put('/api/owner/ownerMember/update/:id', [authJwt.verifyToken, authJwt.isAdminRole], owner.updateMember);
 
@@ -709,19 +711,29 @@ module.exports = function (app) {
 
 	app.put('/api/vendorComplaints/complete', [authJwt.verifyToken, authJwt.isVendorRole], vendorComplaintsController.completedComplaint);
 
-	app.post('/api/purchaseOrder', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.create);
+	app.post('/api/purchaseOrder',  purchaseOrderController.create);
 
 	app.get('/api/purchaseOrder', purchaseOrderController.get);
 
 	app.get('/api/downloadPdfClient/:id', purchaseOrderController.downloadPdfClient);
 
-	app.put('/api/updatePurchaseOrder/:id', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.updatePurchaseOrder);
+	app.put('/api/updatePurchaseOrder/:id',  purchaseOrderController.updatePurchaseOrder);
 
-	app.put('/api/updatePurchaseOrderDetails/:id', [authJwt.verifyToken, authJwt.isAdminRole],purchaseOrderController.updatePurchaseOrderDetails);
+	app.put('/api/updatePurchaseOrderDetails/:id', purchaseOrderController.updatePurchaseOrderDetails);
+	
+	app.get('/api/getAssets/:id',purchaseOrderController.getAssets);
+
+	app.get('/api/getServices/:id',purchaseOrderController.getServices);
 	
 	app.put('/api/deletePurchaseOrder/:id',  purchaseOrderController.delete);
 
 	app.put('/api/deletePurchaseOrders', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.deleteSelected);
+
+	app.put('/api/deletePurchaseOrderDetails/:id', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.deletePurchaseOrderDetails);
+
+	app.put('/api/deleteSelectedPurchaseOrderDetails', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.deleteSelectedPurchaseOrderDetails);
+
+
 
 
 

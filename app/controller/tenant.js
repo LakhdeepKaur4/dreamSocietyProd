@@ -30,6 +30,7 @@ const UserRoles = db.userRole;
 const TenantFlatDetail = db.tenantFlatDetail;
 const RFID = db.rfid;
 const UserRFID = db.userRfid;
+const FingerprintData = db.fingerprintData;
 const URL = config.activationLink;
 
 setInterval(async function () {
@@ -468,6 +469,7 @@ exports.createEncrypted = async (req, res, next) => {
                                 // user.setRoles(roles);
                                 UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false });
                                 UserRFID.create({ userId: tenant.tenantId, rfidId: tenant.rfidId, isActive: true });
+                                FingerprintData.create({userId: user.userId});
                             })
                         if (tenant.profilePicture) {
                             await saveToDisc(tenant.fileName, tenant.fileExt, tenant.profilePicture, (err, res) => {
@@ -874,6 +876,7 @@ exports.updateEncrypted = async (req, res, next) => {
                 lastName: lastName,
                 dob: dob,
                 email: email,
+                userName: email,
                 contact: contact,
                 aadhaarNumber: aadhaarNumber,
                 permanentAddress: permanentAddress,

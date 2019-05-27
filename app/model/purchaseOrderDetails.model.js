@@ -9,6 +9,10 @@ module.exports = (sequelize, Sequelize) => {
                   type:Sequelize.STRING,
                   allowNull:false
             },
+            purchaseOrderSubType:{
+                  type:Sequelize.STRING,
+                  allowNull:true
+            },
             purchaseOrderName:{
                   type:Sequelize.STRING,
                   allowNull:false
@@ -26,7 +30,7 @@ module.exports = (sequelize, Sequelize) => {
                 allowNull: false
           },
           serviceStartDate: {
-                type: Sequelize.STRING,
+                type: Sequelize.DATEONLY,
                 allowNull: true
           },
           // aadharCardNumber: {
@@ -34,7 +38,7 @@ module.exports = (sequelize, Sequelize) => {
           //       allowNull: false
           // },
           serviceEndDate: {
-                type: Sequelize.STRING,
+                type: Sequelize.DATEONLY,
                 allowNull: true
           },
           

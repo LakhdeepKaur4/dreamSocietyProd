@@ -32,6 +32,7 @@ const Token = db.tokenVerify;
 const UserRoles = db.userRole;
 const UserRfid = db.userRfid;
 const OwnerMembersDetail = db.ownerMembersDetail;
+const FingerprintData = db.fingerprintData;
 
 const Op = db.Sequelize.Op;
 
@@ -1088,6 +1089,7 @@ exports.signupEncrypted = async (req, res, next) => {
 						roleId = role.id;
 					});
 					UserRoles.create({ userId: user.userId, roleId: roleId });
+					FingerprintData.create({ userId: user.userId });
 				})
 				.then(() => {
 					return res.status(httpStatus.CREATED).json({
@@ -1410,7 +1412,7 @@ exports.signinDecrypted = async (req, res, next) => {
 			message: "Password cannot be empty"
 		})
 	}
-	console.log("userName",encrypt(req.body.userName))
+	console.log("userName", encrypt(req.body.userName))
 	User.findOne({
 		nested: true,
 		where: {
@@ -1428,7 +1430,7 @@ exports.signinDecrypted = async (req, res, next) => {
 		}
 		]
 	}).then(user => {
-		console.log("user--->",user)
+		console.log("user--->", user)
 		if (user === null) {
 			console.log("------user-------");
 			return res.status(httpStatus.OK).send({
@@ -3244,16 +3246,16 @@ exports.releaseUsersResources = async (req, res, next) => {
 				const tenant = await Tenant.findOne({ where: { tenantId: userId, isActive: false } });
 				if (tenant) {
 					await Tenant.update(update, { where: { tenantId: userId } });
-						await UserRfid.update(update, { where: { userId: userId } });
-						await TenantFlatDetail.update(update, { where: { tenantId: userId } });
-					
+					await UserRfid.update(update, { where: { userId: userId } });
+					await TenantFlatDetail.update(update, { where: { tenantId: userId } });
+
 					const tenantMember = await TenantMembersDetail.findAll({ where: { isActive: true, tenantId: userId } });
 					tenantMember.map(members => { userIds.push(members.memberId) });
 					if (tenantMember.length > 0) {
 						await TenantMembersDetail.update(update, { where: { tenantId: { [Op.in]: userIds } } });
 						await UserRfid.update(update, { where: { userId: { [Op.in]: userIds } } });
 					}
-					res.status(httpStatus.OK).json({ message: "Tenant flats released successfully",owner,tenant });
+					res.status(httpStatus.OK).json({ message: "Tenant flats released successfully", owner, tenant });
 				}
 				break;
 

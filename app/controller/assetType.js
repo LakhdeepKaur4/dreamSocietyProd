@@ -47,6 +47,30 @@ exports.get = async (req, res, next) => {
     }
 }
 
+exports.getAssetsTypeById = async (req,res,next) => {
+    try {
+        // let limit = 10;
+        // let offset = 0;
+        // let page = req.params.page;
+        // offset = limit * (page - 1);
+        const assetsType = await AssetsType.findAll({
+            where: { isActive: true , assetId:req.params.id},
+            order: [['createdAt', 'DESC']],
+            include: [{ model: Assets, attributes: ['assetId', 'assetName'] }]
+        });
+        if (assetsType) {
+            return res.status(httpStatus.CREATED).json({
+                message: "AssetsType Content Page",
+                assetsType: assetsType
+            });
+        }
+    } catch (error) {
+        console.log("error==>", error)
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+
+}
+
 exports.getAssetsTypeByPageNumber = async (req, res, next) => {
     try {
         let limit = 10;

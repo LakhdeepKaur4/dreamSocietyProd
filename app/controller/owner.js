@@ -21,6 +21,7 @@ const URL = config.activationLink;
 const OwnerMembersDetail = db.ownerMembersDetail;
 const FlatDetail = db.flatDetail;
 const Flat = db.flat;
+const FingerPrint = db.fingerprintData;
 
 const Tower = db.tower;
 const Society = db.society;
@@ -420,11 +421,16 @@ exports.create1 = async (req, res, next) => {
           lastName: encrypt1(key, lastName),
           userName: encrypt1(key, email),
           password: bcrypt.hashSync(member.password, 8),
-          contact: encrypt1(key, member.memberContact),
+          contact:  member.memberContact,
           towerId: owner.towerId,
           email: encrypt1(key, email),
           isActive: false
         });
+
+        let fingerPrintOwnerMember = await FingerPrint.create({
+          userId:user.userId
+        })
+
         // if (member.merberRfId !== null && member.memberRfId !== undefined && member.memberRfId !== '') {
         let userRfId = await UserRfId.create({
           userId: user.userId,
@@ -476,11 +482,15 @@ exports.create1 = async (req, res, next) => {
       lastName: encrypt1(key, lastName),
       userName: encrypt1(key, email),
       password: bcrypt.hashSync(owner.password, 8),
-      contact: encrypt1(key, owner.contact),
+      contact:  owner.contact,
       towerId: owner.towerId,
       email: encrypt1(key, email),
       isActive: false
     });
+
+    let fingerPrintOwner = await FingerPrint.create({
+      userId:user.userId
+    })
 
     let userRfId = await UserRfId.create({
       userId: user.userId,
@@ -930,6 +940,15 @@ exports.update1 = async (req, res, next) => {
     console.log("updated attributes,", updAttr);
     let updatedOwner1 = await updatedOwner.updateAttributes(updAttr);
 
+    const updatedUser = await User.find({
+      where: {
+        userId: id,
+        isActive: true
+      }
+    });
+    let updatedUser1 = await updatedUser.updateAttributes(updAttr);
+
+
     if (updatedOwner1) {
       // updatedOwner1.userName = decrypt(key, updatedOwner1.userName);
       updatedOwner1.firstName = decrypt(key, updatedOwner1.firstName);
@@ -1154,6 +1173,10 @@ exports.update2 = async (req, res, next) => {
     console.log("updated attributes,", updAttr);
     let updatedOwner1 = await updatedOwner.updateAttributes(updAttr);
     let updatedUser = await user.updateAttributes(updUserAttr);
+    if(req.body.email!==null && req.body.email!==undefined && req.body.email!==""){
+      updatedOwner1 = await updatedOwner.updateAttributes({userName:encrypt(key,req.body.email)});
+      updatedUser = await user.updateAttributes({userName:encrypt(key,req.body.email)});
+    }
 
     if (updatedOwner1) {
       // updatedOwner1.userName = decrypt(key, updatedOwner1.userName);
@@ -1770,6 +1793,7 @@ exports.updateMember = async (req, res, next) => {
 
 
     console.log("updatememberreq====>", req.body);
+    let userUpd = {};
     let updAttr = {};
     let attrArr = [
       "memberFirstName",
@@ -1824,6 +1848,7 @@ exports.updateMember = async (req, res, next) => {
         req.body[attr] !== null
       ) {
         updAttr[attr] = encrypt(key, req.body[attr]);
+
       }
     });
     others.forEach(attr => {
@@ -1846,6 +1871,33 @@ exports.updateMember = async (req, res, next) => {
     });
 
     let updatedOwner1 = await updatedOwnerMember.updateAttributes(updAttr);
+
+    if(req.body.memberFirstName!==null && req.body.memberFirstName!==undefined && req.body.memberFirstName!=='' ){
+      userUpd.firstName = encrypt(key, req.body.memberFirstName);
+    }
+
+    if(req.body.memberLastName!==null && req.body.memberLastName!==undefined && req.body.memberLastName!=='' ){
+      userUpd.lastName = encrypt(key, req.body.memberLastName);      
+    }
+
+    if(req.body.memberEmail!==null && req.body.memberEmail!==undefined && req.body.memberEmail!=='' ){
+      userUpd.email = encrypt(key, req.body.memberEmail);
+      userUpd.userName = encrypt(key, req.body.memberEmail);
+      
+    }
+
+    if(req.body.memberContact!==null && req.body.memberContact!==undefined && req.body.memberContact!=='' ){
+      userUpd.contact = encrypt(key, req.body.memberContact);
+      
+    }
+
+    const updatedUser = await User.find({
+      where: {
+        userId: id,
+        isActive: true
+      }
+    });
+    let updatedUser1 = await updatedUser.updateAttributes(userUpd);
 
     return res.status(httpStatus.OK).json({
       message: "Owner Updated Page",
@@ -1940,7 +1992,7 @@ exports.addMember = async (req, res, next) => {
       lastName: encrypt1(key, lastName),
       userName: encrypt1(key, email),
       password: bcrypt.hashSync(member.password, 8),
-      contact: encrypt1(key, member.memberContact),
+      contact:  member.memberContact,
       towerId: req.body.towerId,
       email: encrypt1(key, email),
       isActive: false

@@ -27,7 +27,6 @@ exports.create = async (req, res) => {
         console.log("inside state");
         return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "City Name already Exists" })
     }
-
     City.create({
         countryId: req.body.countryId,
         cityName: req.body.cityName,

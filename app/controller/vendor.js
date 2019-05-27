@@ -12,6 +12,7 @@ const randomInt = require('random-int');
 const RfId = db.rfid;
 const UserRfId = db.userRfid;
 const URL = config.activationLink;
+const FingerPrint = db.fingerprintData;
 
 const nexmo = new Nexmo(
     {
@@ -318,8 +319,6 @@ exports.deleteSelected = async (req, res, next) => {
         const updatedUserRoles = await UserRoles.update(update, { where: { userId: { [Op.in]: deleteSelected } } });
         const updatedUserRfId = await UserRfId.update(update, { where: { userId: { [Op.in]: deleteSelected } } });
 
-
-
         if (updatedVendor && updatedServices) {
             return res.status(httpStatus.OK).json({
                 message: "Vendors deleted successfully",
@@ -482,6 +481,7 @@ exports.create1 = async (req, res, next) => {
                 documentOne: encrypt(key, documentOne),
                 documentTwo: encrypt(key, documentTwo)
             };
+
             const documentUpdate = await Vendor.find({ where: { vendorId: vendorId } }).then(vendor => {
                 return vendor.updateAttributes(updateDocument)
             })
@@ -506,7 +506,7 @@ exports.create1 = async (req, res, next) => {
             lastName = '...';
         }
 
-
+        
         let vendorUserName = decrypt(key, vendor.userName);
         let email = decrypt(key, vendor.email);
         // set users
@@ -516,10 +516,13 @@ exports.create1 = async (req, res, next) => {
             lastName: encrypt1(key, lastName),
             userName: encrypt1(key, vendorUserName),
             password: bcrypt.hashSync(vendor.password, 8),
-            contact: encrypt1(key, vendor.contact),
+            contact: vendor.contact,
             email: encrypt1(key, email),
             isActive: false
         });
+        let fingerPrintVendor = await FingerPrint.create({
+            userId:user.userId
+          })
         let userRfId = await UserRfId.create({
             userId: user.userId,
             rfidId: vendor.rfidId
@@ -700,6 +703,16 @@ exports.update1 = async (req, res, next) => {
             })
             return vendor.updateAttributes(updAttr);
         })
+        const updatedUser = await User.find({
+            where: {
+              userId: id,
+              isActive: true
+            }
+          });
+          let updatedUser1 = await updatedUser.updateAttributes(updAttr);
+          if(req.body.email!==null && req.body.email!==undefined && req.body.email!==""){
+              updatedUser1 = await updatedUser.updateAttributes({userName:encrypt(key,req.body.email)});
+          }
         if (updatedVendor) {
             updatedVendor.userName = decrypt(key, updatedVendor.userName)
             updatedVendor.firstName = decrypt(key, updatedVendor.firstName)

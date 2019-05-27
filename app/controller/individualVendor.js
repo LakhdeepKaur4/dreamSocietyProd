@@ -28,6 +28,7 @@ const UserRoles = db.userRole;
 const UserRFID = db.userRfid;
 const RFID = db.rfid;
 const URL = config.activationLink;
+const FingerprintData = db.fingerprintData;
 
 encrypt = (text) => {
     let key = config.secret;
@@ -280,6 +281,7 @@ exports.create = async (req, res, next) => {
                                 // user.setRoles(roles);
                                 UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false });
                                 UserRFID.create({ userId: user.userId, rfidId: vendor.rfidId, isActive: true });
+                                FingerprintData.create({ userId: user.userId });
                             })
                         if (vendor.profilePicture) {
                             await saveToDisc(vendor.fileName1, vendor.fileExt1, vendor.profilePicture, (err, res) => {
@@ -695,6 +697,7 @@ exports.update = async (req, res, next) => {
                 lastName: lastName,
                 contact: contact,
                 email: email,
+                userName: email,
                 permanentAddress: permanentAddress,
                 currentAddress: currentAddress,
                 rate: rate,
