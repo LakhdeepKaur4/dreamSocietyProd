@@ -71,6 +71,7 @@ exports.create = async (req, res, next) => {
             expDateOfDelievery:req.body.expectedDateOfDelievery
         });
         if(req.body.purchaseOrderAssetsArray) {
+            console.log("getting assets");
              purchaseOrderAssets = await PurchaseOrderDetails.bulkCreate(
                 req.body.purchaseOrderAssetsArray, {
                     returning: true
@@ -85,10 +86,9 @@ exports.create = async (req, res, next) => {
             purchaseOrderId:purchaseOrder.purchaseOrderId
         }
         purchaseOrderAssets.forEach(x => x.updateAttributes(update));
-
-
-
+        console.log("updated assets");
         if(req.body.purchaseOrderServiceArray){
+            console.log("getting services");
              purchaseOrderService = await PurchaseOrderDetails.bulkCreate(
                 req.body.purchaseOrderServiceArray, {
                     returning: true
@@ -101,6 +101,7 @@ exports.create = async (req, res, next) => {
         
         purchaseOrderService.forEach(x => x.updateAttributes(update));
         console.log("purchaseOrder =====> ", pdf)
+        console.log("updated services");
 
         await pdf.create(pdfTemplate(purchaseOrderAssets,purchaseOrderService,purchaseOrder.issuedBy,purchaseOrder.expDateOfDelievery),{format: 'Letter'}).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`, (err,res) => {
             if(err){
@@ -111,21 +112,21 @@ exports.create = async (req, res, next) => {
             }
 
         });
+
+        console.log("pdf created ");
         let vendor = await Vendor.findOne({where:{isActive:true,vendorId:req.body.vendorId}})
         if(vendor){
             console.log("vendor=======>",decrypt(key,vendor.firstName));
             mailToUser(decrypt(key,vendor.email),vendor.vendorId,purchaseOrder.purchaseOrderId);
+            console.log("mail send");
         }
         
-        console.log("dgsfhgsahjgfjah ===============>");
+        console.log(" sending response dgsfhgsahjgfjah ===============>");
         return res.status(httpStatus.CREATED).json({
             message: "Purchase Order registered",
           });
-
-
     } catch(error){
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
-
     }
 }
 
