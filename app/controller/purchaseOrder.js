@@ -104,15 +104,10 @@ exports.create = async (req, res, next) => {
         console.log("purchaseOrder =====> ", pdf)
         console.log("updated services");
 
-      const pdfresponse =  await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, purchaseOrder.issuedBy, purchaseOrder.expDateOfDelievery), { format: 'Letter' }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`);
-      console.log("checking=======>", pdfresponse); 
-      //     if (err) {
-        //         console.log("err ======>", err);
-        //     }
-        //     else {
-        //         console.log("res =======>", res);
-        //     }
-        // });
+        const pdfresponse = await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, purchaseOrder.issuedBy, purchaseOrder.expDateOfDelievery), { format: 'Letter' }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`, (err, res) => {
+            if (err) return console.log(err);
+            console.log(res);
+        });
         console.log("pdf created ");
         let vendor = await Vendor.findOne({ where: { isActive: true, vendorId: req.body.vendorId } })
         if (vendor) {
