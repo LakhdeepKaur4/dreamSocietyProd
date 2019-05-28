@@ -102,15 +102,15 @@ exports.create = async (req, res, next) => {
         purchaseOrderService.forEach(x => x.updateAttributes(update));
         console.log("purchaseOrder =====> ", pdf)
 
-        await pdf.create(pdfTemplate(purchaseOrderAssets,purchaseOrderService,purchaseOrder.issuedBy,purchaseOrder.expDateOfDelievery),{format: 'Letter'}).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`, (err,res) => {
-            if(err){
-               console.log("err ======>",err);
-            }
-            else if(res){
-                console.log("res =======>", res);
-            }
+        // await pdf.create(pdfTemplate(purchaseOrderAssets,purchaseOrderService,purchaseOrder.issuedBy,purchaseOrder.expDateOfDelievery),{format: 'Letter'}).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`, (err,res) => {
+        //     if(err){
+        //        console.log("err ======>",err);
+        //     }
+        //     else if(res){
+        //         console.log("res =======>", res);
+        //     }
 
-        });
+        // });
         let vendor = await Vendor.findOne({where:{isActive:true,vendorId:req.body.vendorId}})
         if(vendor){
             console.log("vendor=======>",decrypt(key,vendor.firstName));
