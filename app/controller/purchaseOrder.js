@@ -72,6 +72,7 @@ exports.create = async (req, res, next) => {
         });
         if (req.body.purchaseOrderAssetsArray) {
             console.log("getting assets");
+            console.log("%%%%%%%%%%%%");
             purchaseOrderAssets = await PurchaseOrderDetails.bulkCreate(
                 req.body.purchaseOrderAssetsArray, {
                     returning: true
@@ -103,7 +104,7 @@ exports.create = async (req, res, next) => {
         console.log("purchaseOrder =====> ", pdf)
         console.log("updated services");
 
-        await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, purchaseOrder.issuedBy, purchaseOrder.expDateOfDelievery), { format: 'Letter' }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`);
+        // await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, purchaseOrder.issuedBy, purchaseOrder.expDateOfDelievery), { format: 'Letter' }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`);
         //     if (err) {
         //         console.log("err ======>", err);
         //     }
