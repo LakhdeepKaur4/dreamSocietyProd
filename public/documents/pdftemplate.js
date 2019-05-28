@@ -1,17 +1,14 @@
 module.exports = (assets=[],services=[],issuedBy,expDateOfDelievery) => {
    console.log("Atin Tanwar ===============>")
     const today = new Date();
-    console.log("template today")
     let total = 0;
-    console.log("today",today)
     assets.forEach((asset) => {
        total = total + asset.amount;
     });
-    console.log("total~~~~~~~assets~~~~~~~>",total)
+    console.log("total--->",total)
     services.forEach((service) => {
        total = total + service.amount;
     })
-    console.log("total!!!!!!!services~~~~~~~~~~",total)
 
 return `
     <!doctype html>
