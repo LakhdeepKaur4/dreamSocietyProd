@@ -126,9 +126,9 @@ return `
                   return `<tr class="item">
                   <td>${i+1}</td>
                   <td>${item.purchaseOrderName}</td>
-                  <td>$${item.rate}</td>
+                  <td>INR${item.rate}</td>
                   <td>${item.quantity}</td>
-                  <td>$${item.amount}</td>
+                  <td>INR${item.amount}</td>
                </tr>` 
                 })}
                 </table>
@@ -146,16 +146,16 @@ return `
                   return `<tr class="item">
                   <td>${i+1}</td>
                   <td>${item.purchaseOrderName}</td>
-                  <td>$${item.rate}</td>
+                  <td>INR${item.rate}</td>
                   <td>${item.quantity}</td>
-                  <td>$${item.amount}</td>
+                  <td>INR${item.amount}</td>
                   <td>${item.serviceStartDate}</td>
                   <td>${item.serviceEndDate}</td>
                </tr>` 
                 })}
              </table>
              <br />
-             <h1 class="justify-center">Total price:$${total}</h1>
+             <h1 class="justify-center">Total price:INR${total}</h1>
           </div>
        </body>
     </html>
