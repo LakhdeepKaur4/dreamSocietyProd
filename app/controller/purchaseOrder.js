@@ -108,7 +108,7 @@ exports.create = async (req, res, next) => {
             if (err) return console.log(err);
             console.log(res);
         });
-        console.log("pdf created ");
+        console.log("pdf created ",pdfresponse);
         let vendor = await Vendor.findOne({ where: { isActive: true, vendorId: req.body.vendorId } })
         if (vendor) {
             console.log("vendor=======>", decrypt(key, vendor.firstName));
