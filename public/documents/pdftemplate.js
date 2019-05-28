@@ -1,6 +1,14 @@
 module.exports = (assets=[],services=[],issuedBy,expDateOfDelievery) => {
    console.log("Atin Tanwar ===============>")
     const today = new Date();
+    let total = 0;
+    assets.forEach((asset) => {
+       total = total + asset.amount;
+    });
+    services.forEach((service) => {
+       total = total + service.amount;
+    })
+
 return `
     <!doctype html>
     <html>
@@ -147,7 +155,7 @@ return `
                 })}
              </table>
              <br />
-             <h1 class="justify-center">Total price:$</h1>
+             <h1 class="justify-center">Total price:$${total}</h1>
           </div>
        </body>
     </html>
