@@ -26,124 +26,123 @@ function decrypt(key, data) {
 }
 
 
-let mailToUser = (email, vendorId,purchaseOrder) => {
+let mailToUser = (email, vendorId, purchaseOrder) => {
     const token = jwt.sign({
-      data: 'foo'
+        data: 'foo'
     },
-      'secret', {
-        expiresIn: '24h'
-      });
+        'secret', {
+            expiresIn: '24h'
+        });
     vendorId = encrypt(key, vendorId.toString());
     const request = mailjet.post("send", {
-      'version': 'v3.1'
+        'version': 'v3.1'
     })
-      .request({
-        "Messages": [{
-          "From": {
-            "Email": "rohit.khandelwal@greatwits.com",
-            "Name": "Greatwits"
-          },
-          "To": [{
-            "Email": email,
-            "Name": 'Atin' + ' ' + 'Tanwar'
-          }],
-          "Subject": "Purchase Order",
-          "HTMLPart": `<b>Click on the given link to download your purchase order</b> <a href="http://mydreamsociety.com/downloadPdf?vendorId=${vendorId}&pdfDocument=purchaseOrder${purchaseOrder}">click here</a>`
-        }]
-      })
+        .request({
+            "Messages": [{
+                "From": {
+                    "Email": "rohit.khandelwal@greatwits.com",
+                    "Name": "Greatwits"
+                },
+                "To": [{
+                    "Email": email,
+                    "Name": 'Atin' + ' ' + 'Tanwar'
+                }],
+                "Subject": "Purchase Order",
+                "HTMLPart": `<b>Click on the given link to download your purchase order</b> <a href="http://mydreamsociety.com/downloadPdf?vendorId=${vendorId}&pdfDocument=purchaseOrder${purchaseOrder}">click here</a>`
+            }]
+        })
     request.then((result) => {
-      console.log(result.body)
-      // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
+        console.log(result.body)
+        // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
     })
-      .catch((err) => {
-        console.log(err.statusCode)
-      })
-  }
+        .catch((err) => {
+            console.log(err.statusCode)
+        })
+}
 
 exports.create = async (req, res, next) => {
-    try{
+    try {
         let purchaseOrderService = [];
         let purchaseOrderAssets = []
 
         let purchaseOrder = await PurchaseOrder.create({
-            vendorId:req.body.vendorId,
-            issuedBy:req.body.issuedBy,
-            expDateOfDelievery:req.body.expectedDateOfDelievery
+            vendorId: req.body.vendorId,
+            issuedBy: req.body.issuedBy,
+            expDateOfDelievery: req.body.expectedDateOfDelievery
         });
-        if(req.body.purchaseOrderAssetsArray) {
+        if (req.body.purchaseOrderAssetsArray) {
             console.log("getting assets");
-             purchaseOrderAssets = await PurchaseOrderDetails.bulkCreate(
+            purchaseOrderAssets = await PurchaseOrderDetails.bulkCreate(
                 req.body.purchaseOrderAssetsArray, {
                     returning: true
-                  }, {
-                    fields: ["purchaseOrderDetailId","purchaseOrderType","purchaseOrderName", "rate","quantity","amount","serviceStartDate","serviceEndDate", "issuedBy", "expDateOfDelievery","purchaseOrderId" ]
+                }, {
+                    fields: ["purchaseOrderDetailId", "purchaseOrderType", "purchaseOrderName", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
                     // updateOnDuplicate: ["name"]
-                  }
+                }
             );
         }
-       
+
         let update = {
-            purchaseOrderId:purchaseOrder.purchaseOrderId
+            purchaseOrderId: purchaseOrder.purchaseOrderId
         }
         purchaseOrderAssets.forEach(x => x.updateAttributes(update));
         console.log("updated assets");
-        if(req.body.purchaseOrderServiceArray){
+        if (req.body.purchaseOrderServiceArray) {
             console.log("getting services");
-             purchaseOrderService = await PurchaseOrderDetails.bulkCreate(
+            purchaseOrderService = await PurchaseOrderDetails.bulkCreate(
                 req.body.purchaseOrderServiceArray, {
                     returning: true
-                  }, {
-                    fields: ["purchaseOrderDetailId","purchaseOrderType", "rate","quantity","amount","serviceStartDate","serviceEndDate", "issuedBy", "expDateOfDelievery","purchaseOrderId" ]
+                }, {
+                    fields: ["purchaseOrderDetailId", "purchaseOrderType", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
                     // updateOnDuplicate: ["name"]
-                  }
+                }
             );
         }
-        
+
         purchaseOrderService.forEach(x => x.updateAttributes(update));
         console.log("purchaseOrder =====> ", pdf)
         console.log("updated services");
 
-        await pdf.create(pdfTemplate(purchaseOrderAssets,purchaseOrderService,purchaseOrder.issuedBy,purchaseOrder.expDateOfDelievery),{format: 'Letter'}).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`, (err,res) => {
-            if(err){
-               console.log("err ======>",err);
+        await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, purchaseOrder.issuedBy, purchaseOrder.expDateOfDelievery), { format: 'Letter' }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`, (err, res) => {
+            if (err) {
+                console.log("err ======>", err);
             }
-            else if(res){
+            else {
                 console.log("res =======>", res);
             }
-
         });
 
         console.log("pdf created ");
-        let vendor = await Vendor.findOne({where:{isActive:true,vendorId:req.body.vendorId}})
-        if(vendor){
-            console.log("vendor=======>",decrypt(key,vendor.firstName));
-            mailToUser(decrypt(key,vendor.email),vendor.vendorId,purchaseOrder.purchaseOrderId);
+        let vendor = await Vendor.findOne({ where: { isActive: true, vendorId: req.body.vendorId } })
+        if (vendor) {
+            console.log("vendor=======>", decrypt(key, vendor.firstName));
+            mailToUser(decrypt(key, vendor.email), vendor.vendorId, purchaseOrder.purchaseOrderId);
             console.log("mail send");
         }
-        
+
         console.log(" sending response dgsfhgsahjgfjah ===============>");
         return res.status(httpStatus.CREATED).json({
             message: "Purchase Order registered",
-          });
-    } catch(error){
+        });
+    } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
-exports.get = async (req,res,next) => {
-    try{
-        let purchaseOrder = await PurchaseOrder.findAll({where:{isActive:true},include:[{model:Vendor}]});
+exports.get = async (req, res, next) => {
+    try {
+        let purchaseOrder = await PurchaseOrder.findAll({ where: { isActive: true }, include: [{ model: Vendor }] });
         let purchaseNew = [];
-        const promise = purchaseOrder.map( async x => {
+        const promise = purchaseOrder.map(async x => {
             x = x.toJSON();
-            x.assets = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderId:x.purchaseOrderId,purchaseOrderType:"Assets"}});           
-            x.services = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderId:x.purchaseOrderId,purchaseOrderType:"Service"}});
-            x.vendor_master.firstName = decrypt(key,x.vendor_master.firstName);
-            x.vendor_master.lastName = decrypt(key,x.vendor_master.lastName);
-            x.vendor_master.contact = decrypt(key,x.vendor_master.contact);
-            x.vendor_master.email = decrypt(key,x.vendor_master.email);
+            x.assets = await PurchaseOrderDetails.findAll({ where: { isActive: true, purchaseOrderId: x.purchaseOrderId, purchaseOrderType: "Assets" } });
+            x.services = await PurchaseOrderDetails.findAll({ where: { isActive: true, purchaseOrderId: x.purchaseOrderId, purchaseOrderType: "Service" } });
+            x.vendor_master.firstName = decrypt(key, x.vendor_master.firstName);
+            x.vendor_master.lastName = decrypt(key, x.vendor_master.lastName);
+            x.vendor_master.contact = decrypt(key, x.vendor_master.contact);
+            x.vendor_master.email = decrypt(key, x.vendor_master.email);
             purchaseNew.push(x);
-            console.log("purchaseOrder======>", purchaseNew);    
+            console.log("purchaseOrder======>", purchaseNew);
         });
         Promise.all(promise).then(() => {
             console.log("atin============>")
@@ -153,41 +152,41 @@ exports.get = async (req,res,next) => {
             });
         })
 
-    } catch(error){
+    } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
-exports.delete = async (req,res,next) => {
-    try{
+exports.delete = async (req, res, next) => {
+    try {
         let id = req.params.id;
 
         if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-              message: "Id is missing"
+                message: "Id is missing"
             });
-          }
-          let update = {
+        }
+        let update = {
             isActive: false
-          };
-        let purchaseOrder = await PurchaseOrder.findOne({where:{isActive:true,purchaseOrderId:id}});
+        };
+        let purchaseOrder = await PurchaseOrder.findOne({ where: { isActive: true, purchaseOrderId: id } });
         purchaseOrder.updateAttributes(update);
         const purchaseOrderDetails = await PurchaseOrderDetails.update(update, { where: { purchaseOrderId: id } })
 
         if (purchaseOrder && purchaseOrderDetails) {
             return res.status(httpStatus.OK).json({
-              message: "PurchaseOrder deleted successfully",
+                message: "PurchaseOrder deleted successfully",
             });
-          }
+        }
 
-    } catch(error){
+    } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 
-exports.deleteSelected = async(req,res,next) => {
-    try{
+exports.deleteSelected = async (req, res, next) => {
+    try {
         const deleteSelected = req.body.ids;
         console.log("delete selected==>", deleteSelected);
 
@@ -196,124 +195,124 @@ exports.deleteSelected = async(req,res,next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
         const updatedPurchaseOrder = await PurchaseOrder.update(update, { where: { purchaseOrderId: { [Op.in]: deleteSelected } } });
-        const updatedPurchaseOrderDetails = await PurchaseOrderDetails.update(update, {where: { purchaseOrderId: { [Op.in]: deleteSelected } } });
+        const updatedPurchaseOrderDetails = await PurchaseOrderDetails.update(update, { where: { purchaseOrderId: { [Op.in]: deleteSelected } } });
 
         if (updatedPurchaseOrder && updatedPurchaseOrderDetails) {
             return res.status(httpStatus.OK).json({
-              message: "PurchaseOrders deleted successfully",
+                message: "PurchaseOrders deleted successfully",
             });
-          }
-    } catch(error) {
+        }
+    } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
 
     }
 }
 
-exports.updatePurchaseOrder = async(req,res,next) => {
-    try{
+exports.updatePurchaseOrder = async (req, res, next) => {
+    try {
         let id = req.params.id;
-        if(!id){
+        if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         };
         console.log("id", id);
         let update = req.body;
         console.log("update", update);
-        let porder = await PurchaseOrder.find({where:{isActive:true,purchaseOrderId:id}});
-        console.log("porder",porder);
+        let porder = await PurchaseOrder.find({ where: { isActive: true, purchaseOrderId: id } });
+        console.log("porder", porder);
 
         porder.updateAttributes(update);
-        let purchaseOrderAssets = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderId:id,purchaseOrderType:"Assets"}});
-        console.log("purchaseOrderAssets======>",purchaseOrderAssets);
-        let purchaseOrderService = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderId:id,purchaseOrderType:"Service"}});
-        await pdf.create(pdfTemplate(purchaseOrderAssets,purchaseOrderService,porder.issuedBy,porder.expDateOfDelievery),{format: 'Letter'}).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`,(err,res) => {
-            if(err){
-               console.log("err ======>",err);
+        let purchaseOrderAssets = await PurchaseOrderDetails.findAll({ where: { isActive: true, purchaseOrderId: id, purchaseOrderType: "Assets" } });
+        console.log("purchaseOrderAssets======>", purchaseOrderAssets);
+        let purchaseOrderService = await PurchaseOrderDetails.findAll({ where: { isActive: true, purchaseOrderId: id, purchaseOrderType: "Service" } });
+        await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, porder.issuedBy, porder.expDateOfDelievery), { format: 'Letter' }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err, res) => {
+            if (err) {
+                console.log("err ======>", err);
             }
-            else if(res){
+            else if (res) {
                 console.log("res =======>", res);
             }
 
         });
-        let vendor = await Vendor.findOne({where:{isActive:true,vendorId:porder.vendorId}})
-        if(vendor){
-            console.log("vendor=======>",decrypt(key,vendor.firstName));
-            mailToUser(decrypt(key,vendor.email),vendor.vendorId,porder.purchaseOrderId);
+        let vendor = await Vendor.findOne({ where: { isActive: true, vendorId: porder.vendorId } })
+        if (vendor) {
+            console.log("vendor=======>", decrypt(key, vendor.firstName));
+            mailToUser(decrypt(key, vendor.email), vendor.vendorId, porder.purchaseOrderId);
         }
-        if(porder){
+        if (porder) {
             return res.status(httpStatus.OK).json({
                 message: "PurchaseOrders updated successfully",
-              });
+            });
         }
-    } catch(error){
+    } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
 
     }
 }
 
-exports.updatePurchaseOrderDetails = async(req,res,next) => {
-    try{
+exports.updatePurchaseOrderDetails = async (req, res, next) => {
+    try {
         console.log("===============>", req.body);
         let purchaseDetailId = req.params.id;
         let id;
         let update = req.body;
-        let x = await PurchaseOrderDetails.findOne({where:{isActive:true,purchaseOrderDetailId:purchaseDetailId}});
+        let x = await PurchaseOrderDetails.findOne({ where: { isActive: true, purchaseOrderDetailId: purchaseDetailId } });
         x.updateAttributes(update);
         id = x.purchaseOrderId
-        let porder = await PurchaseOrder.find({where:{isActive:true,purchaseOrderId:id}});
-        console.log("porder",porder);
+        let porder = await PurchaseOrder.find({ where: { isActive: true, purchaseOrderId: id } });
+        console.log("porder", porder);
 
 
-        let purchaseOrderAssets = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderId:id,purchaseOrderType:"Assets"}});
-        console.log("purchaseOrderAssets======>",purchaseOrderAssets);
-        let purchaseOrderService = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderId:id,purchaseOrderType:"Service"}});
-        await pdf.create(pdfTemplate(purchaseOrderAssets,purchaseOrderService,porder.issuedBy,porder.expDateOfDelievery),{format: 'Letter'}).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`,(err,res) => {
-            if(err){
-               console.log("err ======>",err);
+        let purchaseOrderAssets = await PurchaseOrderDetails.findAll({ where: { isActive: true, purchaseOrderId: id, purchaseOrderType: "Assets" } });
+        console.log("purchaseOrderAssets======>", purchaseOrderAssets);
+        let purchaseOrderService = await PurchaseOrderDetails.findAll({ where: { isActive: true, purchaseOrderId: id, purchaseOrderType: "Service" } });
+        await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, porder.issuedBy, porder.expDateOfDelievery), { format: 'Letter' }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err, res) => {
+            if (err) {
+                console.log("err ======>", err);
             }
-            else if(res){
+            else if (res) {
                 console.log("res =======>", res);
             }
 
         });
-        let vendor = await Vendor.findOne({where:{isActive:true,vendorId:porder.vendorId}})
-        if(vendor){
-            console.log("vendor=======>",decrypt(key,vendor.firstName));
-            mailToUser(decrypt(key,vendor.email),vendor.vendorId,porder.purchaseOrderId);
+        let vendor = await Vendor.findOne({ where: { isActive: true, vendorId: porder.vendorId } })
+        if (vendor) {
+            console.log("vendor=======>", decrypt(key, vendor.firstName));
+            mailToUser(decrypt(key, vendor.email), vendor.vendorId, porder.purchaseOrderId);
         }
-        if(porder){
+        if (porder) {
             return res.status(httpStatus.OK).json({
                 message: "PurchaseOrderDetails updated successfully",
-              });
+            });
         }
 
 
-    } catch(error){
+    } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
-exports.downloadPDF = async(req,res,next) => {
-    try{
+exports.downloadPDF = async (req, res, next) => {
+    try {
         let pdfId = req.query.pdfDocument;
-        if(!pdfId){
+        if (!pdfId) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
 
         }
-        return res.download(`./public/purchaseOrderPdfs/${pdfId}.pdf`,'purchaseOrder.pdf', function(err){
-            if(err){
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "File not found" });
+        return res.download(`./public/purchaseOrderPdfs/${pdfId}.pdf`, 'purchaseOrder.pdf', function (err) {
+            if (err) {
+                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "File not found" });
             }
         })
-    } catch(error) {
+    } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 
-exports.downloadPdfClient = async(req,res,next) => {
-    try{
+exports.downloadPdfClient = async (req, res, next) => {
+    try {
         let id = req.params.id;
-        if(!id){
+        if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
         // res.download(`./public/purchaseOrderPdfs/purchaseOrder${id}.pdf`,'purchaseOrder.pdf', function(err){
@@ -323,203 +322,207 @@ exports.downloadPdfClient = async(req,res,next) => {
         // });
         return res.status(httpStatus.CREATED).json({
             message: `public\\purchaseOrderPdfs\\purchaseOrder${id}.pdf`
-          });
-    } catch(error) {
+        });
+    } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 
-exports.update = async(req,res,next) =>{
+exports.update = async (req, res, next) => {
     let purchaseOrderService = [];
     let purchaseOrderAssets = [];
     let id = req.params.id;
     let updatePurchaseOrder = {
-            vendorId:req.body.vendorId,
-            issuedBy:req.body.issuedBy,
-            expDateOfDelievery:req.body.expectedDateOfDelievery
+        vendorId: req.body.vendorId,
+        issuedBy: req.body.issuedBy,
+        expDateOfDelievery: req.body.expectedDateOfDelievery
     }
     let purchaseOrder = await PurchaseOrder.findOne({
-        where:{isActive:true,purchaseOrderId:id}
+        where: { isActive: true, purchaseOrderId: id }
     });
     purchaseOrder.updateAttributes(updatePurchaseOrder);
 
-    let purchaseOrderAssetsDelete = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderId:id,purchaseOrderType:"Assets"}});
-    purchaseOrderAssetsDelete.map(x=>x.destroy());
+    let purchaseOrderAssetsDelete = await PurchaseOrderDetails.findAll({ where: { isActive: true, purchaseOrderId: id, purchaseOrderType: "Assets" } });
+    purchaseOrderAssetsDelete.map(x => x.destroy());
 
-    let purchaseOrderServiceDelete = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderId:id,purchaseOrderType:"Service"}});
-    purchaseOrderServiceDelete.map(x=>x.destroy());
+    let purchaseOrderServiceDelete = await PurchaseOrderDetails.findAll({ where: { isActive: true, purchaseOrderId: id, purchaseOrderType: "Service" } });
+    purchaseOrderServiceDelete.map(x => x.destroy());
 
 
-    if(req.body.purchaseOrderAssetsArray) {
+    if (req.body.purchaseOrderAssetsArray) {
         purchaseOrderAssets = await PurchaseOrderDetails.bulkCreate(
-           req.body.purchaseOrderAssetsArray, {
-               returning: true
-             }, {
-               fields: ["purchaseOrderDetailId","purchaseOrderType","purchaseOrderName", "rate","quantity","amount","serviceStartDate","serviceEndDate", "issuedBy", "expDateOfDelievery","purchaseOrderId" ]
-               // updateOnDuplicate: ["name"]
-             }
-       );
-   }
-  
-   let update = {
-       purchaseOrderId:purchaseOrder.purchaseOrderId
-   }
-   purchaseOrderAssets.forEach(x => x.updateAttributes(update));
+            req.body.purchaseOrderAssetsArray, {
+                returning: true
+            }, {
+                fields: ["purchaseOrderDetailId", "purchaseOrderType", "purchaseOrderName", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
+                // updateOnDuplicate: ["name"]
+            }
+        );
+    }
+
+    let update = {
+        purchaseOrderId: purchaseOrder.purchaseOrderId
+    }
+    purchaseOrderAssets.forEach(x => x.updateAttributes(update));
 
 
 
-   if(req.body.purchaseOrderServiceArray){
+    if (req.body.purchaseOrderServiceArray) {
         purchaseOrderService = await PurchaseOrderDetails.bulkCreate(
-           req.body.purchaseOrderServiceArray, {
-               returning: true
-             }, {
-               fields: ["purchaseOrderDetailId","purchaseOrderType", "rate","quantity","amount","serviceStartDate","serviceEndDate", "issuedBy", "expDateOfDelievery","purchaseOrderId" ]
-               // updateOnDuplicate: ["name"]
-             }
-       );
-   }
-   
-   purchaseOrderService.forEach(x => x.updateAttributes(update));
-
-   await pdf.create(pdfTemplate(purchaseOrderAssets,purchaseOrderService,purchaseOrder.issuedBy,purchaseOrder.expDateOfDelievery),{format: 'Letter'}).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`, (err,res) => {
-    if(err){
-       console.log("err ======>",err);
-    }
-    else if(res){
-        console.log("res =======>", res);
+            req.body.purchaseOrderServiceArray, {
+                returning: true
+            }, {
+                fields: ["purchaseOrderDetailId", "purchaseOrderType", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
+                // updateOnDuplicate: ["name"]
+            }
+        );
     }
 
-});
-let vendor = await Vendor.findOne({where:{isActive:true,vendorId:req.body.vendorId}})
-if(vendor){
-    console.log("vendor=======>",decrypt(key,vendor.firstName));
-    mailToUser(decrypt(key,vendor.email),vendor.vendorId,purchaseOrder.purchaseOrderId);
+    purchaseOrderService.forEach(x => x.updateAttributes(update));
+
+    await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, purchaseOrder.issuedBy, purchaseOrder.expDateOfDelievery), { format: 'Letter' }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`, (err, res) => {
+        if (err) {
+            console.log("err ======>", err);
+        }
+        else if (res) {
+            console.log("res =======>", res);
+        }
+
+    });
+    let vendor = await Vendor.findOne({ where: { isActive: true, vendorId: req.body.vendorId } })
+    if (vendor) {
+        console.log("vendor=======>", decrypt(key, vendor.firstName));
+        mailToUser(decrypt(key, vendor.email), vendor.vendorId, purchaseOrder.purchaseOrderId);
+    }
+
+    console.log("dgsfhgsahjgfjah ===============>");
+    return res.status(httpStatus.CREATED).json({
+        message: "Purchase Order updated",
+    });
 }
 
-console.log("dgsfhgsahjgfjah ===============>");
-return res.status(httpStatus.CREATED).json({
-    message: "Purchase Order updated",
-});
-}
 
-
-exports.getAssets = async(req,res,next) => {
-    try{
+exports.getAssets = async (req, res, next) => {
+    try {
         let id = req.params.id;
-        let assetsArray = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderType:"Assets",purchaseOrderId:id}});
+        let assetsArray = await PurchaseOrderDetails.findAll({ where: { isActive: true, purchaseOrderType: "Assets", purchaseOrderId: id } });
         return res.status(httpStatus.CREATED).json({
             message: "Assets",
-            assets:assetsArray
+            assets: assetsArray
         });
-    } catch(error){
+    } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
-  
+
 }
 
-exports.getServices = async(req,res,next) => {
-    try{
+exports.getServices = async (req, res, next) => {
+    try {
         let id = req.params.id;
-        let serviceArray = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderType:"Service",purchaseOrderId:id}});
+        let serviceArray = await PurchaseOrderDetails.findAll({ where: { isActive: true, purchaseOrderType: "Service", purchaseOrderId: id } });
         return res.status(httpStatus.CREATED).json({
             message: "Services",
-            assets:serviceArray
+            assets: serviceArray
         });
-    } catch(error){
+    } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
-  
+
 }
 
 
 
-exports.deletePurchaseOrderDetails = async(req,res,next) => {
-    try{
+exports.deletePurchaseOrderDetails = async (req, res, next) => {
+    try {
         console.log("===============>", req.params);
         let purchaseDetailId = req.params.id;
         let id;
-        let update = {isActive:false};
-        let x = await PurchaseOrderDetails.findOne({where:{isActive:true,purchaseOrderDetailId:purchaseDetailId}});
+        let update = { isActive: false };
+        let x = await PurchaseOrderDetails.findOne({ where: { isActive: true, purchaseOrderDetailId: purchaseDetailId } });
         x.updateAttributes(update);
         id = x.purchaseOrderId
-        let porder = await PurchaseOrder.find({where:{isActive:true,purchaseOrderId:id}});
-        console.log("porder",porder);
+        let porder = await PurchaseOrder.find({ where: { isActive: true, purchaseOrderId: id } });
+        console.log("porder", porder);
 
 
-        let purchaseOrderAssets = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderId:id,purchaseOrderType:"Assets"}});
-        console.log("purchaseOrderAssets======>",purchaseOrderAssets);
-        let purchaseOrderService = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderId:id,purchaseOrderType:"Service"}});
-        await pdf.create(pdfTemplate(purchaseOrderAssets,purchaseOrderService,porder.issuedBy,porder.expDateOfDelievery),{format: 'Letter'}).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`,(err,res) => {
-            if(err){
-               console.log("err ======>",err);
+        let purchaseOrderAssets = await PurchaseOrderDetails.findAll({ where: { isActive: true, purchaseOrderId: id, purchaseOrderType: "Assets" } });
+        console.log("purchaseOrderAssets======>", purchaseOrderAssets);
+        let purchaseOrderService = await PurchaseOrderDetails.findAll({ where: { isActive: true, purchaseOrderId: id, purchaseOrderType: "Service" } });
+        await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, porder.issuedBy, porder.expDateOfDelievery), { format: 'Letter' }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err, res) => {
+            if (err) {
+                console.log("err ======>", err);
             }
-            else if(res){
+            else if (res) {
                 console.log("res =======>", res);
             }
 
         });
-        let vendor = await Vendor.findOne({where:{isActive:true,vendorId:porder.vendorId}})
-        if(vendor){
-            console.log("vendor=======>",decrypt(key,vendor.firstName));
-            mailToUser(decrypt(key,vendor.email),vendor.vendorId,porder.purchaseOrderId);
+        let vendor = await Vendor.findOne({ where: { isActive: true, vendorId: porder.vendorId } })
+        if (vendor) {
+            console.log("vendor=======>", decrypt(key, vendor.firstName));
+            mailToUser(decrypt(key, vendor.email), vendor.vendorId, porder.purchaseOrderId);
         }
-        if(porder){
+        if (porder) {
             return res.status(httpStatus.OK).json({
                 message: "PurchaseOrderDetails updated successfully",
-              });
+            });
         }
 
 
-    } catch(error){
+    } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 
-exports.deleteSelectedPurchaseOrderDetails = async(req,res,next) => {
-    try{
+exports.deleteSelectedPurchaseOrderDetails = async (req, res, next) => {
+    try {
         console.log("===============>", req.body);
         let purchaseDetailId = req.body.ids;
         let id;
-        let update = {isActive:false};
-        let x = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderDetailId:{
-            [Op.in]: purchaseDetailId
-          }}});
+        let update = { isActive: false };
+        let x = await PurchaseOrderDetails.findAll({
+            where: {
+                isActive: true, purchaseOrderDetailId: {
+                    [Op.in]: purchaseDetailId
+                }
+            }
+        });
         x.forEach((item) => {
             item.updateAttributes(update);
             id = item.purchaseOrderId
         })
-        
-        let porder = await PurchaseOrder.find({where:{isActive:true,purchaseOrderId:id}});
-        console.log("porder",porder);
+
+        let porder = await PurchaseOrder.find({ where: { isActive: true, purchaseOrderId: id } });
+        console.log("porder", porder);
 
 
-        let purchaseOrderAssets = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderId:id,purchaseOrderType:"Assets"}});
-        console.log("purchaseOrderAssets======>",purchaseOrderAssets);
-        let purchaseOrderService = await PurchaseOrderDetails.findAll({where:{isActive:true,purchaseOrderId:id,purchaseOrderType:"Service"}});
-        await pdf.create(pdfTemplate(purchaseOrderAssets,purchaseOrderService,porder.issuedBy,porder.expDateOfDelievery),{format: 'Letter'}).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`,(err,res) => {
-            if(err){
-               console.log("err ======>",err);
+        let purchaseOrderAssets = await PurchaseOrderDetails.findAll({ where: { isActive: true, purchaseOrderId: id, purchaseOrderType: "Assets" } });
+        console.log("purchaseOrderAssets======>", purchaseOrderAssets);
+        let purchaseOrderService = await PurchaseOrderDetails.findAll({ where: { isActive: true, purchaseOrderId: id, purchaseOrderType: "Service" } });
+        await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, porder.issuedBy, porder.expDateOfDelievery), { format: 'Letter' }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err, res) => {
+            if (err) {
+                console.log("err ======>", err);
             }
-            else if(res){
+            else if (res) {
                 console.log("res =======>", res);
             }
 
         });
-        let vendor = await Vendor.findOne({where:{isActive:true,vendorId:porder.vendorId}})
-        if(vendor){
-            console.log("vendor=======>",decrypt(key,vendor.firstName));
-            mailToUser(decrypt(key,vendor.email),vendor.vendorId,porder.purchaseOrderId);
+        let vendor = await Vendor.findOne({ where: { isActive: true, vendorId: porder.vendorId } })
+        if (vendor) {
+            console.log("vendor=======>", decrypt(key, vendor.firstName));
+            mailToUser(decrypt(key, vendor.email), vendor.vendorId, porder.purchaseOrderId);
         }
-        if(porder){
+        if (porder) {
             return res.status(httpStatus.OK).json({
                 message: "PurchaseOrderDetails updated successfully",
-              });
+            });
         }
 
 
-    } catch(error){
+    } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

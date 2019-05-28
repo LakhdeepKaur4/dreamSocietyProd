@@ -5,9 +5,11 @@ module.exports = (assets=[],services=[],issuedBy,expDateOfDelievery) => {
     assets.forEach((asset) => {
        total = total + asset.amount;
     });
+    console.log("total~~~~~~~assets~~~~~~~>",total)
     services.forEach((service) => {
        total = total + service.amount;
     })
+    console.log("total!!!!!!!services~~~~~~~~~~",total)
 
 return `
     <!doctype html>
@@ -126,9 +128,9 @@ return `
                   return `<tr class="item">
                   <td>${i+1}</td>
                   <td>${item.purchaseOrderName}</td>
-                  <td>INR${item.rate}</td>
+                  <td>INR ${item.rate}</td>
                   <td>${item.quantity}</td>
-                  <td>INR${item.amount}</td>
+                  <td>INR ${item.amount}</td>
                </tr>` 
                 })}
                 </table>
@@ -146,16 +148,16 @@ return `
                   return `<tr class="item">
                   <td>${i+1}</td>
                   <td>${item.purchaseOrderName}</td>
-                  <td>INR${item.rate}</td>
+                  <td>INR ${item.rate}</td>
                   <td>${item.quantity}</td>
-                  <td>INR${item.amount}</td>
+                  <td>INR ${item.amount}</td>
                   <td>${item.serviceStartDate}</td>
                   <td>${item.serviceEndDate}</td>
                </tr>` 
                 })}
              </table>
              <br />
-             <h1 class="justify-center">Total price:INR${total}</h1>
+             <h1 class="justify-center">Total price:INR ${total}</h1>
           </div>
        </body>
     </html>
