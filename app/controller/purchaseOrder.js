@@ -104,8 +104,9 @@ exports.create = async (req, res, next) => {
         console.log("purchaseOrder =====> ", pdf)
         console.log("updated services");
 
-        await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, purchaseOrder.issuedBy, purchaseOrder.expDateOfDelievery), { format: 'Letter' }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`);
-        //     if (err) {
+      const pdfresponse =  await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, purchaseOrder.issuedBy, purchaseOrder.expDateOfDelievery), { format: 'Letter' }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`);
+      console.log("checking=======>", pdfresponse); 
+      //     if (err) {
         //         console.log("err ======>", err);
         //     }
         //     else {
