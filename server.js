@@ -28,7 +28,7 @@ require('./app/router/router.js')(app);
 const db = require('./app/config/db.config.js');
 
 const Role = db.role;
-var PORT = process.env.PORT || 8083;
+var PORT = process.env.PORT || 8081;
 
 // force: true will drop the table if it already exists
 db.sequelize.sync({
