@@ -266,6 +266,7 @@ exports.deleteSelected = async (req, res, next) => {
 
 exports.updatePurchaseOrder = async (req, res, next) => {
     try {
+        let data = {};
         let id = req.params.id;
         if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
@@ -299,16 +300,51 @@ exports.updatePurchaseOrder = async (req, res, next) => {
                 purchaseOrderType: "Service"
             }
         });
-        await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, porder.issuedBy, porder.expDateOfDelievery), {
-            format: 'Letter'
-        }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err, res) => {
-            if (err) {
-                console.log("err ======>", err);
-            } else if (res) {
-                console.log("res =======>", res);
-            }
+        data.purchaseOrderAssets = purchaseOrderAssets;
+        data.purchaseOrderService = purchaseOrderService;
+        data.issuedBy = porder.issuedBy;
+        data.expectedDateOfDelievery = porder.expDateOfDelievery;
 
+
+        const today = new Date();
+        let total = 0;
+        if (purchaseOrderAssets.length > 0) {
+            purchaseOrderAssets.forEach((asset) => {
+                total = total + asset.amount;
+            });
+        }
+        if (purchaseOrderService.length > 0) {
+            purchaseOrderService.forEach((service) => {
+                total = total + service.amount;
+            })
+        }
+
+        data.today = `${`${today.getDate()}. ${today.getMonth() + 1}. ${today.getFullYear()}`}`;
+        data.total = total
+
+        console.log("data====================>", data);
+
+        const browser = await Puppeteer.launch(
+            {
+                'args' : [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox'
+                ]
+            });
+        const page = await browser.newPage();
+        const content = await compile('purchaseOrderTemplate', data)
+        await page.setContent(content);
+        console.log("hello");
+        await page.emulateMedia('screen');
+        console.log("Hi");
+        await page.pdf({
+            path: `./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`,
+            format: 'A4',
+            printBackground: true
         });
+
+        console.log("done");
+        await browser.close();
         let vendor = await Vendor.findOne({
             where: {
                 isActive: true,
@@ -332,6 +368,7 @@ exports.updatePurchaseOrder = async (req, res, next) => {
 
 exports.updatePurchaseOrderDetails = async (req, res, next) => {
     try {
+        let data = {};
         console.log("===============>", req.body);
         let purchaseDetailId = req.params.id;
         let id;
@@ -368,16 +405,51 @@ exports.updatePurchaseOrderDetails = async (req, res, next) => {
                 purchaseOrderType: "Service"
             }
         });
-        await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, porder.issuedBy, porder.expDateOfDelievery), {
-            format: 'Letter'
-        }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err, res) => {
-            if (err) {
-                console.log("err ======>", err);
-            } else if (res) {
-                console.log("res =======>", res);
-            }
+        data.purchaseOrderAssets = purchaseOrderAssets;
+        data.purchaseOrderService = purchaseOrderService;
+        data.issuedBy = porder.issuedBy;
+        data.expectedDateOfDelievery = porder.expDateOfDelievery;
 
+
+        const today = new Date();
+        let total = 0;
+        if (purchaseOrderAssets.length > 0) {
+            purchaseOrderAssets.forEach((asset) => {
+                total = total + asset.amount;
+            });
+        }
+        if (purchaseOrderService.length > 0) {
+            purchaseOrderService.forEach((service) => {
+                total = total + service.amount;
+            })
+        }
+
+        data.today = `${`${today.getDate()}. ${today.getMonth() + 1}. ${today.getFullYear()}`}`;
+        data.total = total
+
+        console.log("data====================>", data);
+
+        const browser = await Puppeteer.launch(
+            {
+                'args' : [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox'
+                ]
+            });
+        const page = await browser.newPage();
+        const content = await compile('purchaseOrderTemplate', data)
+        await page.setContent(content);
+        console.log("hello");
+        await page.emulateMedia('screen');
+        console.log("Hi");
+        await page.pdf({
+            path: `./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`,
+            format: 'A4',
+            printBackground: true
         });
+
+        console.log("done");
+        await browser.close();
         let vendor = await Vendor.findOne({
             where: {
                 isActive: true,
@@ -445,6 +517,7 @@ exports.downloadPdfClient = async (req, res, next) => {
 
 
 exports.update = async (req, res, next) => {
+    let data = {};
     let purchaseOrderService = [];
     let purchaseOrderAssets = [];
     let id = req.params.id;
@@ -511,16 +584,51 @@ exports.update = async (req, res, next) => {
 
     purchaseOrderService.forEach(x => x.updateAttributes(update));
 
-    await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, purchaseOrder.issuedBy, purchaseOrder.expDateOfDelievery), {
-        format: 'Letter'
-    }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`, (err, res) => {
-        if (err) {
-            console.log("err ======>", err);
-        } else if (res) {
-            console.log("res =======>", res);
-        }
+    data.purchaseOrderAssets = purchaseOrderAssets;
+    data.purchaseOrderService = purchaseOrderService;
+    data.issuedBy = purchaseOrder.issuedBy;
+    data.expectedDateOfDelievery = purchaseOrder.expDateOfDelievery;
 
+
+    const today = new Date();
+    let total = 0;
+    if (purchaseOrderAssets.length > 0) {
+        purchaseOrderAssets.forEach((asset) => {
+            total = total + asset.amount;
+        });
+    }
+    if (purchaseOrderService.length > 0) {
+        purchaseOrderService.forEach((service) => {
+            total = total + service.amount;
+        })
+    }
+
+    data.today = `${`${today.getDate()}. ${today.getMonth() + 1}. ${today.getFullYear()}`}`;
+    data.total = total
+
+    console.log("data====================>", data);
+
+    const browser = await Puppeteer.launch(
+        {
+            'args' : [
+                '--no-sandbox',
+                '--disable-setuid-sandbox'
+            ]
+        });
+    const page = await browser.newPage();
+    const content = await compile('purchaseOrderTemplate', data)
+    await page.setContent(content);
+    console.log("hello");
+    await page.emulateMedia('screen');
+    console.log("Hi");
+    await page.pdf({
+        path: `./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`,
+        format: 'A4',
+        printBackground: true
     });
+
+    console.log("done");
+    await browser.close();
     let vendor = await Vendor.findOne({
         where: {
             isActive: true,
@@ -583,6 +691,7 @@ exports.getServices = async (req, res, next) => {
 
 exports.deletePurchaseOrderDetails = async (req, res, next) => {
     try {
+        let data = {};
         console.log("===============>", req.params);
         let purchaseDetailId = req.params.id;
         let id;
@@ -621,16 +730,51 @@ exports.deletePurchaseOrderDetails = async (req, res, next) => {
                 purchaseOrderType: "Service"
             }
         });
-        await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, porder.issuedBy, porder.expDateOfDelievery), {
-            format: 'Letter'
-        }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err, res) => {
-            if (err) {
-                console.log("err ======>", err);
-            } else if (res) {
-                console.log("res =======>", res);
-            }
+        data.purchaseOrderAssets = purchaseOrderAssets;
+        data.purchaseOrderService = purchaseOrderService;
+        data.issuedBy = porder.issuedBy;
+        data.expectedDateOfDelievery = porder.expDateOfDelievery;
 
+
+        const today = new Date();
+        let total = 0;
+        if (purchaseOrderAssets.length > 0) {
+            purchaseOrderAssets.forEach((asset) => {
+                total = total + asset.amount;
+            });
+        }
+        if (purchaseOrderService.length > 0) {
+            purchaseOrderService.forEach((service) => {
+                total = total + service.amount;
+            })
+        }
+
+        data.today = `${`${today.getDate()}. ${today.getMonth() + 1}. ${today.getFullYear()}`}`;
+        data.total = total
+
+        console.log("data====================>", data);
+
+        const browser = await Puppeteer.launch(
+            {
+                'args' : [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox'
+                ]
+            });
+        const page = await browser.newPage();
+        const content = await compile('purchaseOrderTemplate', data)
+        await page.setContent(content);
+        console.log("hello");
+        await page.emulateMedia('screen');
+        console.log("Hi");
+        await page.pdf({
+            path: `./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`,
+            format: 'A4',
+            printBackground: true
         });
+
+        console.log("done");
+        await browser.close();
         let vendor = await Vendor.findOne({
             where: {
                 isActive: true,
@@ -656,6 +800,7 @@ exports.deletePurchaseOrderDetails = async (req, res, next) => {
 
 exports.deleteSelectedPurchaseOrderDetails = async (req, res, next) => {
     try {
+        let data = {};
         console.log("===============>", req.body);
         let purchaseDetailId = req.body.ids;
         let id;
@@ -699,16 +844,51 @@ exports.deleteSelectedPurchaseOrderDetails = async (req, res, next) => {
                 purchaseOrderType: "Service"
             }
         });
-        await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, porder.issuedBy, porder.expDateOfDelievery), {
-            format: 'Letter'
-        }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err, res) => {
-            if (err) {
-                console.log("err ======>", err);
-            } else if (res) {
-                console.log("res =======>", res);
-            }
+        data.purchaseOrderAssets = purchaseOrderAssets;
+        data.purchaseOrderService = purchaseOrderService;
+        data.issuedBy = porder.issuedBy;
+        data.expectedDateOfDelievery = porder.expDateOfDelievery;
 
+
+        const today = new Date();
+        let total = 0;
+        if (purchaseOrderAssets.length > 0) {
+            purchaseOrderAssets.forEach((asset) => {
+                total = total + asset.amount;
+            });
+        }
+        if (purchaseOrderService.length > 0) {
+            purchaseOrderService.forEach((service) => {
+                total = total + service.amount;
+            })
+        }
+
+        data.today = `${`${today.getDate()}. ${today.getMonth() + 1}. ${today.getFullYear()}`}`;
+        data.total = total
+
+        console.log("data====================>", data);
+
+        const browser = await Puppeteer.launch(
+            {
+                'args' : [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox'
+                ]
+            });
+        const page = await browser.newPage();
+        const content = await compile('purchaseOrderTemplate', data)
+        await page.setContent(content);
+        console.log("hello");
+        await page.emulateMedia('screen');
+        console.log("Hi");
+        await page.pdf({
+            path: `./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`,
+            format: 'A4',
+            printBackground: true
         });
+
+        console.log("done");
+        await browser.close();
         let vendor = await Vendor.findOne({
             where: {
                 isActive: true,
@@ -807,7 +987,6 @@ exports.create1 = async (req, res, next) => {
                 total = total + service.amount;
             })
         }
-
 
         data.today = `${`${today.getDate()}. ${today.getMonth() + 1}. ${today.getFullYear()}`}`;
         data.total = total
