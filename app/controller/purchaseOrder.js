@@ -847,6 +847,7 @@ exports.create1 = async (req, res, next) => {
 
 
     } catch (error) {
+        console.log("error=============>",error)
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
 
     }
