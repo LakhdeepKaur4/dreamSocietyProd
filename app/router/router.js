@@ -711,7 +711,7 @@ module.exports = function (app) {
 
 	app.put('/api/vendorComplaints/complete', [authJwt.verifyToken, authJwt.isVendorRole], vendorComplaintsController.completedComplaint);
 
-	app.post('/api/purchaseOrder',  purchaseOrderController.create);
+	app.post('/api/purchaseOrder',  purchaseOrderController.create1);
 
 	app.get('/api/purchaseOrder', purchaseOrderController.get);
 
