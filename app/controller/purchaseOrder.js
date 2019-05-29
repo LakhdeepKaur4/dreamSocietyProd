@@ -814,7 +814,13 @@ exports.create1 = async (req, res, next) => {
 
         console.log("data====================>", data);
 
-        const browser = await Puppeteer.launch();
+        const browser = await Puppeteer.launch(
+            {
+                'args' : [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox'
+                ]
+            });
         const page = await browser.newPage();
         const content = await compile('purchaseOrderTemplate', data)
         await page.setContent(content);
