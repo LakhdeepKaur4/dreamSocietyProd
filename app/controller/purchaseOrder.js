@@ -323,14 +323,18 @@ exports.updatePurchaseOrder = async (req, res, next) => {
         data.total = total
 
         console.log("data====================>", data);
+        fs.unlink(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err) => {
+            console.log('path/file.txt was deleted');
+        });
 
         const browser = await Puppeteer.launch(
-            {
-                'args' : [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox'
-                ]
-            });
+            // {
+            //     'args' : [
+            //         '--no-sandbox',
+            //         '--disable-setuid-sandbox'
+            //     ]
+            // }
+        );
         const page = await browser.newPage();
         const content = await compile('purchaseOrderTemplate', data)
         await page.setContent(content);
@@ -338,7 +342,7 @@ exports.updatePurchaseOrder = async (req, res, next) => {
         await page.emulateMedia('screen');
         console.log("Hi");
         await page.pdf({
-            path: `./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`,
+            path: `./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`,
             format: 'A4',
             printBackground: true
         });
@@ -361,6 +365,7 @@ exports.updatePurchaseOrder = async (req, res, next) => {
             });
         }
     } catch (error) {
+        console.log("error=============>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
 
     }
@@ -431,7 +436,7 @@ exports.updatePurchaseOrderDetails = async (req, res, next) => {
 
         const browser = await Puppeteer.launch(
             {
-                'args' : [
+                'args': [
                     '--no-sandbox',
                     '--disable-setuid-sandbox'
                 ]
@@ -443,7 +448,7 @@ exports.updatePurchaseOrderDetails = async (req, res, next) => {
         await page.emulateMedia('screen');
         console.log("Hi");
         await page.pdf({
-            path: `./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`,
+            path: `./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`,
             format: 'A4',
             printBackground: true
         });
@@ -610,7 +615,7 @@ exports.update = async (req, res, next) => {
 
     const browser = await Puppeteer.launch(
         {
-            'args' : [
+            'args': [
                 '--no-sandbox',
                 '--disable-setuid-sandbox'
             ]
@@ -756,7 +761,7 @@ exports.deletePurchaseOrderDetails = async (req, res, next) => {
 
         const browser = await Puppeteer.launch(
             {
-                'args' : [
+                'args': [
                     '--no-sandbox',
                     '--disable-setuid-sandbox'
                 ]
@@ -768,7 +773,7 @@ exports.deletePurchaseOrderDetails = async (req, res, next) => {
         await page.emulateMedia('screen');
         console.log("Hi");
         await page.pdf({
-            path: `./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`,
+            path: `./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`,
             format: 'A4',
             printBackground: true
         });
@@ -870,7 +875,7 @@ exports.deleteSelectedPurchaseOrderDetails = async (req, res, next) => {
 
         const browser = await Puppeteer.launch(
             {
-                'args' : [
+                'args': [
                     '--no-sandbox',
                     '--disable-setuid-sandbox'
                 ]
@@ -882,7 +887,7 @@ exports.deleteSelectedPurchaseOrderDetails = async (req, res, next) => {
         await page.emulateMedia('screen');
         console.log("Hi");
         await page.pdf({
-            path: `./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`,
+            path: `./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`,
             format: 'A4',
             printBackground: true
         });
@@ -922,8 +927,7 @@ const compile = async function (templateName, data) {
 //     return Moment(value).format(format);
 // })
 
-Hbs.registerHelper("inc", function(value, options)
-{
+Hbs.registerHelper("inc", function (value, options) {
     return parseInt(value) + 1;
 });
 
@@ -995,7 +999,7 @@ exports.create1 = async (req, res, next) => {
 
         const browser = await Puppeteer.launch(
             {
-                'args' : [
+                'args': [
                     '--no-sandbox',
                     '--disable-setuid-sandbox'
                 ]
@@ -1032,7 +1036,7 @@ exports.create1 = async (req, res, next) => {
 
 
     } catch (error) {
-        console.log("error=============>",error)
+        console.log("error=============>", error)
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
 
     }
