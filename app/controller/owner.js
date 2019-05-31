@@ -556,7 +556,7 @@ exports.get1 = async (req, res, next) => {
     // console.log(owners);
 
     owners.map(owner => {
-      console.log("adsfag===", ownerId);
+      // console.log("adsfag===", ownerId);
       owner.firstName = decrypt(key, owner.firstName);
       owner.lastName = decrypt(key, owner.lastName);
       owner.userName = decrypt(key, owner.userName);
