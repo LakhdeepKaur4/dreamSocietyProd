@@ -304,8 +304,6 @@ exports.updatePurchaseOrder = async (req, res, next) => {
         data.purchaseOrderService = purchaseOrderService;
         data.issuedBy = porder.issuedBy;
         data.expectedDateOfDelievery = porder.expDateOfDelievery;
-
-
         const today = new Date();
         let total = 0;
         if (purchaseOrderAssets.length > 0) {
@@ -329,7 +327,7 @@ exports.updatePurchaseOrder = async (req, res, next) => {
 
         const browser = await Puppeteer.launch(
             {
-                'args' : [
+                'args': [
                     '--no-sandbox',
                     '--disable-setuid-sandbox'
                 ]
@@ -999,6 +997,7 @@ exports.create1 = async (req, res, next) => {
 
         const browser = await Puppeteer.launch(
             {
+                headless:false,
                 'args': [
                     '--no-sandbox',
                     '--disable-setuid-sandbox'
