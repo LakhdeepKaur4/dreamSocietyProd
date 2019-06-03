@@ -325,15 +325,7 @@ exports.updatePurchaseOrder = async (req, res, next) => {
             console.log('path/file.txt was deleted');
         });
 
-        const browser = await Puppeteer.launch(
-            {
-                'args': [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox'
-                ],
-                headless: true
-            }
-        );
+        const browser = await Puppeteer.launch();
         const page = await browser.newPage();
         const content = await compile('purchaseOrderTemplate', data)
         await page.setContent(content);
