@@ -997,7 +997,6 @@ exports.create1 = async (req, res, next) => {
 
         const browser = await Puppeteer.launch(
             {
-                headless:false,
                 'args': [
                     '--no-sandbox',
                     '--disable-setuid-sandbox'
