@@ -469,12 +469,8 @@ exports.downloadPdfClient = async (req, res, next) => {
                 message: "No id Found"
             });
         }
-        // res.download(`./public/purchaseOrderPdfs/purchaseOrder${id}.pdf`,'purchaseOrder.pdf', function(err){
-        //     if(err){
-        //     return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "File not found" });
-        //     }
-        // });
-        return res.status(httpStatus.CREATED).json({
+        
+        return res.status(httpStatus.OK).json({
             message: `public\\purchaseOrderPdfs\\purchaseOrder${id}.pdf`
         });
     } catch (error) {
