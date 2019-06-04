@@ -926,7 +926,7 @@ exports.create1 = async (req, res, next) => {
     try {
         let data = {};
         let purchaseOrderService = [];
-        let purchaseOrderAssets = []
+        let purchaseOrderAssets = [];
 
         let purchaseOrder = await PurchaseOrder.create({
             vendorId: req.body.vendorId,
