@@ -359,21 +359,19 @@ exports.updatePurchaseOrderDetails = async (req, res, next) => {
         let purchaseDetailId = req.params.id;
         let id;
         let update = req.body;
-        let x = await PurchaseOrderDetails.findOne({
+        
+        await PurchaseOrderDetails.findOne({
             where: {
                 isActive: true,
                 purchaseOrderDetailId: purchaseDetailId
             }
-        });
-        x.updateAttributes(update);
-        id = x.purchaseOrderId;
-        let porder = await PurchaseOrder.find({
-            where: {
-                isActive: true,
-                purchaseOrderId: id
-            }
-        });
-        console.log("porder", porder);
+        })
+        .then(async POrderDetail => {
+            POrderDetail.updateAttributes(update);
+            id = POrderDetail.purchaseOrderId;
+        })
+
+        
 
 
         let purchaseOrderAssets = await PurchaseOrderDetails.findAll({
@@ -391,68 +389,51 @@ exports.updatePurchaseOrderDetails = async (req, res, next) => {
                 purchaseOrderType: "Service"
             }
         });
-        data.purchaseOrderAssets = purchaseOrderAssets;
-        data.purchaseOrderService = purchaseOrderService;
-        data.issuedBy = porder.issuedBy;
-        data.expectedDateOfDelievery = porder.expDateOfDelievery;
 
-
-        const today = new Date();
-        let total = 0;
-        if (purchaseOrderAssets.length > 0) {
-            purchaseOrderAssets.forEach((asset) => {
-                total = total + asset.amount;
-            });
-        }
-        if (purchaseOrderService.length > 0) {
-            purchaseOrderService.forEach((service) => {
-                total = total + service.amount;
-            })
-        }
-
-        data.today = `${`${today.getDate()}. ${today.getMonth() + 1}. ${today.getFullYear()}`}`;
-        data.total = total
-
-        console.log("data====================>", data);
-
-        const browser = await Puppeteer.launch(
-            {
-                'args': [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox'
-                ]
-            });
-        const page = await browser.newPage();
-        const content = await compile('purchaseOrderTemplate', data)
-        await page.setContent(content);
-        console.log("hello");
-        await page.emulateMedia('screen');
-        console.log("Hi");
-        await page.pdf({
-            path: `./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`,
-            format: 'A4',
-            printBackground: true
-        });
-
-        console.log("done");
-        await browser.close();
-        let vendor = await Vendor.findOne({
+        await PurchaseOrder.find({
             where: {
                 isActive: true,
-                vendorId: porder.vendorId
+                purchaseOrderId: id
             }
         })
-        if (vendor) {
-            console.log("vendor=======>", decrypt(key, vendor.firstName));
-            mailToUser(decrypt(key, vendor.email), vendor.vendorId, porder.purchaseOrderId);
-        }
-        if (porder) {
-            return res.status(httpStatus.OK).json({
-                message: "PurchaseOrderDetails updated successfully",
-            });
-        }
+            .then(async porder => {
+                fs.unlink(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err) => {
+                    if (err) {
+                        console.log('File is missing ===>', err);
+                    } else {
+                        console.log('File deleted successfully');
+                    }
+                });
 
+                await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, porder.issuedBy, porder.expDateOfDelievery), {
+                    format: 'Letter'
+                }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err, res) => {
+                    if (err) {
+                        console.log("Pdf generation error ======>", err);
+                    } else {
+                        console.log("Pdf generated successfully");
+                    }
 
+                });
+
+                let vendor = await Vendor.findOne({
+                    where: {
+                        isActive: true,
+                        vendorId: porder.vendorId
+                    }
+                })
+                if (vendor) {
+                    console.log("vendor=======>", decrypt(key, vendor.firstName));
+                    mailToUser(decrypt(key, vendor.email), vendor.vendorId, porder.purchaseOrderId);
+                }
+
+                if (porder) {
+                    return res.status(httpStatus.OK).json({
+                        message: "PurchaseOrderDetails updated successfully",
+                    });
+                }
+            })
+       
     } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
