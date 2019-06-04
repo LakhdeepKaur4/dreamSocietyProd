@@ -106,7 +106,7 @@ exports.create = async (req, res, next) => {
         }
 
         purchaseOrderService.forEach(x => x.updateAttributes(update));
-        console.log("purchaseOrder =====> ", pdf)
+        // console.log("purchaseOrder =====> ", pdf)
 
         await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, purchaseOrder.issuedBy, purchaseOrder.expDateOfDelievery), {
             format: 'Letter'
@@ -129,7 +129,7 @@ exports.create = async (req, res, next) => {
             mailToUser(decrypt(key, vendor.email), vendor.vendorId, purchaseOrder.purchaseOrderId);
         }
 
-        console.log("dgsfhgsahjgfjah ===============>");
+        // console.log("dgsfhgsahjgfjah ===============>");
         return res.status(httpStatus.CREATED).json({
             message: "Purchase Order registered",
         });
@@ -173,7 +173,7 @@ exports.get = async (req, res, next) => {
             x.vendor_master.contact = decrypt(key, x.vendor_master.contact);
             x.vendor_master.email = decrypt(key, x.vendor_master.email);
             purchaseNew.push(x);
-            console.log("purchaseOrder======>", purchaseNew);
+            // console.log("purchaseOrder======>", purchaseNew);
         });
         Promise.all(promise).then(() => {
             console.log("atin============>")
