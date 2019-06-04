@@ -112,9 +112,9 @@ exports.create = async (req, res, next) => {
             format: 'Letter'
         }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`, (err, res) => {
             if (err) {
-                console.log("err ======>", err);
-            } else if (res) {
-                console.log("res =======>", res);
+                console.log("Pdf generation error ======>", err);
+            } else {
+                console.log("Pdf generated successfully");
             }
 
         });
