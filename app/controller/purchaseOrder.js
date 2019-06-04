@@ -276,15 +276,16 @@ exports.updatePurchaseOrder = async (req, res, next) => {
         console.log("id", id);
         let update = req.body;
         console.log("update", update);
-        let porder = await PurchaseOrder.find({
+        await PurchaseOrder.find({
             where: {
                 isActive: true,
                 purchaseOrderId: id
             }
-        });
-        console.log("porder", porder);
+        }).then(POrder => {
+            POrder.updateAttributes(update);
+        })
+        // console.log("porder", porder);
 
-        porder.updateAttributes(update);
         let purchaseOrderAssets = await PurchaseOrderDetails.findAll({
             where: {
                 isActive: true,
@@ -300,46 +301,36 @@ exports.updatePurchaseOrder = async (req, res, next) => {
                 purchaseOrderType: "Service"
             }
         });
-        data.purchaseOrderAssets = purchaseOrderAssets;
-        data.purchaseOrderService = purchaseOrderService;
-        data.issuedBy = porder.issuedBy;
-        data.expectedDateOfDelievery = porder.expDateOfDelievery;
-        const today = new Date();
-        let total = 0;
-        if (purchaseOrderAssets.length > 0) {
-            purchaseOrderAssets.forEach((asset) => {
-                total = total + asset.amount;
-            });
-        }
-        if (purchaseOrderService.length > 0) {
-            purchaseOrderService.forEach((service) => {
-                total = total + service.amount;
-            })
-        }
+        let porder = await PurchaseOrder.find({
+            where: {
+                isActive: true,
+                purchaseOrderId: id
+            }
+        });       
 
-        data.today = `${`${today.getDate()}. ${today.getMonth() + 1}. ${today.getFullYear()}`}`;
-        data.total = total
-
-        console.log("data====================>", data);
+        // console.log("data====================>", data);
         fs.unlink(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err) => {
-            console.log('path/file.txt was deleted');
+            if (err) {
+                console.log('File is missing ===>',err);
+            } else {
+                console.log('File deleted successfully');
+            }
         });
 
-        const browser = await Puppeteer.launch();
-        const page = await browser.newPage();
-        const content = await compile('purchaseOrderTemplate', data)
-        await page.setContent(content);
-        console.log("hello");
-        await page.emulateMedia('screen');
-        console.log("Hi");
-        await page.pdf({
-            path: `./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`,
-            format: 'A4',
-            printBackground: true
+        
+
+        await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, porder.issuedBy, porder.expDateOfDelievery), {
+            format: 'Letter'
+        }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`, (err, res) => {
+            if (err) {
+                console.log("Pdf generation error ======>", err);
+            } else {
+                console.log("Pdf generated successfully");
+            }
+
         });
 
-        console.log("done");
-        await browser.close();
+
         let vendor = await Vendor.findOne({
             where: {
                 isActive: true,
@@ -350,6 +341,7 @@ exports.updatePurchaseOrder = async (req, res, next) => {
             console.log("vendor=======>", decrypt(key, vendor.firstName));
             mailToUser(decrypt(key, vendor.email), vendor.vendorId, porder.purchaseOrderId);
         }
+        
         if (porder) {
             return res.status(httpStatus.OK).json({
                 message: "PurchaseOrders updated successfully",
@@ -376,7 +368,7 @@ exports.updatePurchaseOrderDetails = async (req, res, next) => {
             }
         });
         x.updateAttributes(update);
-        id = x.purchaseOrderId
+        id = x.purchaseOrderId;
         let porder = await PurchaseOrder.find({
             where: {
                 isActive: true,
@@ -604,27 +596,28 @@ exports.update = async (req, res, next) => {
 
     console.log("data====================>", data);
 
-    const browser = await Puppeteer.launch(
-        {
-            'args': [
-                '--no-sandbox',
-                '--disable-setuid-sandbox'
-            ]
-        });
-    const page = await browser.newPage();
-    const content = await compile('purchaseOrderTemplate', data)
-    await page.setContent(content);
-    console.log("hello");
-    await page.emulateMedia('screen');
-    console.log("Hi");
-    await page.pdf({
-        path: `./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`,
-        format: 'A4',
-        printBackground: true
-    });
+    // const browser = await Puppeteer.launch(
+    //     {
+    //         'args': [
+    //             '--no-sandbox',
+    //             '--disable-setuid-sandbox'
+    //         ]
+    //     });
+    // const page = await browser.newPage();
+    // const content = await compile('purchaseOrderTemplate', data)
+    // await page.setContent(content);
+    // console.log("hello");
+    // await page.emulateMedia('screen');
+    // console.log("Hi");
+    // await page.pdf({
+    //     path: `./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`,
+    //     format: 'A4',
+    //     printBackground: true
+    // });
 
-    console.log("done");
-    await browser.close();
+    // console.log("done");
+    // await browser.close();
+
     let vendor = await Vendor.findOne({
         where: {
             isActive: true,
