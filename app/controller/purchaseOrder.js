@@ -301,52 +301,50 @@ exports.updatePurchaseOrder = async (req, res, next) => {
                 purchaseOrderType: "Service"
             }
         });
-        let porder = await PurchaseOrder.find({
+        await PurchaseOrder.find({
             where: {
                 isActive: true,
                 purchaseOrderId: id
             }
-        });       
-
-        // console.log("data====================>", data);
-        fs.unlink(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err) => {
-            if (err) {
-                console.log('File is missing ===>',err);
-            } else {
-                console.log('File deleted successfully');
-            }
-        });
-
-        
-
-        await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, porder.issuedBy, porder.expDateOfDelievery), {
-            format: 'Letter'
-        }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${purchaseOrder.purchaseOrderId}.pdf`, (err, res) => {
-            if (err) {
-                console.log("Pdf generation error ======>", err);
-            } else {
-                console.log("Pdf generated successfully");
-            }
-
-        });
-
-
-        let vendor = await Vendor.findOne({
-            where: {
-                isActive: true,
-                vendorId: porder.vendorId
-            }
         })
-        if (vendor) {
-            console.log("vendor=======>", decrypt(key, vendor.firstName));
-            mailToUser(decrypt(key, vendor.email), vendor.vendorId, porder.purchaseOrderId);
-        }
-        
-        if (porder) {
-            return res.status(httpStatus.OK).json({
-                message: "PurchaseOrders updated successfully",
+        .then(async porder => {
+            fs.unlink(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err) => {
+                if (err) {
+                    console.log('File is missing ===>', err);
+                } else {
+                    console.log('File deleted successfully');
+                }
             });
-        }
+
+            await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, porder.issuedBy, porder.expDateOfDelievery), {
+                format: 'Letter'
+            }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err, res) => {
+                if (err) {
+                    console.log("Pdf generation error ======>", err);
+                } else {
+                    console.log("Pdf generated successfully");
+                }
+
+            });
+
+            let vendor = await Vendor.findOne({
+                where: {
+                    isActive: true,
+                    vendorId: porder.vendorId
+                }
+            })
+            if (vendor) {
+                console.log("vendor=======>", decrypt(key, vendor.firstName));
+                mailToUser(decrypt(key, vendor.email), vendor.vendorId, porder.purchaseOrderId);
+            }
+
+            if (porder) {
+                return res.status(httpStatus.OK).json({
+                    message: "PurchaseOrders updated successfully",
+                });
+            }
+        })       
+        
     } catch (error) {
         console.log("error=============>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
