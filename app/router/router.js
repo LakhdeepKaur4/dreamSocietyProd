@@ -259,6 +259,8 @@ module.exports = function (app) {
 
 	app.get('/api/event', [authJwt.verifyToken, authJwt.isAdminRole], eventController.get);
 
+	app.get('/api/event/tenantOrOwner', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], eventController.get);
+
 	app.put('/api/event/:id', [authJwt.verifyToken, authJwt.isAdminRole], eventController.update);
 
 	app.put('/api/event/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], eventController.deleteSelected);
@@ -455,6 +457,8 @@ module.exports = function (app) {
 
 	app.get('/api/societyMemberEvent', [authJwt.verifyToken, authJwt.isAdminRole], societyMemberEvent.get);
 
+	app.get('/api/societyMemberEvent/tenantOrOwner', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], societyMemberEvent.get);
+
 	app.put('/api/societyMemberEvent/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], societyMemberEvent.deleteSelected);
 
 	app.put('/api/societyMemberEvent/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], societyMemberEvent.delete);
@@ -527,7 +531,11 @@ module.exports = function (app) {
 
 	app.post('/api/societyMemberEventBooking', [authJwt.verifyToken, authJwt.isAdminRole], societyMemberEventBooking.create);
 
+	app.post('/api/societyMemberEventBooking/tenantOrOwner', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], societyMemberEventBooking.create);
+
 	app.get('/api/societyMemberEventBooking', [authJwt.verifyToken, authJwt.isAdminRole], societyMemberEventBooking.get);
+
+	app.get('/api/societyMemberEventBooking/user', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], societyMemberEventBooking.getByUserId);
 
 	app.put('/api/societyMemberEventBooking/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], societyMemberEventBooking.deleteSelected);
 
@@ -535,9 +543,17 @@ module.exports = function (app) {
 
 	app.put('/api/societyMemberEventBooking/:id', [authJwt.verifyToken, authJwt.isAdminRole], societyMemberEventBooking.update);
 
+	app.put('/api/societyMemberEventBooking/tenantOrOwner/delete/deleteSelected', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], societyMemberEventBooking.deleteSelected);
+
+	app.put('/api/societyMemberEventBooking/tenantOrOwner/delete/:id', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], societyMemberEventBooking.delete);
+
+	app.put('/api/societyMemberEventBooking/tenantOrOwner/:id', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], societyMemberEventBooking.update);
+
 	app.post('/api/eventSpaceMaster', [authJwt.verifyToken, authJwt.isAdminRole], eventSpaceController.create);
 
 	app.get('/api/eventSpaceMaster', [authJwt.verifyToken, authJwt.isAdminRole], eventSpaceController.get);
+
+	app.get('/api/eventSpaceMaster/tenantOrOwner', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], eventSpaceController.get);
 
 	app.put('/api/eventSpaceMaster/:id', [authJwt.verifyToken, authJwt.isAdminRole], eventSpaceController.update);
 
@@ -679,13 +695,15 @@ module.exports = function (app) {
 
 	app.put('/api/commonAreaDetail/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaDetailController.delete);
 
-	app.get('/api/fingerPrint/test', [authJwt.verifyToken], fingerPrintController.test);
+	app.get('/api/fingerPrint/flat', [authJwt.verifyToken], fingerPrintController.getFingerPrintData);
 
 	app.get('/api/fingerPrint/roles', [authJwt.verifyToken], fingerPrintController.getRoles);
 
 	app.post('/api/fingerPrint', [authJwt.verifyToken], fingerPrintController.addFingerPrintData);
 
 	app.get('/api/fingerPrint', [authJwt.verifyToken], fingerPrintController.getFingerPrintData);
+
+	app.get('/api/fingerPrint/userFlats', [authJwt.verifyToken], fingerPrintController.getFingerprintAndManchineData);
 
 	app.put('/api/fingerPrint/:userId', [authJwt.verifyToken], fingerPrintController.updateFingerPrintData);
 
@@ -711,7 +729,7 @@ module.exports = function (app) {
 
 	app.put('/api/vendorComplaints/complete', [authJwt.verifyToken, authJwt.isVendorRole], vendorComplaintsController.completedComplaint);
 
-	app.post('/api/purchaseOrder', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.create1);
+	app.post('/api/purchaseOrder', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.create);
 
 	app.get('/api/purchaseOrder', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.get);
 
@@ -721,11 +739,11 @@ module.exports = function (app) {
 
 	app.put('/api/updatePurchaseOrderDetails/:id', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.updatePurchaseOrderDetails);
 
-	app.get('/api/getAssets/:id', purchaseOrderController.getAssets);
+	app.get('/api/getAssets/:id', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.getAssets);
 
-	app.get('/api/getServices/:id', purchaseOrderController.getServices);
+	app.get('/api/getServices/:id', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.getServices);
 
-	app.put('/api/deletePurchaseOrder/:id', purchaseOrderController.delete);
+	app.put('/api/deletePurchaseOrder/:id', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.delete);
 
 	app.put('/api/deletePurchaseOrders', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.deleteSelected);
 

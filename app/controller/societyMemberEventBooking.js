@@ -76,6 +76,37 @@ exports.get = async (req, res, next) => {
     }
 };
 
+exports.getByUserId = async (req, res, next) => {
+    try {
+        let userId = req.userId;
+
+        SocietyMemberEventBooking.findAll({
+            where: {
+                isActive: true,
+                userId: userId
+            },
+            include: [
+                {
+                    model: SocietyMemberEvent
+                },
+                {
+                    model: EventSpaceMaster
+                }
+            ]
+        })
+            .then(events => {
+                return res.status(httpStatus.CREATED).json({
+                    message: "Event Content Page",
+                    events: events
+                });
+            })
+            .catch(err => console.log(err))
+    } catch (error) {
+        console.log("error==>", error)
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+};
+
 exports.update = async (req, res, next) => {
     try {
         const id = req.params.id;

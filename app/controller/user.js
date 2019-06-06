@@ -32,7 +32,6 @@ const Token = db.tokenVerify;
 const UserRoles = db.userRole;
 const UserRfid = db.userRfid;
 const OwnerMembersDetail = db.ownerMembersDetail;
-const TenantMembersDetail = db.tenantMembersDetail;
 const FingerprintData = db.fingerprintData;
 
 const Op = db.Sequelize.Op;
@@ -2209,7 +2208,7 @@ exports.activateUsers = async (req, res, next) => {
 			case "DeactiveTenant":
 				const tenant = await Tenant.findOne({ where: { tenantId: userId, isActive: false } });
 				if (tenant) {
-					await Tenant.update(update, { where: { tenantId: userId } });
+					await Tenant.update(update, { where: { tenant: userId } });
 					const user = await User.findOne({ where: { userId: userId, isActive: false } });
 					if (user) {
 						await User.update(update, { where: { userId: userId } });
