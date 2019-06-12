@@ -296,3 +296,35 @@ exports.getMachineForCommonArea = (req, res, next) => {
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
 }
+
+exports.getByFlatId = (req, res, next) => {
+    const flatDetailId = req.params.id;
+    if (!flatDetailId) {
+        res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ "message": "Flat can't be empty" });
+    }
+    Machine.findAll({
+        where: {
+            isActive: true,
+            flatDetailId: req.params.id
+        },
+        include: [
+            FlatDetail,
+            MachineDetail
+        ]
+    })
+        .then(machines => {
+            if (machines.length !== 0) {
+                res.status(httpStatus.OK).json({
+                    machinesDetail: machines,
+                })
+            } else {
+                res.status(httpStatus.NO_CONTENT).json({
+                    message: 'No Content'
+                })
+            }
+        })
+        .catch(err => {
+            console.log('Error ===>', err);
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
+}

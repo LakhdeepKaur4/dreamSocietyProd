@@ -62,7 +62,6 @@ exports.update = async (req, res, next) => {
         if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
         }
-
         const maintenance = await Maintenance.findOne({
             where: {
                 [Op.and]: [
