@@ -55,7 +55,7 @@ module.exports = function (app) {
 	const fingerPrintController = require('../controller/fingerprint');
 	const vendorComplaintsController = require('../controller/vendorComplaints');
 	const purchaseOrderController = require('../controller/purchaseOrder');
-
+    const chatController = require('../controller/chat')
 
 	app.get('/', userController.start);
 
@@ -613,6 +613,8 @@ module.exports = function (app) {
 
 	app.get('/api/machine', [authJwt.verifyToken, authJwt.isAdminRole], machine.get);
 
+	app.get('/api/machine/:id', [authJwt.verifyToken, authJwt.isAdminRole], machine.getByFlatId);
+
 	app.post('/api/machine', [authJwt.verifyToken, authJwt.isAdminRole], machine.create);
 
 	app.put('/api/machine/:id', [authJwt.verifyToken, authJwt.isAdminRole], machine.update);
@@ -703,6 +705,10 @@ module.exports = function (app) {
 
 	app.get('/api/fingerPrint', [authJwt.verifyToken], fingerPrintController.getFingerPrintData);
 
+	app.put('/api/fingerPrint/enable/:userId', [authJwt.verifyToken], fingerPrintController.enableFingerPrintData);
+
+	app.put('/api/fingerPrint/disable/:userId', [authJwt.verifyToken], fingerPrintController.disableFingerPrintData);
+
 	app.get('/api/fingerPrint/userFlats', [authJwt.verifyToken], fingerPrintController.getFingerprintAndManchineData);
 
 	app.put('/api/fingerPrint/:userId', [authJwt.verifyToken], fingerPrintController.updateFingerPrintData);
@@ -751,9 +757,12 @@ module.exports = function (app) {
 
 	app.put('/api/deleteSelectedPurchaseOrderDetails', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.deleteSelectedPurchaseOrderDetails);
 
+	app.post('/api/chat',chatController.createUserOnChatKit);
 
+	app.get('/api/chat',chatController.getAllUserFromChatKit);
 
+	app.get('/api/chat/:id',chatController.getByUserIdFromChatKit);
 
-
+	app.post('/api/auth/chat',chatController.authByChatKit);
 
 }

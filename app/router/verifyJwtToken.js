@@ -9,7 +9,6 @@ const httpStatus = require('http-status');
 
 verifyToken = (req, res, next) => {
 	let token = req.headers['x-access-token'];
-
 	if (!token) {
 		return res.status(httpStatus.FORBIDDEN).json({
 			auth: false,

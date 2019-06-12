@@ -307,44 +307,44 @@ exports.updatePurchaseOrder = async (req, res, next) => {
                 purchaseOrderId: id
             }
         })
-        .then(async porder => {
-            fs.unlink(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err) => {
-                if (err) {
-                    console.log('File is missing ===>', err);
-                } else {
-                    console.log('File deleted successfully');
+            .then(async porder => {
+                fs.unlink(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err) => {
+                    if (err) {
+                        console.log('File is missing ===>', err);
+                    } else {
+                        console.log('File deleted successfully');
+                    }
+                });
+
+                await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, porder.issuedBy, porder.expDateOfDelievery), {
+                    format: 'Letter'
+                }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err, res) => {
+                    if (err) {
+                        console.log("Pdf generation error ======>", err);
+                    } else {
+                        console.log("Pdf generated successfully");
+                    }
+
+                });
+
+                let vendor = await Vendor.findOne({
+                    where: {
+                        isActive: true,
+                        vendorId: porder.vendorId
+                    }
+                })
+                if (vendor) {
+                    console.log("vendor=======>", decrypt(key, vendor.firstName));
+                    mailToUser(decrypt(key, vendor.email), vendor.vendorId, porder.purchaseOrderId);
                 }
-            });
 
-            await pdf.create(pdfTemplate(purchaseOrderAssets, purchaseOrderService, porder.issuedBy, porder.expDateOfDelievery), {
-                format: 'Letter'
-            }).toFile(`./public/purchaseOrderPdfs/purchaseOrder${porder.purchaseOrderId}.pdf`, (err, res) => {
-                if (err) {
-                    console.log("Pdf generation error ======>", err);
-                } else {
-                    console.log("Pdf generated successfully");
-                }
-
-            });
-
-            let vendor = await Vendor.findOne({
-                where: {
-                    isActive: true,
-                    vendorId: porder.vendorId
+                if (porder) {
+                    return res.status(httpStatus.OK).json({
+                        message: "PurchaseOrders updated successfully",
+                    });
                 }
             })
-            if (vendor) {
-                console.log("vendor=======>", decrypt(key, vendor.firstName));
-                mailToUser(decrypt(key, vendor.email), vendor.vendorId, porder.purchaseOrderId);
-            }
 
-            if (porder) {
-                return res.status(httpStatus.OK).json({
-                    message: "PurchaseOrders updated successfully",
-                });
-            }
-        })       
-        
     } catch (error) {
         console.log("error=============>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
@@ -359,19 +359,19 @@ exports.updatePurchaseOrderDetails = async (req, res, next) => {
         let purchaseDetailId = req.params.id;
         let id;
         let update = req.body;
-        
+
         await PurchaseOrderDetails.findOne({
             where: {
                 isActive: true,
                 purchaseOrderDetailId: purchaseDetailId
             }
         })
-        .then(async POrderDetail => {
-            POrderDetail.updateAttributes(update);
-            id = POrderDetail.purchaseOrderId;
-        })
+            .then(async POrderDetail => {
+                POrderDetail.updateAttributes(update);
+                id = POrderDetail.purchaseOrderId;
+            })
 
-        
+
 
 
         let purchaseOrderAssets = await PurchaseOrderDetails.findAll({
@@ -433,7 +433,7 @@ exports.updatePurchaseOrderDetails = async (req, res, next) => {
                     });
                 }
             })
-       
+
     } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
@@ -469,7 +469,7 @@ exports.downloadPdfClient = async (req, res, next) => {
                 message: "No id Found"
             });
         }
-        
+
         return res.status(httpStatus.OK).json({
             message: `public\\purchaseOrderPdfs\\purchaseOrder${id}.pdf`
         });
