@@ -41,6 +41,7 @@ exports.complaintsData = (req, res, next) => {
                     completed = 0; 
                     cancelled = 0; 
                     accepted = 0;
+                    totalComplaints = complaints.length;
                     complaints.map(item => {
                         if (item.complaintStatusId === 1) {
                             todo += 1;
@@ -62,13 +63,20 @@ exports.complaintsData = (req, res, next) => {
                         }
                     })
 
+                    let todoPercent = todo / totalComplaints * 100;
+                    let assignedPercent = assigned / totalComplaints * 100;
+                    let inprogressPercent = inprogress / totalComplaints * 100;
+                    let completedPercent = completed / totalComplaints * 100;
+                    let cancelledPercent = cancelled / totalComplaints * 100;
+                    let acceptedPercent = accepted / totalComplaints * 100;
+                    
                     const complaintsData = {
-                        todo: todo,
-                        assigned: assigned,
-                        inprogress: inprogress,
-                        completed: completed,
-                        cancelled: cancelled,
-                        accepted: accepted
+                        todo: todoPercent,
+                        assigned: assignedPercent,
+                        inprogress: inprogressPercent,
+                        completed: completedPercent,
+                        cancelled: cancelledPercent,
+                        accepted: acceptedPercent
                     }
 
                     res.status(httpStatus.OK).json({
