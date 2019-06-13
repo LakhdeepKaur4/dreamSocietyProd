@@ -490,8 +490,10 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
     // userData.unshift({disabled:true});
     FingerprintData.findAll({
         where: {
-            isActive: true,
-            fingerprintData: { [Op.ne]: null }
+            [Op.and]: [
+                { isActive: true },
+                { fingerprintData: { [Op.ne]: null } }
+            ]
         },
         attributes: ['userId']
     })
