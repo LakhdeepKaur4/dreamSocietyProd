@@ -54,8 +54,10 @@ module.exports = function (app) {
 	const commonAreaDetailController = require('../controller/commonAreaDetail');
 	const fingerPrintController = require('../controller/fingerprint');
 	const vendorComplaintsController = require('../controller/vendorComplaints');
+	const vendorChartController = require('../controller/vendorChart');
+	const tenantOrOwnerChartController = require('../controller/tenantOrOwnerChart');
 	const purchaseOrderController = require('../controller/purchaseOrder');
-    const chatController = require('../controller/chat')
+	const chatController = require('../controller/chat')
 
 	app.get('/', userController.start);
 
@@ -721,6 +723,10 @@ module.exports = function (app) {
 
 	app.get('/api/filterOnNotNull/flats/fingerPrint/:id', [authJwt.verifyToken], fingerPrintController.notNullFilterOnflats);
 
+	app.get('/api/chart', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], tenantOrOwnerChartController.complaintsData);
+
+	app.get('/api/vendorChart', [authJwt.verifyToken, authJwt.isVendorRole], vendorChartController.complaintsData);
+
 	app.get('/api/vendorComplaints', [authJwt.verifyToken, authJwt.isVendorRole], vendorComplaintsController.getById);
 
 	app.put('/api/vendorComplaints/reject', [authJwt.verifyToken, authJwt.isVendorRole], vendorComplaintsController.rejectComplaint);
@@ -757,12 +763,10 @@ module.exports = function (app) {
 
 	app.put('/api/deleteSelectedPurchaseOrderDetails', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.deleteSelectedPurchaseOrderDetails);
 
-	app.post('/api/chat',chatController.createUserOnChatKit);
+	app.post('/api/chat', chatController.createUserOnChatKit);
 
-	app.get('/api/chat',chatController.getAllUserFromChatKit);
+	app.get('/api/chat', chatController.getAllUserFromChatKit);
 
-	app.get('/api/chat/:id',chatController.getByUserIdFromChatKit);
-
-	app.post('/api/auth/chat',chatController.authByChatKit);
+	app.get('/api/chat/:id', chatController.getByUserIdFromChatKit);
 
 }
