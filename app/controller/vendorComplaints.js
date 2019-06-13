@@ -45,9 +45,11 @@ exports.getById = (req, res, next) => {
         }
     })
         .then(complaints => {
+            // console.log("C---->",complaints);
             complaints.map(item => {
                 complaintIds.push(item.complaintId);
             })
+            // console.log("C---->", complaintIds);
             Complaint.findAll({
                 where: {
                     complaintId: {
@@ -60,10 +62,10 @@ exports.getById = (req, res, next) => {
                     {
                         model: FlatDetail, where: { isActive: true }, include: [
                             { model: Tower, where: { isActive: true } },
-                            { model: Floor, where: { isActive: true } },
-                            { model: User, where: { isActive: true }, attributes: ['firstName', 'lastName', 'contact'] }
+                            { model: Floor, where: { isActive: true } }, 
                         ]
                     },
+                    { model: User, where: { isActive: true }, attributes: ['firstName', 'lastName', 'contact'] }
                 ]
             })
                 .then(complaints => {
@@ -71,9 +73,9 @@ exports.getById = (req, res, next) => {
                     complaints.map(item => {
                         let disable;
                         slotArr.splice(0, slotArr.length);
-                        item.flat_detail_master.user_master.firstName = decrypt(item.flat_detail_master.user_master.firstName);
-                        item.flat_detail_master.user_master.lastName = decrypt(item.flat_detail_master.user_master.lastName);
-                        item.flat_detail_master.user_master.contact = decrypt(item.flat_detail_master.user_master.contact);
+                        item.user_master.firstName = decrypt(item.user_master.firstName);
+                        item.user_master.lastName = decrypt(item.user_master.lastName);
+                        item.user_master.contact = decrypt(item.user_master.contact);
 
                         if (item.slotTime1 !== '') {
                             slotArr.push(item.slotTime1)
