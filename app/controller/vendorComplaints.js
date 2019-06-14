@@ -62,7 +62,7 @@ exports.getById = (req, res, next) => {
                     {
                         model: FlatDetail, where: { isActive: true }, include: [
                             { model: Tower, where: { isActive: true } },
-                            { model: Floor, where: { isActive: true } }, 
+                            { model: Floor, where: { isActive: true } },
                         ]
                     },
                     { model: User, where: { isActive: true }, attributes: ['firstName', 'lastName', 'contact'] }

@@ -488,7 +488,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
     // console.log(1)
     const type = req.params.type;
     const userData = [];
-    console.log("***", type)
+    console.log("***",type)
     switch (type) {
         case 'all':
             FingerprintData.findAll({
@@ -1185,12 +1185,12 @@ exports.enableFingerPrintData = async (req, res, next) => {
             socket.on('error', (error) => {
                 console.log("fingerprint api socket error", error);
             })
-            socket.on('close', () => { console.log('close') });
+
             // if (socketResponse.ret == "setuserinfo" && socketResponse.result == true) {
             res.status(httpStatus.OK).json({
                 message: "Fingerprint enabled successfully"
             })
-
+            socket.on('close', () => { console.log('close') });
             // }
             // socket.send('hello this is just for testing!')
         })
@@ -1233,11 +1233,10 @@ exports.disableFingerPrintData = async (req, res, next) => {
             socket.on('error', (error) => {
                 console.log("fingerprint api socket error", error);
             })
-            socket.on('close', () => { console.log('close') })
             res.status(httpStatus.OK).json({
                 message: "Fingerprint disabled successfully"
             })
-
+            socket.on('close', () => { console.log('close') })
             // socket.send('hello this is just for testing!')
         })
         // setTimeout(() => {
