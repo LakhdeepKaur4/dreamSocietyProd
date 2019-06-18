@@ -1209,7 +1209,7 @@ exports.disableFingerPrintData = async (req, res, next) => {
     try {
         console.log("**disabling ")
         const userId = parseInt(req.params.userId);
-        const update = { isActive: true };
+        const update = { isActive: false };
         // var sockets = [];
         const updatedStatus = await FingerprintData.update(update, { where: { userId: userId } });
         wss.on('connection', (socket, req) => {
