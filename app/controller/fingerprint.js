@@ -1187,18 +1187,18 @@ exports.enableFingerPrintData = async (req, res, next) => {
             })
 
             // if (socketResponse.ret == "setuserinfo" && socketResponse.result == true) {
-            res.status(httpStatus.OK).json({
-                message: "Fingerprint enabled successfully"
-            })
+            // res.status(httpStatus.OK).json({
+            //     message: "Fingerprint enabled successfully"
+            // })
             socket.on('close', () => { console.log('close') });
             // }
             // socket.send('hello this is just for testing!')
         })
-        // setTimeout(() => {
-        //     res.status(httpStatus.OK).json({
-        //         message: "Fingerprint enabled successfully"
-        //     })
-        // }, 5000);
+        setTimeout(() => {
+            res.status(httpStatus.OK).json({
+                message: "Fingerprint enabled successfully"
+            })
+        }, 5000);
     } catch (error) {
         console.log("error==>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
@@ -1233,17 +1233,17 @@ exports.disableFingerPrintData = async (req, res, next) => {
             socket.on('error', (error) => {
                 console.log("fingerprint api socket error", error);
             })
-            res.status(httpStatus.OK).json({
-                message: "Fingerprint disabled successfully"
-            })
+            // res.status(httpStatus.OK).json({
+            //     message: "Fingerprint disabled successfully"
+            // })
             socket.on('close', () => { console.log('close') })
             // socket.send('hello this is just for testing!')
         })
-        // setTimeout(() => {
-        //     res.status(httpStatus.OK).json({
-        //         message: "Fingerprint disabled successfully"
-        //     })
-        // }, 3000);
+        setTimeout(() => {
+            res.status(httpStatus.OK).json({
+                message: "Fingerprint disabled successfully"
+            })
+        }, 3000);
     } catch (error) {
         console.log("error==>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
