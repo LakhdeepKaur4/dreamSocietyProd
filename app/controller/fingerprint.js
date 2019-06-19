@@ -1196,11 +1196,11 @@ exports.enableFingerPrintData = async (req, res, next) => {
             // }
             // socket.send('hello this is just for testing!')
         })
-        // setTimeout(() => {
-        //     res.status(httpStatus.OK).json({
-        //         message: "Fingerprint enabled successfully"
-        //     })
-        // }, 5000);
+        setTimeout(() => {
+            res.status(httpStatus.OK).json({
+                message: "Fingerprint enabled successfully"
+            })
+        }, 5000);
     } catch (error) {
         console.log("error==>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
