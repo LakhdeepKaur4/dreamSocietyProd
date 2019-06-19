@@ -9,6 +9,15 @@ const FacilitiesDetails = db.facilitiesDetails;
 exports.create = (req, res, next) => {
     const facility = req.body;
     console.log('Facility ===>', facility);
+    facility.facilityId = parseInt(facility.facilityId); 
+    if(facility.monthlyRateType){
+        facility.unitRate = null;
+        facility.monthlyRate = parseFloat(facility.monthlyRate);
+    }
+    if(facility.rateType){
+        facility.monthlyRate = null;
+        facility.unitRate = parseFloat(facility.unitRate);
+    }
 
     FacilitiesDetails.findOne({
         where: {
@@ -34,7 +43,7 @@ exports.create = (req, res, next) => {
                     .catch(err => {
                         console.log('Error ===>', err);
                         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-                    }) 
+                    })
             }
         })
         .catch(err => {
@@ -48,9 +57,18 @@ exports.update = (req, res, next) => {
     console.log('ID ===>', id);
 
     const facility = req.body;
-    console.log('Facility ===>', facility);
+    console.log('Facility ===>', facility);   
 
-    Facilities.findOne({
+    if(facility.monthlyRate !== null){
+        facility.unitRate = null;
+        facility.monthlyRate = parseFloat(facility.monthlyRate);
+    }
+    if(facility.unitRate !== null){
+        facility.monthlyRate = null;
+        facility.unitRate = parseFloat(facility.unitRate);
+    }
+
+    FacilitiesDetails.findOne({
         where: {
             isActive: true,
             facilityId: facility.facilityId,
@@ -96,7 +114,10 @@ exports.get = (req, res, next) => {
     FacilitiesDetails.findAll({
         where: {
             isActive: true
-        }
+        },
+        include: [
+            { model: Facilities }
+        ]
     })
         .then(facilities => {
             res.status(httpStatus.OK).json({

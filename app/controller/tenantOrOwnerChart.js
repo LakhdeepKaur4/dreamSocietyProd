@@ -44,7 +44,7 @@ exports.complaintsData = (req, res, next) => {
                     cancelled += 1;
                 }
                 else if (item.complaintStatusId === 6) {
-                    assacceptedigned += 1;
+                    accepted += 1;
                 }
             })
 

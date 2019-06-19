@@ -717,6 +717,8 @@ module.exports = function (app) {
 
 	app.put('/api/fingerPrint/:userId', [authJwt.verifyToken], fingerPrintController.updateFingerPrintData);
 
+	app.get('/api/fingerPrint/machine/data/:userId', [authJwt.verifyToken], fingerPrintController.fingerPrintDataByUserId);
+
 	app.get('/api/filterOnNull/fingerPrint', [authJwt.verifyToken], fingerPrintController.nullFingerPrintData);
 
 	app.get('/api/filterOnNotNull/fingerPrint', [authJwt.verifyToken], fingerPrintController.notNullFingerPrintData);
@@ -784,6 +786,8 @@ module.exports = function (app) {
 	app.post('/api/facilityDetail', [authJwt.verifyToken, authJwt.isAdminRole], facilitiesDetailsController.create);
 
 	app.get('/api/facilityDetail', [authJwt.verifyToken, authJwt.isAdminRole], facilitiesDetailsController.get);
+
+	app.get('/api/facilityDetail/user', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], facilitiesDetailsController.get);
 
 	app.put('/api/facilityDetail/:id', [authJwt.verifyToken, authJwt.isAdminRole], facilitiesDetailsController.update);
 
