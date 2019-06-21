@@ -568,7 +568,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                }
+                                                },
                                             })
                                             user.flats = Flats;
                                         }
@@ -646,7 +646,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                }
+                                                },include:[Tower,Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -684,7 +684,8 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                }
+                                                },
+                                                include:[Tower,Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -782,7 +783,8 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                }
+                                                },
+                                                include:[Tower,Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -820,7 +822,8 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true
-                                                }
+                                                },
+                                                include:[Tower,Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -860,7 +863,8 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                }
+                                                },
+                                                include:[Tower,Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -898,7 +902,8 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                }
+                                                },
+                                                include:[Tower,Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -996,7 +1001,8 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                }
+                                                },
+                                                include:[Tower,Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -1034,7 +1040,8 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true
-                                                }
+                                                },
+                                                include:[Tower,Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -1074,7 +1081,8 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                }
+                                                },
+                                                include:[Tower,Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -1112,7 +1120,8 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                }
+                                                },
+                                                include:[Tower,Floor]
                                             })
                                             user.flats = Flats;
                                         }
