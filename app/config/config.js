@@ -14,4 +14,7 @@ module.exports = {
   activationLink: 'http://mydreamsociety.com',
   instanceLocator:"v1:us1:288b3dbe-c84d-4124-99a2-9b9ac1dfeba5",
   key:"64ea67c2-6c5f-447a-ad99-424f54649986:LZFgtDPaVAjditpc6+QDrX3PWu64RXxaEhc2MvyPPhw=",
+  mail_public_key: '322065b2fb761352e6b07b20a00ac0f6',
+  mail_secret_key: 'af15511ca57a779d4bba790052bb5090',
+  mail_email: 'rohit.khandelwal@greatwits.com'
 };
