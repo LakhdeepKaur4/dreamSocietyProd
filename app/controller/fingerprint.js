@@ -606,7 +606,8 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true
-                                                }
+                                                },include:[Tower,Floor]
+                                                
                                             })
                                             user.flats = Flats;
                                         }
@@ -1370,3 +1371,4 @@ exports.fingerPrintDataByUserId = async (req, res, next) => {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
+
