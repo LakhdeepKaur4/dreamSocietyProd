@@ -569,6 +569,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                     },
                                                     isActive: true,
                                                 },
+                                                include:[Tower,Floor]
                                             })
                                             user.flats = Flats;
                                         }
