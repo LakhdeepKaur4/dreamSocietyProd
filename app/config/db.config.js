@@ -89,6 +89,8 @@ db.feedback = require('../model/feedback.model')(sequelize, Sequelize);
 db.facilities = require('../model/facilities.model')(sequelize, Sequelize);
 db.facilitiesDetails = require('../model/facilitiesDetails.model')(sequelize, Sequelize);
 db.fingerprintMachineData = require('../model/fingerprintMachineData.model')(sequelize, Sequelize);
+db.punchedfingerprintMachineData = require('../model/punchedFingerprintData.model')(sequelize, Sequelize);
+db.userFacility = require('../model/userFacility.model')(sequelize, Sequelize);
 
 
 db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
@@ -244,6 +246,7 @@ db.userRfid.belongsTo(db.user, { foreignKey: 'userId' });
 db.userRfid.belongsTo(db.rfid, { foreignKey: 'rfidId' });
 db.fingerprintData.belongsTo(db.user, { foreignKey: 'userId', as: 'user' });
 db.fingerprintMachineData.belongsTo(db.user, { foreignKey: 'userId', as: 'user' });
+db.punchedfingerprintMachineData.belongsTo(db.user, { foreignKey: 'userId', as:'user' });
 db.vendor.belongsToMany(db.complaint, { through: 'vendor_complaints_master', foreignKey: 'vendorId' });
 db.vendor.belongsTo(db.rfid, { foreignKey: 'rfidId' });
 db.complaint.belongsToMany(db.vendor, { through: 'vendor_complaints_master', foreignKey: 'complaintId' });
@@ -253,5 +256,7 @@ db.feedback.belongsTo(db.user, { foreignKey: 'userId' });
 db.feedback.belongsTo(db.complaint, { foreignKey: 'complaintId' });
 db.feedback.belongsTo(db.vendor, { foreignKey: 'vendorId' });
 db.facilitiesDetails.belongsTo(db.facilities, { foreignKey: 'facilityId' });
+db.userFacility.belongsTo(db.facilitiesDetails, { foreignKey: 'facilityDetailId' });
+db.userFacility.belongsTo(db.user, { foreignKey: 'userId' });
 
 module.exports = db;

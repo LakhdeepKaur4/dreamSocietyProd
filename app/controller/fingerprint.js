@@ -8,6 +8,7 @@ var schedule = require('node-schedule');
 
 const FingerprintData = db.fingerprintData;
 const FingerprintMachineData = db.fingerprintMachineData;
+const PunchedData = db.punchedfingerprintMachineData;
 const Owner = db.owner;
 const Tenant = db.tenant;
 const OwnerMembersDetail = db.ownerMembersDetail;
@@ -568,8 +569,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                },
-                                                include:[Tower,Floor]
+                                                }
                                             })
                                             user.flats = Flats;
                                         }
@@ -607,8 +607,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true
-                                                },include:[Tower,Floor]
-                                                
+                                                }
                                             })
                                             user.flats = Flats;
                                         }
@@ -648,7 +647,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                },include:[Tower,Floor]
+                                                }
                                             })
                                             user.flats = Flats;
                                         }
@@ -686,8 +685,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                },
-                                                include:[Tower,Floor]
+                                                }
                                             })
                                             user.flats = Flats;
                                         }
@@ -785,8 +783,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                },
-                                                include:[Tower,Floor]
+                                                }
                                             })
                                             user.flats = Flats;
                                         }
@@ -824,8 +821,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true
-                                                },
-                                                include:[Tower,Floor]
+                                                }
                                             })
                                             user.flats = Flats;
                                         }
@@ -865,8 +861,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                },
-                                                include:[Tower,Floor]
+                                                }
                                             })
                                             user.flats = Flats;
                                         }
@@ -904,8 +899,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                },
-                                                include:[Tower,Floor]
+                                                }
                                             })
                                             user.flats = Flats;
                                         }
@@ -1003,8 +997,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                },
-                                                include:[Tower,Floor]
+                                                }
                                             })
                                             user.flats = Flats;
                                         }
@@ -1042,8 +1035,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true
-                                                },
-                                                include:[Tower,Floor]
+                                                }
                                             })
                                             user.flats = Flats;
                                         }
@@ -1083,8 +1075,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                },
-                                                include:[Tower,Floor]
+                                                }
                                             })
                                             user.flats = Flats;
                                         }
@@ -1122,8 +1113,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                },
-                                                include:[Tower,Floor]
+                                                }
                                             })
                                             user.flats = Flats;
                                         }
@@ -1207,11 +1197,11 @@ exports.enableFingerPrintData = async (req, res, next) => {
             // }
             // socket.send('hello this is just for testing!')
         })
-        setTimeout(() => {
-            res.status(httpStatus.OK).json({
-                message: "Fingerprint enabled successfully"
-            })
-        }, 5000);
+        // setTimeout(() => {
+        //     res.status(httpStatus.OK).json({
+        //         message: "Fingerprint enabled successfully"
+        //     })
+        // }, 5000);
     } catch (error) {
         console.log("error==>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
@@ -1263,6 +1253,91 @@ exports.disableFingerPrintData = async (req, res, next) => {
     }
 }
 
+exports.getCurrentFingerprintData = async (req, res, next) => {
+    try {
+        console.log("***getting current");
+        let records = [];
+        let count;
+        let socketResponse;
+        let loopCount = 0;
+        wss.on('connection', (socket, req) => {
+            socket.on('open', () => {
+                console.log('websocket is connected ...')
+                // sending a send event to websocket server
+                // socket.send('connected')
+                // console.log("connected");
+            })
+            let response = { "ret": "reg", "result": true }
+            let getLogs = { "cmd": "getnewlog", "stn": true }
+            socket.on('message', (message) => {
+                // console.log("%%%%", message)
+                // message1 = message.slice(0,message.lastIndexOf(",")) + message.slice(message.lastIndexOf(",") + 1);
+                if (message.indexOf(",]") > -1) {
+                    message = message.slice(0, message.lastIndexOf(",")) + message.slice(message.lastIndexOf(",") + 1);
+                }
+                socketResponse = JSON.parse(message);
+                socket.send(JSON.stringify(response));
+                socket.send(JSON.stringify(getLogs));
+                getLogs.stn = false;
+                if (socketResponse.cmd == 'sendlog') {
+                    // message = message.slice(0, message.lastIndexOf(",")) + message.slice(message.lastIndexOf(",") + 1);
+                    records = socketResponse.record;
+                    console.log("records", records)
+                    console.log("length0---->", records.length);
+                    // if (socketResponse.record.length == 10) {
+                    //     socketResponse.record.splice(0, 10);
+                    //     console.log("current record ", records)
+                    // }
+                    console.log(" Records", records);
+                    from = socketResponse.from;
+                    // console.log("from", from)
+                    to = socketResponse.to;
+                    // console.log("to", to)
+                    count = socketResponse.count;
+
+                    console.log('Count ====>', count);
+                    // console.log(loopCount !== count)
+                    if (loopCount !== count) {
+                        // console.log("inside if")
+                        records.map(item => {
+                            // console.log("***item",item)
+                            loopCount += 1;
+                            let body = {
+                                userId: item.enrollid,
+                                time: item.time,
+                                mode: item.mode
+                            }
+                            // console.log("&&&&body",body)
+                            let createdData = PunchedData.findOrCreate({
+                                where: {
+                                    userId: body.userId,
+                                    time: body.time,
+                                    mode: item.mode
+                                },
+                                // defaults: {
+                                //     endDate: body.endDate,
+                                //     numberOfGuestExpected: body.numberOfGuestExpected,
+                                //     userId: body.userId
+                                // }
+                                defaults: body
+                            })
+                            // create(body);
+                        })
+                    }
+                }
+            })
+            // socket.on('close', () => { console.log('close') });
+            socket.on('error', (error) => {
+                console.log("fingerprint api socket error", error);
+            })
+        })
+
+    } catch (error) {
+        console.log("error==>", error);
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
+
 // exports.fingerprintDataScheduler = async (req, res, next) => {
 let date = new Date(Date.now());
 let startTime = date.setHours(1);
@@ -1306,7 +1381,6 @@ var j = schedule.scheduleJob({ start: startTime, end: endTime, rule: '*/10000 * 
                     // console.log("to", to)
                     count = socketResponse.count;
                     console.log('Count ====>', count);
-
                     // length = (length === 1000) ? 1000 : records.length;
                     // console.log('Length --->', length);
 
@@ -1340,7 +1414,7 @@ var j = schedule.scheduleJob({ start: startTime, end: endTime, rule: '*/10000 * 
                 console.log("fingerprint api socket error", error);
             })
         })
-
+      
     } catch (error) {
         console.log("error==>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
@@ -1348,6 +1422,29 @@ var j = schedule.scheduleJob({ start: startTime, end: endTime, rule: '*/10000 * 
 })
 
 // }
+
+exports.punchedData = async (req, res,next) => {
+    try {  
+        const punchedfingerprint = await PunchedData.findAll({ where: { isActive: true }, include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'userName', 'email', 'contact'], include: [Role] }] });
+        punchedfingerprint.map(user => {
+                user.user.firstName = decrypt(user.user.firstName);
+                user.user.lastName = decrypt(user.user.lastName);
+                user.user.userName = decrypt(user.user.userName);
+                user.user.contact = decrypt(user.user.contact);
+                user.user.email = decrypt(user.user.email);
+            })
+        if (punchedfingerprint) {
+            return res.status(httpStatus.CREATED).json({
+                message: "Finger Print punched Content Page",
+                punchedfingerprint
+            });
+        }
+    } catch (error) {
+        console.log("error==>", error);
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
+
 
 exports.fingerPrintDataByUserId = async (req, res, next) => {
     try {

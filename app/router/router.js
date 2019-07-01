@@ -60,6 +60,8 @@ module.exports = function (app) {
 	const chatController = require('../controller/chat');
 	const facilitiesController = require('../controller/facilities');
 	const facilitiesDetailsController = require('../controller/facilitiesDetails');
+	const userFacilityController = require('../controller/userFacility');
+	const contactUsController = require('../controller/contactUs');
 
 	app.get('/', userController.start);
 
@@ -68,6 +70,8 @@ module.exports = function (app) {
 	app.post('/api/auth/signup', [verifySignUp.checkRolesExisted], userController.signupEncrypted);
 
 	app.post('/api/auth/signin', userController.signinDecrypted);
+
+	app.post('/api/contactUS', contactUsController.email);
 
 	app.get('/api/user', [authJwt.verifyToken, authJwt.isAdminRole], userController.getUserDecrypted);
 
@@ -109,7 +113,7 @@ module.exports = function (app) {
 
 	app.put('/api/user/:id', [authJwt.verifyToken, authJwt.isAdminRole], userController.updateEncrypted);
 
-	app.get('/api/user/:id', userController.getById);
+	// app.get('/api/user/:id', userController.getById);
 
 	app.post('/api/user/changePassword', [authJwt.verifyToken], userController.changePassword);
 
@@ -709,6 +713,10 @@ module.exports = function (app) {
 
 	app.get('/api/fingerPrint', [authJwt.verifyToken], fingerPrintController.getFingerPrintData);
 
+	app.post('/api/fingerPrint/get/current', [authJwt.verifyToken], fingerPrintController.getCurrentFingerprintData);
+
+	app.get('/api/fingerPrint/get/current', [authJwt.verifyToken], fingerPrintController.punchedData);
+
 	app.put('/api/fingerPrint/enable/:userId', [authJwt.verifyToken], fingerPrintController.enableFingerPrintData);
 
 	app.put('/api/fingerPrint/disable/:userId', [authJwt.verifyToken], fingerPrintController.disableFingerPrintData);
@@ -795,6 +803,14 @@ module.exports = function (app) {
 
 	app.put('/api/facilityDetail/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], facilitiesDetailsController.delete);
 
-	app.post('/api/auth/chat',chatController.authByChatKit);
+	app.post('/api/auth/chat', chatController.authByChatKit);
+
+	app.post('/api/user/facility', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], userFacilityController.create);
+
+	app.get('/api/user/facility', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], userFacilityController.get);
+
+	app.put('/api/user/facility/update', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], userFacilityController.update);
+
+	app.get('/api/user/facility/deactivated', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], userFacilityController.getNotInUse);
 
 }
