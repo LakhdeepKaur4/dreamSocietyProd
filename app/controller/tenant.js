@@ -12,6 +12,7 @@ const Op = db.Sequelize.Op;
 const jwt = require('jsonwebtoken');
 const mailjet = require('node-mailjet').connect(config.mail_public_key, config.mail_secret_key);
 const randomInt = require('random-int');
+const Chatkit = require('@pusher/chatkit-server');
 
 
 const Tenant = db.tenant;
@@ -32,6 +33,11 @@ const RFID = db.rfid;
 const UserRFID = db.userRfid;
 const FingerprintData = db.fingerprintData;
 const URL = config.activationLink;
+
+const chatkit = new Chatkit.default({
+    instanceLocator: config.instanceLocator,
+    key: config.key
+})
 
 setInterval(async function () {
     // console.log("atin")
@@ -469,7 +475,7 @@ exports.createEncrypted = async (req, res, next) => {
                                 // user.setRoles(roles);
                                 UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false });
                                 UserRFID.create({ userId: tenant.tenantId, rfidId: tenant.rfidId, isActive: true });
-                                FingerprintData.create({userId: user.userId});
+                                FingerprintData.create({ userId: user.userId });
                             })
                         if (tenant.profilePicture) {
                             await saveToDisc(tenant.fileName, tenant.fileExt, tenant.profilePicture, (err, res) => {
@@ -569,7 +575,9 @@ exports.createEncrypted = async (req, res, next) => {
                                     ownerId = item.ownerId;
                                     mailToOwner(ownerId, tenantSend.email, tenantSend.tenantId, tenantSend.userName);
                                 });
+                                const chatKitUserName = tenantSend
                                 // mailToOwner(ownerId, tenantSend);
+                                chatkit.createUser({ name: tenantSend.email, id: tenantSend.tenantId });
                                 return res.status(httpStatus.CREATED).json({
                                     message: "Tenant successfully created. please activate your account. click on the link delievered to your given email",
                                     // tenant: tenantSend
@@ -669,7 +677,7 @@ exports.getDecrypted = (req, res, next) => {
                     tenantIds.push(item.tenantId);
                 })
                 // console.log(tenantIds);
-                const promise =  tenantIds.map(async item => {
+                const promise = tenantIds.map(async item => {
                     await Tenant.findOne({
                         where: {
                             isActive: true,
@@ -697,7 +705,7 @@ exports.getDecrypted = (req, res, next) => {
                                     { model: RFID, where: { isActive: true }, attributes: ['rfidId', 'rfid'] }
                                 ]
                             })
-                            
+
                             tenant.firstName = decrypt(tenant.firstName);
                             tenant.lastName = decrypt(tenant.lastName);
                             tenant.userName = decrypt(tenant.userName);
@@ -730,16 +738,16 @@ exports.getDecrypted = (req, res, next) => {
                         })
                 })
                 Promise.all(promise)
-                .then(result => {
-                    let tenants = tenantsArr;
-                    tenants.sort(function (a, b) {
-                        return Number(a.tenantId) - Number(b.tenantId)
-                    });
-                    res.status(httpStatus.OK).json({
-                        message: "Tenant Content Page",
-                        tenants
-                    });
-                })
+                    .then(result => {
+                        let tenants = tenantsArr;
+                        tenants.sort(function (a, b) {
+                            return Number(a.tenantId) - Number(b.tenantId)
+                        });
+                        res.status(httpStatus.OK).json({
+                            message: "Tenant Content Page",
+                            tenants
+                        });
+                    })
                     .catch(err => {
                         console.log(err)
                     })
@@ -1006,19 +1014,19 @@ exports.getTenantMembers = async (req, res, next) => {
                     })
             })
             Promise.all(promise)
-            .then(result => {
-                let members = membersArr;
-                members.sort(function (a, b) {
-                    return Number(a.memberId) - Number(b.memberId)
-                });
-                res.status(httpStatus.OK).json({
-                    message: "Tenant Members Details",
-                    members
-                });
-            })
-            .catch(err => {
-                console.log(err);
-            })
+                .then(result => {
+                    let members = membersArr;
+                    members.sort(function (a, b) {
+                        return Number(a.memberId) - Number(b.memberId)
+                    });
+                    res.status(httpStatus.OK).json({
+                        message: "Tenant Members Details",
+                        members
+                    });
+                })
+                .catch(err => {
+                    console.log(err);
+                })
         })
 }
 

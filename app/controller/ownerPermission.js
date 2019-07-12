@@ -7,7 +7,7 @@ const fs = require("fs");
 const http = require('http');
 const crypto = require("crypto");
 const jwt = require('jsonwebtoken');
-const mailjet = require('node-mailjet').connect(config.mail_public_key, config.mail_secret_key);
+const mailjet = require('node-mailjet').connect('5549b15ca6faa8d83f6a5748002921aa', '68afe5aeee2b5f9bbabf2489f2e8ade2');
 const URL = config.activationLink;
 
 const Owner = db.owner;
