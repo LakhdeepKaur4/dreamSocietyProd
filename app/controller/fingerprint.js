@@ -569,7 +569,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                     },
                                                     isActive: true,
                                                 },
-                                                include:[Tower,Floor]
+                                                include: [Tower, Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -607,8 +607,8 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true
-                                                },include:[Tower,Floor]
-                                                
+                                                }, include: [Tower, Floor]
+
                                             })
                                             user.flats = Flats;
                                         }
@@ -648,7 +648,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                         [Op.in]: flatIds
                                                     },
                                                     isActive: true,
-                                                },include:[Tower,Floor]
+                                                }, include: [Tower, Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -687,7 +687,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                     },
                                                     isActive: true,
                                                 },
-                                                include:[Tower,Floor]
+                                                include: [Tower, Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -786,7 +786,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                     },
                                                     isActive: true,
                                                 },
-                                                include:[Tower,Floor]
+                                                include: [Tower, Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -825,7 +825,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                     },
                                                     isActive: true
                                                 },
-                                                include:[Tower,Floor]
+                                                include: [Tower, Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -866,7 +866,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                     },
                                                     isActive: true,
                                                 },
-                                                include:[Tower,Floor]
+                                                include: [Tower, Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -905,7 +905,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                     },
                                                     isActive: true,
                                                 },
-                                                include:[Tower,Floor]
+                                                include: [Tower, Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -1004,7 +1004,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                     },
                                                     isActive: true,
                                                 },
-                                                include:[Tower,Floor]
+                                                include: [Tower, Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -1043,7 +1043,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                     },
                                                     isActive: true
                                                 },
-                                                include:[Tower,Floor]
+                                                include: [Tower, Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -1084,7 +1084,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                     },
                                                     isActive: true,
                                                 },
-                                                include:[Tower,Floor]
+                                                include: [Tower, Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -1123,7 +1123,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                                     },
                                                     isActive: true,
                                                 },
-                                                include:[Tower,Floor]
+                                                include: [Tower, Floor]
                                             })
                                             user.flats = Flats;
                                         }
@@ -1149,6 +1149,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
 
 exports.enableFingerPrintData = async (req, res, next) => {
     try {
+        console.log("^^^^^^^^^^^^^");
         let serialNumber;
         let socketResponse;
         const userId = parseInt(req.params.userId);
@@ -1367,6 +1368,15 @@ exports.fingerPrintDataByUserId = async (req, res, next) => {
                 fingerprint
             });
         }
+    } catch (error) {
+        console.log("error==>", error);
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
+
+exports.getPunchData = async (req, res, next) => {
+    try {
+
     } catch (error) {
         console.log("error==>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
