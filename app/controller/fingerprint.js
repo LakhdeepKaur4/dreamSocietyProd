@@ -1524,7 +1524,6 @@ exports.giveAccessByTenant = async (req, res, next) => {
             }
             res.status(httpStatus.OK).json(fingerprint);
         }
-        
     } catch (error) {
         console.log("error==>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
@@ -1535,6 +1534,8 @@ exports.giveAccessByOwner = async (req, res, next) => {
     try {
         const userId = req.userId;
         const memberIds = [];
+        const flatIds = [];
+        const tenantIds=[];
         console.log("^&%user", userId)
         const type = req.params.type;
         // let roleId;
@@ -1543,6 +1544,28 @@ exports.giveAccessByOwner = async (req, res, next) => {
         //     roleId = item.id
         // }
         // )
+        if (type == 'tenant') {
+            const ownerFlat = await OwnerFlatDetail.findAll({ where: { isActive: true, ownerId: userId } });
+            ownerFlat.map(item => { 
+                flatIds.push(item.flatDetailId);
+            })
+            console.log("flats-- ",flatIds);
+            const tenantFlat = await TenantFlatDetail.findAll({where:{isActive:true,flatDetailId:{[Op.in]:flatIds}}});
+            tenantFlat.map(item => { 
+                tenantIds.push(item.tenantId);
+            })
+            const fingerprint = await FingerprintData.findAll({ where: { isActive: true, userId: { [Op.in]: tenantIds } }, include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'userName', 'email', 'contact'], include: [Role] }] });
+            if (fingerprint.userId = ! null) {
+                fingerprint.map(user => {
+                    user.user.firstName = decrypt(user.user.firstName);
+                    user.user.lastName = decrypt(user.user.lastName);
+                    user.user.userName = decrypt(user.user.userName);
+                    user.user.contact = decrypt(user.user.contact);
+                    user.user.email = decrypt(user.user.email);
+                })
+            }
+            res.json(fingerprint);
+        }
         if (type == 'member') {
             const member = await OwnerMembersDetail.findAll({ where: { isActive: true, ownerId: userId } });
             member.map(item => {
