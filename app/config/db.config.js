@@ -265,6 +265,6 @@ db.user.belongsToMany(db.video, { as: 'Video', through: 'user_video_master', for
 db.video.belongsToMany(db.user, { as: 'User', through: 'user_video_master', foreignKey: 'videoId' });
 db.vendorAllotment.belongsTo(db.individualVendor, { foreignKey: 'individualVendorId' });
 db.vendorAllotment.belongsTo(db.user, { foreignKey: 'userId' });
-db.vendorAllotment.belongsTo(db.user,{as:'bookedBy', foreignKey: 'userId' });
+db.vendorAllotment.belongsTo(db.user, { foreignKey: 'bookedBy' });
 
 module.exports = db;
