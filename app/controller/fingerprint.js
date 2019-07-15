@@ -21,6 +21,7 @@ const Tower = db.tower;
 const Floor = db.floor;
 const Machine = db.machine;
 const MachineDetail = db.machineDetail;
+const UserRoles = db.userRole;
 
 const Role = db.role;
 const Op = db.Sequelize.Op;
@@ -1426,7 +1427,7 @@ var j = schedule.scheduleJob({ start: startTime, end: endTime, rule: '*/10000 * 
                 console.log("fingerprint api socket error", error);
             })
         })
-      
+
     } catch (error) {
         console.log("error==>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
@@ -1435,16 +1436,16 @@ var j = schedule.scheduleJob({ start: startTime, end: endTime, rule: '*/10000 * 
 
 // }
 
-exports.punchedData = async (req, res,next) => {
-    try {  
+exports.punchedData = async (req, res, next) => {
+    try {
         const punchedfingerprint = await PunchedData.findAll({ where: { isActive: true }, include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'userName', 'email', 'contact'], include: [Role] }] });
         punchedfingerprint.map(user => {
-                user.user.firstName = decrypt(user.user.firstName);
-                user.user.lastName = decrypt(user.user.lastName);
-                user.user.userName = decrypt(user.user.userName);
-                user.user.contact = decrypt(user.user.contact);
-                user.user.email = decrypt(user.user.email);
-            })
+            user.user.firstName = decrypt(user.user.firstName);
+            user.user.lastName = decrypt(user.user.lastName);
+            user.user.userName = decrypt(user.user.userName);
+            user.user.contact = decrypt(user.user.contact);
+            user.user.email = decrypt(user.user.email);
+        })
         if (punchedfingerprint) {
             return res.status(httpStatus.CREATED).json({
                 message: "Finger Print punched Content Page",
@@ -1482,9 +1483,84 @@ exports.fingerPrintDataByUserId = async (req, res, next) => {
     }
 }
 
-exports.getPunchData = async (req, res, next) => {
-    try {
+// exports.getPunchData = async (req, res, next) => {
+//     try {
 
+//     } catch (error) {
+//         console.log("error==>", error);
+//         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+//     }
+// }
+
+
+exports.giveAccessByTenant = async (req, res, next) => {
+    try {
+        console.log("**tenant")
+        const userId = req.userId;
+        const memberIds = [];
+        console.log("^&%user", userId)
+        const type = req.params.type;
+        // let roleId;
+        // const role = await User.find({ where: { isActive: true, userId: userId }, include: [Role] });
+        // role.roles.map(item => {
+        //     roleId = item.id
+        // }
+        // )
+        if (type == 'member') {
+            const member = await TenantMembersDetail.findAll({ where: { isActive: true, tenantId: userId } });
+            member.map(item => {
+                memberIds.push(item.memberId);
+            })
+            console.log("memberId",memberIds)
+            const fingerprint = await FingerprintData.findAll({ where: { isActive: true, userId: { [Op.in]: memberIds } }, include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'userName', 'email', 'contact'], include: [Role] }] });
+            if (fingerprint.userId = ! null) {
+                fingerprint.map(user => {
+                    user.user.firstName = decrypt(user.user.firstName);
+                    user.user.lastName = decrypt(user.user.lastName);
+                    user.user.userName = decrypt(user.user.userName);
+                    user.user.contact = decrypt(user.user.contact);
+                    user.user.email = decrypt(user.user.email);
+                })
+            }
+            res.status(httpStatus.OK).json(fingerprint);
+        }
+        
+    } catch (error) {
+        console.log("error==>", error);
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
+
+exports.giveAccessByOwner = async (req, res, next) => {
+    try {
+        const userId = req.userId;
+        const memberIds = [];
+        console.log("^&%user", userId)
+        const type = req.params.type;
+        // let roleId;
+        // const role = await User.find({ where: { isActive: true, userId: userId }, include: [Role] });
+        // role.roles.map(item => {
+        //     roleId = item.id
+        // }
+        // )
+        if (type == 'member') {
+            const member = await OwnerMembersDetail.findAll({ where: { isActive: true, ownerId: userId } });
+            member.map(item => {
+                memberIds.push(item.memberId);
+            })
+            console.log("memberId",memberIds)
+            const fingerprint = await FingerprintData.findAll({ where: { isActive: true, userId: { [Op.in]: memberIds } }, include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'userName', 'email', 'contact'], include: [Role] }] });
+            if (fingerprint.userId = ! null) {
+                fingerprint.map(user => {
+                    user.user.firstName = decrypt(user.user.firstName);
+                    user.user.lastName = decrypt(user.user.lastName);
+                    user.user.userName = decrypt(user.user.userName);
+                    user.user.contact = decrypt(user.user.contact);
+                    user.user.email = decrypt(user.user.email);
+                })
+            }
+            res.json(fingerprint);
+        }
     } catch (error) {
         console.log("error==>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);

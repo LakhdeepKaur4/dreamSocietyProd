@@ -704,6 +704,10 @@ module.exports = function (app) {
 	app.put('/api/commonAreaDetail/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaDetailController.deleteSelected);
 
 	app.put('/api/commonAreaDetail/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaDetailController.delete);
+   
+	app.get('/api/owner/access/:type', [authJwt.verifyToken], fingerPrintController.giveAccessByOwner);
+
+	app.get('/api/tenant/access/:type', [authJwt.verifyToken], fingerPrintController.giveAccessByTenant);
 
 	app.get('/api/fingerPrint/flat', [authJwt.verifyToken], fingerPrintController.getFingerPrintData);
 
