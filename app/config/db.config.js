@@ -91,7 +91,9 @@ db.facilitiesDetails = require('../model/facilitiesDetails.model')(sequelize, Se
 db.fingerprintMachineData = require('../model/fingerprintMachineData.model')(sequelize, Sequelize);
 db.punchedfingerprintMachineData = require('../model/punchedFingerprintData.model')(sequelize, Sequelize);
 db.userFacility = require('../model/userFacility.model')(sequelize, Sequelize);
-
+db.video = require('../model/video.model')(sequelize, Sequelize);
+db.userVideo = require('../model/userVideo.model')(sequelize, Sequelize);
+db.vendorAllotment = require('../model/vendorAllotment.model')(sequelize,Sequelize);
 
 db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
 db.otp.belongsTo(db.tenant, { foreignKey: 'tenantId' });
@@ -258,5 +260,11 @@ db.feedback.belongsTo(db.vendor, { foreignKey: 'vendorId' });
 db.facilitiesDetails.belongsTo(db.facilities, { foreignKey: 'facilityId' });
 db.userFacility.belongsTo(db.facilitiesDetails, { foreignKey: 'facilityDetailId' });
 db.userFacility.belongsTo(db.user, { foreignKey: 'userId' });
+// db.video.belongsTo(db.user, { foreignKey: 'userId' });
+db.user.belongsToMany(db.video, { as: 'Video', through: 'user_video_master', foreignKey: 'userId'});
+db.video.belongsToMany(db.user, { as: 'User', through: 'user_video_master', foreignKey: 'videoId' });
+db.vendorAllotment.belongsTo(db.individualVendor, { foreignKey: 'individualVendorId' });
+db.vendorAllotment.belongsTo(db.user, { foreignKey: 'userId' });
+db.vendorAllotment.belongsTo(db.user,{as:'bookedBy', foreignKey: 'userId' });
 
 module.exports = db;
