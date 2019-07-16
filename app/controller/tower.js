@@ -37,7 +37,6 @@ exports.create = async (req, res) => {
             fields: ["floorId", "towerId"],
         },
         );
-
         // const updatedTower = await TowerFloor.update(bodyToUpdate, { where: { floorId: { [Op.in]: req.body.floorIds } } });
 
         if (updatedTowerFloor) {

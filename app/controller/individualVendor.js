@@ -29,6 +29,7 @@ const UserRFID = db.userRfid;
 const RFID = db.rfid;
 const URL = config.activationLink;
 const FingerprintData = db.fingerprintData;
+const VendorAllotment = db.vendorAllotment;
 
 encrypt = (text) => {
     let key = config.secret;
@@ -264,6 +265,44 @@ exports.create = async (req, res, next) => {
                                 id: 5
                             }
                         })
+                        if (vendor.startTime1 == '' && vendor.endTime1 == '' && vendor.startTime2 == '' && vendor.endTime2 == '') {
+                            VendorAllotment.create({
+                                individualVendorId: randomNumber,
+                                startTime: startTime,
+                                endTime: endTime
+                            })
+                        }
+
+                        else if (vendor.startTime2 == '' && vendor.endTime2 == '') {
+                            VendorAllotment.create({
+                                individualVendorId: randomNumber,
+                                startTime: startTime,
+                                endTime: endTime
+                            })
+                            VendorAllotment.create({
+                                individualVendorId: randomNumber,
+                                startTime: startTime1,
+                                endTime: endTime1
+                            })
+                        }
+
+                        else {
+                            VendorAllotment.create({
+                                individualVendorId: randomNumber,
+                                startTime: startTime,
+                                endTime: endTime
+                            })
+                            VendorAllotment.create({
+                                individualVendorId: randomNumber,
+                                startTime: startTime1,
+                                endTime: endTime1
+                            })
+                            VendorAllotment.create({
+                                individualVendorId: randomNumber,
+                                startTime: startTime2,
+                                endTime: endTime2
+                            })
+                        }
 
                         User.create({
                             userId: randomNumber,

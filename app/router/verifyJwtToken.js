@@ -35,7 +35,7 @@ isAdmin = (req, res, next) => {
 		.then(user => {
 			user.getRoles().then(roles => {
 				for (let i = 0; i < roles.length; i++) {
-					console.log(roles[i].name);
+					// console.log(roles[i].name);
 					if (roles[i].name.toUpperCase() === "ADMIN") {
 						next();
 						return;
@@ -108,7 +108,7 @@ isOwnerOrTenantRole = async (req, res, next) => {
 
 isOwnerOrTenant = (req, res, next) => {
 	let token = req.headers['x-access-token'];
-
+    console.log(req.userId)
 	User.findById(req.userId)
 		.then(user => {
 			user.getRoles().then(roles => {

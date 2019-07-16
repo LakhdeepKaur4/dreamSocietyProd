@@ -93,7 +93,7 @@ db.punchedfingerprintMachineData = require('../model/punchedFingerprintData.mode
 db.userFacility = require('../model/userFacility.model')(sequelize, Sequelize);
 db.video = require('../model/video.model')(sequelize, Sequelize);
 db.userVideo = require('../model/userVideo.model')(sequelize, Sequelize);
-db.vendorAllotment = require('../model/vendorAllotment.model')(sequelize,Sequelize);
+db.vendorAllotment = require('../model/vendorAllotment.model')(sequelize, Sequelize);
 
 db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
 db.otp.belongsTo(db.tenant, { foreignKey: 'tenantId' });
@@ -248,12 +248,12 @@ db.userRfid.belongsTo(db.user, { foreignKey: 'userId' });
 db.userRfid.belongsTo(db.rfid, { foreignKey: 'rfidId' });
 db.fingerprintData.belongsTo(db.user, { foreignKey: 'userId', as: 'user' });
 db.fingerprintMachineData.belongsTo(db.user, { foreignKey: 'userId', as: 'user' });
-db.punchedfingerprintMachineData.belongsTo(db.user, { foreignKey: 'userId', as:'user' });
+db.punchedfingerprintMachineData.belongsTo(db.user, { foreignKey: 'userId', as: 'user' });
 db.vendor.belongsToMany(db.complaint, { through: 'vendor_complaints_master', foreignKey: 'vendorId' });
 db.vendor.belongsTo(db.rfid, { foreignKey: 'rfidId' });
 db.complaint.belongsToMany(db.vendor, { through: 'vendor_complaints_master', foreignKey: 'complaintId' });
 db.purchaseOrder.belongsTo(db.vendor, { foreignKey: 'vendorId' });
-db.purchaseOrderDetails.belongsTo(db.purchaseOrder, {foreignKey: 'purchaseOrderId'}); 
+db.purchaseOrderDetails.belongsTo(db.purchaseOrder, { foreignKey: 'purchaseOrderId' });
 db.feedback.belongsTo(db.user, { foreignKey: 'userId' });
 db.feedback.belongsTo(db.complaint, { foreignKey: 'complaintId' });
 db.feedback.belongsTo(db.vendor, { foreignKey: 'vendorId' });
@@ -261,10 +261,10 @@ db.facilitiesDetails.belongsTo(db.facilities, { foreignKey: 'facilityId' });
 db.userFacility.belongsTo(db.facilitiesDetails, { foreignKey: 'facilityDetailId' });
 db.userFacility.belongsTo(db.user, { foreignKey: 'userId' });
 // db.video.belongsTo(db.user, { foreignKey: 'userId' });
-db.user.belongsToMany(db.video, { as: 'Video', through: 'user_video_master', foreignKey: 'userId'});
+db.user.belongsToMany(db.video, { as: 'Video', through: 'user_video_master', foreignKey: 'userId' });
 db.video.belongsToMany(db.user, { as: 'User', through: 'user_video_master', foreignKey: 'videoId' });
-db.vendorAllotment.belongsTo(db.individualVendor, { foreignKey: 'individualVendorId' });
-db.vendorAllotment.belongsTo(db.user, { foreignKey: 'userId' });
-db.vendorAllotment.belongsTo(db.user, { foreignKey: 'bookedBy' });
+db.vendorAllotment.belongsTo(db.individualVendor, { foreignKey: 'individualVendorId', as: 'Vendor'  });
+db.vendorAllotment.belongsTo(db.user, { foreignKey: 'userId'});
+db.vendorAllotment.belongsTo(db.user, { foreignKey: 'bookedBy' ,as: 'User',defaultValue:null });
 
 module.exports = db;

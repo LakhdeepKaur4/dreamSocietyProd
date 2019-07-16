@@ -19,11 +19,8 @@ const User = db.user;
 const FlatDetail = db.flatDetail;
 const Tower = db.tower;
 const Floor = db.floor;
-const Machine = db.machine;
-const MachineDetail = db.machineDetail;
-const UserRoles = db.userRole;
-
 const Role = db.role;
+const VendorAllotment = db.vendorAllotment;
 const Op = db.Sequelize.Op;
 
 let decrypt = (text) => {
@@ -1511,8 +1508,25 @@ exports.giveAccessByTenant = async (req, res, next) => {
             member.map(item => {
                 memberIds.push(item.memberId);
             })
-            console.log("memberId",memberIds)
+            console.log("memberId", memberIds)
             const fingerprint = await FingerprintData.findAll({ where: { isActive: true, userId: { [Op.in]: memberIds } }, include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'userName', 'email', 'contact'], include: [Role] }] });
+            if (fingerprint.userId = ! null) {
+                fingerprint.map(user => {
+                    user.user.firstName = decrypt(user.user.firstName);
+                    user.user.lastName = decrypt(user.user.lastName);
+                    user.user.userName = decrypt(user.user.userName);
+                    user.user.contact = decrypt(user.user.contact);
+                    user.user.email = decrypt(user.user.email);
+                })
+            }
+            res.status(httpStatus.OK).json(fingerprint);
+        }
+        if (type == 'vendor') {
+            const vendor = await VendorAllotment.findAll({ where: { isActive: true, booked: true, bookedBy: userId } });
+            vendor.map(item => {
+                Ids.push(item.individualVendorId);
+            })
+            const fingerprint = await FingerprintData.findAll({ where: { isActive: true, userId: { [Op.in]: Ids } }, include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'userName', 'email', 'contact'], include: [Role] }] });
             if (fingerprint.userId = ! null) {
                 fingerprint.map(user => {
                     user.user.firstName = decrypt(user.user.firstName);
@@ -1533,9 +1547,10 @@ exports.giveAccessByTenant = async (req, res, next) => {
 exports.giveAccessByOwner = async (req, res, next) => {
     try {
         const userId = req.userId;
+        const Ids = [];
         const memberIds = [];
         const flatIds = [];
-        const tenantIds=[];
+        const tenantIds = [];
         console.log("^&%user", userId)
         const type = req.params.type;
         // let roleId;
@@ -1546,12 +1561,12 @@ exports.giveAccessByOwner = async (req, res, next) => {
         // )
         if (type == 'tenant') {
             const ownerFlat = await OwnerFlatDetail.findAll({ where: { isActive: true, ownerId: userId } });
-            ownerFlat.map(item => { 
+            ownerFlat.map(item => {
                 flatIds.push(item.flatDetailId);
             })
-            console.log("flats-- ",flatIds);
-            const tenantFlat = await TenantFlatDetail.findAll({where:{isActive:true,flatDetailId:{[Op.in]:flatIds}}});
-            tenantFlat.map(item => { 
+            console.log("flats-- ", flatIds);
+            const tenantFlat = await TenantFlatDetail.findAll({ where: { isActive: true, flatDetailId: { [Op.in]: flatIds } } });
+            tenantFlat.map(item => {
                 tenantIds.push(item.tenantId);
             })
             const fingerprint = await FingerprintData.findAll({ where: { isActive: true, userId: { [Op.in]: tenantIds } }, include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'userName', 'email', 'contact'], include: [Role] }] });
@@ -1564,14 +1579,14 @@ exports.giveAccessByOwner = async (req, res, next) => {
                     user.user.email = decrypt(user.user.email);
                 })
             }
-            res.json(fingerprint);
+            res.status(httpStatus.OK).json(fingerprint);
         }
         if (type == 'member') {
             const member = await OwnerMembersDetail.findAll({ where: { isActive: true, ownerId: userId } });
             member.map(item => {
                 memberIds.push(item.memberId);
             })
-            console.log("memberId",memberIds)
+            console.log("memberId", memberIds)
             const fingerprint = await FingerprintData.findAll({ where: { isActive: true, userId: { [Op.in]: memberIds } }, include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'userName', 'email', 'contact'], include: [Role] }] });
             if (fingerprint.userId = ! null) {
                 fingerprint.map(user => {
@@ -1582,7 +1597,24 @@ exports.giveAccessByOwner = async (req, res, next) => {
                     user.user.email = decrypt(user.user.email);
                 })
             }
-            res.json(fingerprint);
+            res.status(httpStatus.OK).json(fingerprint);
+        }
+        if (type == 'vendor') {
+            const vendor = await VendorAllotment.findAll({ where: { isActive: true, booked: true, bookedBy: userId } });
+            vendor.map(item => {
+                Ids.push(item.individualVendorId);
+            })
+            const fingerprint = await FingerprintData.findAll({ where: { isActive: true, userId: { [Op.in]: Ids } }, include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'userName', 'email', 'contact'], include: [Role] }] });
+            if (fingerprint.userId = ! null) {
+                fingerprint.map(user => {
+                    user.user.firstName = decrypt(user.user.firstName);
+                    user.user.lastName = decrypt(user.user.lastName);
+                    user.user.userName = decrypt(user.user.userName);
+                    user.user.contact = decrypt(user.user.contact);
+                    user.user.email = decrypt(user.user.email);
+                })
+            }
+            res.status(httpStatus.OK).json(fingerprint);
         }
     } catch (error) {
         console.log("error==>", error);

@@ -1430,7 +1430,7 @@ exports.signinDecrypted = async (req, res, next) => {
 		}
 		]
 	}).then(user => {
-		console.log("user--->", user)
+		// console.log("user--->", user)
 		if (user === null) {
 			console.log("------user-------");
 			return res.status(httpStatus.OK).send({

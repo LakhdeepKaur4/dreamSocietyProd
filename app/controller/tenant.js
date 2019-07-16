@@ -75,7 +75,7 @@ let decrypt = (text) => {
     return decryptedText;
 }
 
-constraintCheck = (property, object) => {
+constraintCheck = (property, object) => {   
     if ((property in object) && object[property] !== undefined && object[property] !== null) {
         return true;
     } else {

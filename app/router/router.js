@@ -63,7 +63,7 @@ module.exports = function (app) {
 	const userFacilityController = require('../controller/userFacility');
 	const videoController = require('../controller/video');
 	const contactUsController = require('../controller/contactUs');
-
+    const vendorAllotmentController = require('../controller/vendorAllotmentController')
 	app.get('/', userController.start);
 
 	app.get('/test', [authJwt.isSuperAdminRole], userController.test);
@@ -824,4 +824,8 @@ module.exports = function (app) {
 
 	app.get('/api/video', [authJwt.verifyToken], videoController.getAllVideoOfUser);
 
+	app.get('/api/vendors/slot',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.get)
+
+    app.put('/api/book/slot/:id',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.bookVendorSlot)
+	// app.get('/api/vendors/book',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.getVendor)
 }
