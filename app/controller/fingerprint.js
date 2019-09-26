@@ -1427,7 +1427,7 @@ var j = schedule.scheduleJob({ start: startTime, end: endTime, rule: '*/10000 * 
 
     } catch (error) {
         console.log("error==>", error);
-        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+        // res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 })
 
