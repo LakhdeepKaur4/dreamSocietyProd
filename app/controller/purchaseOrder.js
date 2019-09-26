@@ -16,7 +16,6 @@ const pdf = require('html-pdf');
 const pdfTemplate = require('../../public/documents/pdftemplate');
 const mailjet = require('node-mailjet').connect(config.mail_public_key, config.mail_secret_key);
 const Asset = db.assets;
-const Puppeteer = require('puppeteer');
 const fsExtra = require('fs-extra');
 const Hbs = require('handlebars');
 const Path = require('path');
