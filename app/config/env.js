@@ -5,7 +5,7 @@ const env = {
   host: 'greatwits.com.md-in-73.bigrockservers.com',
   dialect: 'mysql',
   pool: {
-	  max: 2000,
+	  max: 5,
 	  min: 0,
 	  idle: 10000
   }
