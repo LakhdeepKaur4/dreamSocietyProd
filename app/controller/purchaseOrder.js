@@ -36,8 +36,8 @@ let mailToUser = (email, vendorId, purchaseOrder) => {
         data: 'foo'
     },
         'secret', {
-            expiresIn: '24h'
-        });
+        expiresIn: '24h'
+    });
     vendorId = encrypt(key, vendorId.toString());
     const request = mailjet.post("send", {
         'version': 'v3.1'
@@ -78,11 +78,11 @@ exports.create = async (req, res, next) => {
         if (req.body.purchaseOrderAssetsArray) {
             purchaseOrderAssets = await PurchaseOrderDetails.bulkCreate(
                 req.body.purchaseOrderAssetsArray, {
-                    returning: true
-                }, {
-                    fields: ["purchaseOrderDetailId", "purchaseOrderType", "purchaseOrderName", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
-                    // updateOnDuplicate: ["name"]
-                }
+                returning: true
+            }, {
+                fields: ["purchaseOrderDetailId", "purchaseOrderType", "purchaseOrderName", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
+                // updateOnDuplicate: ["name"]
+            }
             );
         }
 
@@ -96,11 +96,11 @@ exports.create = async (req, res, next) => {
         if (req.body.purchaseOrderServiceArray) {
             purchaseOrderService = await PurchaseOrderDetails.bulkCreate(
                 req.body.purchaseOrderServiceArray, {
-                    returning: true
-                }, {
-                    fields: ["purchaseOrderDetailId", "purchaseOrderType", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
-                    // updateOnDuplicate: ["name"]
-                }
+                returning: true
+            }, {
+                fields: ["purchaseOrderDetailId", "purchaseOrderType", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
+                // updateOnDuplicate: ["name"]
+            }
             );
         }
 
@@ -115,7 +115,6 @@ exports.create = async (req, res, next) => {
             } else {
                 console.log("Pdf generated successfully");
             }
-
         });
         let vendor = await Vendor.findOne({
             where: {
@@ -132,8 +131,6 @@ exports.create = async (req, res, next) => {
         return res.status(httpStatus.CREATED).json({
             message: "Purchase Order registered",
         });
-
-
     } catch (error) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
 
@@ -518,11 +515,11 @@ exports.update = async (req, res, next) => {
     if (req.body.purchaseOrderAssetsArray) {
         purchaseOrderAssets = await PurchaseOrderDetails.bulkCreate(
             req.body.purchaseOrderAssetsArray, {
-                returning: true
-            }, {
-                fields: ["purchaseOrderDetailId", "purchaseOrderType", "purchaseOrderName", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
-                // updateOnDuplicate: ["name"]
-            }
+            returning: true
+        }, {
+            fields: ["purchaseOrderDetailId", "purchaseOrderType", "purchaseOrderName", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
+            // updateOnDuplicate: ["name"]
+        }
         );
     }
 
@@ -536,11 +533,11 @@ exports.update = async (req, res, next) => {
     if (req.body.purchaseOrderServiceArray) {
         purchaseOrderService = await PurchaseOrderDetails.bulkCreate(
             req.body.purchaseOrderServiceArray, {
-                returning: true
-            }, {
-                fields: ["purchaseOrderDetailId", "purchaseOrderType", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
-                // updateOnDuplicate: ["name"]
-            }
+            returning: true
+        }, {
+            fields: ["purchaseOrderDetailId", "purchaseOrderType", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
+            // updateOnDuplicate: ["name"]
+        }
         );
     }
 
@@ -903,11 +900,11 @@ exports.create1 = async (req, res, next) => {
         if (req.body.purchaseOrderAssetsArray) {
             purchaseOrderAssets = await PurchaseOrderDetails.bulkCreate(
                 req.body.purchaseOrderAssetsArray, {
-                    returning: true
-                }, {
-                    fields: ["purchaseOrderDetailId", "purchaseOrderType", "purchaseOrderName", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
-                    // updateOnDuplicate: ["name"]
-                }
+                returning: true
+            }, {
+                fields: ["purchaseOrderDetailId", "purchaseOrderType", "purchaseOrderName", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
+                // updateOnDuplicate: ["name"]
+            }
             );
         }
 
@@ -921,11 +918,11 @@ exports.create1 = async (req, res, next) => {
         if (req.body.purchaseOrderServiceArray) {
             purchaseOrderService = await PurchaseOrderDetails.bulkCreate(
                 req.body.purchaseOrderServiceArray, {
-                    returning: true
-                }, {
-                    fields: ["purchaseOrderDetailId", "purchaseOrderType", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
-                    // updateOnDuplicate: ["name"]
-                }
+                returning: true
+            }, {
+                fields: ["purchaseOrderDetailId", "purchaseOrderType", "rate", "quantity", "amount", "serviceStartDate", "serviceEndDate", "issuedBy", "expDateOfDelievery", "purchaseOrderId"]
+                // updateOnDuplicate: ["name"]
+            }
             );
         }
 
@@ -998,4 +995,33 @@ exports.create1 = async (req, res, next) => {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
 
     }
+}
+
+
+exports.sendMail = async (req, res, next) => {
+
+    const request = mailjet.post("send", {
+        'version': 'v3.1'
+    })
+        .request({
+            "Messages": [{
+                "From": {
+                    "Email": "rohit.khandelwal@greatwits.com",
+                    "Name": "Greatwits"
+                },
+                "To": [{
+                    "Email": "lakhdeep.kaur@greatwits.com",
+                    "Name": 'Atin' + ' ' + 'Tanwar'
+                }],
+                "Subject": "Purchase Order",
+                "HTMLPart": `<b>Click on the given link to download your purchase order</b>`
+            }]
+        })
+    request.then((result) => {
+        console.log(result.body)
+        // console.log(`http://192.168.1.105:3000/submitotp?userId=${encryptedId}token=${encryptedToken}`);
+    })
+        .catch((err) => {
+            console.log(err.statusCode)
+        })
 }

@@ -209,7 +209,7 @@ exports.deleteSelected = async (req, res, next) => {
         }
         const updatedEmployee = await Employee.update(update, { where: { employeeId: { [Op.in]: deleteSelected } } })
         if (updatedEmployee) {
-            User.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected}}});
+            User.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } } });
             UserRoles.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } } });
             UserRFID.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } } });
             return res.status(httpStatus.OK).json({
@@ -463,7 +463,7 @@ exports.createEncrypt = async (req, res, next) => {
                         console.log("employee role", roles)
                         // user.setRoles(roles);
                         UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false });
-                        UserRFID.create({ userId: user.userId, rfidId: body.rfidId});
+                        UserRFID.create({ userId: user.userId, rfidId: body.rfidId });
                         FingerprintData.create({ userId: user.userId });
                         const message = mailToUser(req.body.email, employeeId);
                         return res.status(httpStatus.CREATED).json({
@@ -555,7 +555,7 @@ exports.getDecrypt = async (req, res, next) => {
                                 message: "Employee Content Page",
                                 employee
                             });
-                        } 
+                        }
                     })
                     .catch(err => {
                         console.log(err)

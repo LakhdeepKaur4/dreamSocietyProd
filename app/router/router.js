@@ -63,7 +63,7 @@ module.exports = function (app) {
 	const userFacilityController = require('../controller/userFacility');
 	const videoController = require('../controller/video');
 	const contactUsController = require('../controller/contactUs');
-    const vendorAllotmentController = require('../controller/vendorAllotmentController')
+	const vendorAllotmentController = require('../controller/vendorAllotmentController')
 	app.get('/', userController.start);
 
 	app.get('/test', [authJwt.isSuperAdminRole], userController.test);
@@ -705,7 +705,7 @@ module.exports = function (app) {
 	app.put('/api/commonAreaDetail/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaDetailController.deleteSelected);
 
 	app.put('/api/commonAreaDetail/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaDetailController.delete);
-   
+
 	app.get('/api/owner/access/:type', [authJwt.verifyToken], fingerPrintController.giveAccessByOwner);
 
 	app.get('/api/tenant/access/:type', [authJwt.verifyToken], fingerPrintController.giveAccessByTenant);
@@ -726,7 +726,7 @@ module.exports = function (app) {
 
 	app.put('/api/fingerPrint/disable/:userId', [authJwt.verifyToken], fingerPrintController.disableFingerPrintData);
 
-	app.get('/api/fingerPrint/userFlats/:type',  fingerPrintController.getFingerprintAndManchineData);
+	app.get('/api/fingerPrint/userFlats/:type', [authJwt.verifyToken], fingerPrintController.getFingerprintAndManchineData);
 
 	app.put('/api/fingerPrint/:userId', [authJwt.verifyToken], fingerPrintController.updateFingerPrintData);
 
@@ -763,6 +763,8 @@ module.exports = function (app) {
 	app.get('/api/purchaseOrder', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.get);
 
 	app.get('/api/downloadPdfClient/:id', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.downloadPdfClient);
+
+	app.get('/api/send/email', purchaseOrderController.sendMail);
 
 	app.put('/api/updatePurchaseOrder/:id', [authJwt.verifyToken, authJwt.isAdminRole], purchaseOrderController.updatePurchaseOrder);
 
@@ -824,8 +826,8 @@ module.exports = function (app) {
 
 	app.get('/api/video', [authJwt.verifyToken], videoController.getAllVideoOfUser);
 
-	app.get('/api/vendors/slot',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.get)
+	app.get('/api/vendors/slot', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], vendorAllotmentController.get)
 
-    app.put('/api/book/slot/:id',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.bookVendorSlot)
+	app.put('/api/book/slot/:id', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], vendorAllotmentController.bookVendorSlot)
 	// app.get('/api/vendors/book',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.getVendor)
 }

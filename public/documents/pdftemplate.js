@@ -1,5 +1,4 @@
 module.exports = (assets=[],services=[],issuedBy,expDateOfDelievery) => {
-   console.log("Atin Tanwar ===============>")
     const today = new Date();
     let total = 0;
     assets.forEach((asset) => {
