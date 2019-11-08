@@ -46,13 +46,24 @@ const Role = db.role;
 var PORT = process.env.PORT || 8083;
 
 // force: true will drop the table if it already exists
-db.sequelize.sync({
-	force: false,
-}).then(() => {
-	console.log('Drop and Resync with { force: false }');
-	//   initial();
-	// complaint();
-});
+
+try{
+	db.sequelize.sync({
+		force: false,
+	}).then(() => {
+		console.log('Drop and Resync with { force: false }');
+		//   initial();
+		// complaint();
+	});
+}catch(err){
+	console.log("eeeeeeee",err)
+}finally{
+							db.sequelize.options.handleDisconnects = false;
+                            db.sequelize.connectionManager.pool.clear();
+                           
+                         
+}
+
 
 app.use(function (req, res, next) {
 	console.log("p-------------------");
