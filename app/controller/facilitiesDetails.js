@@ -6,8 +6,11 @@ const Op = db.Sequelize.Op;
 const Facilities = db.facilities;
 const FacilitiesDetails = db.facilitiesDetails;
 
-exports.create = (req, res, next) => {
-    const facility = req.body;
+exports.create = async(req, res, next) => {
+    let transaction;
+    try{
+        transaction = await db.sequelize.transaction();
+        const facility = req.body;
     console.log('Facility ===>', facility);
     facility.facilityId = parseInt(facility.facilityId); 
     if(facility.monthlyRateType){
@@ -32,16 +35,19 @@ exports.create = (req, res, next) => {
                 });
             }
             else {
-                FacilitiesDetails.create(facility)
-                    .then(facilityCreated => {
+                FacilitiesDetails.create(facility,transaction)
+                    .then(async facilityCreated => {
+                        
                         if (facilityCreated !== null) {
+                            await transaction.commit();
                             res.status(httpStatus.CREATED).json({
                                 message: 'Created Successfully'
                             });
                         }
                     })
-                    .catch(err => {
+                    .catch(async err => {
                         console.log('Error ===>', err);
+                        if(transaction) await transaction.rollback();
                         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
                     })
             }
@@ -50,10 +56,18 @@ exports.create = (req, res, next) => {
             console.log('Error ===>', err);
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
+    }catch(err){
+        if(transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    }
+    
 }
 
-exports.update = (req, res, next) => {
-    const id = req.params.id;
+exports.update = async(req, res, next) => {
+    let transaction;
+    try{
+        transaction = await db.sequelize.transaction();
+        const id = req.params.id;
     console.log('ID ===>', id);
 
     const facility = req.body;
@@ -90,24 +104,29 @@ exports.update = (req, res, next) => {
                         isActive: true
                     }
                 })
-                    .then(facilityToBeUpdated => {
+                    .then(async facilityToBeUpdated => {
                         if (facilityToBeUpdated !== null) {
-                            facilityToBeUpdated.updateAttributes(facility);
+                            facilityToBeUpdated.updateAttributes(facility,transaction);
+                            await transaction.commit();
                             res.status(httpStatus.CREATED).json({
                                 message: 'Updated Successfully'
                             });
                         }
                     })
-                    .catch(err => {
-                        console.log('Error ===>', err);
+                    .catch(async err => {
+                        if(transaction) await transaction.rollback();
                         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
                     })
             }
         })
-        .catch(err => {
+        .catch(async err => {
             console.log('Error ===>', err);
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
+    }catch(err){
+        if(transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    }
 }
 
 exports.get = (req, res, next) => {
@@ -130,7 +149,10 @@ exports.get = (req, res, next) => {
         })
 }
 
-exports.delete = (req, res, next) => {
+exports.delete = async(req, res, next) => {
+    let transaction;
+ try{
+     transaction = await db.sequelize.transaction();
     const id = req.params.id;
     console.log('ID ===>', id);
 
@@ -140,20 +162,29 @@ exports.delete = (req, res, next) => {
             facilityDetailId: id
         }
     })
-        .then(facility => {
-            facility.updateAttributes({ isActive: false });
+        .then(async facility => {
+            facility.updateAttributes({ isActive: false },transaction);
+            await transaction.commit();
             res.status(httpStatus.OK).json({
                 message: 'Deleted Successfully'
             });
         })
-        .catch(err => {
-            console.log('Error ===>', err);
+        .catch(async err => {
+            if(transaction) await transaction.rollback();
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
+ }catch(err){
+    if(transaction) await transaction.rollback();
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+ }
+    
 }
 
-exports.deleteSelected = (req, res, next) => {
-    const ids = req.body.ids;
+exports.deleteSelected = async(req, res, next) => {
+    let transaction;
+    try{
+        transaction = await db.sequelize.transaction();
+        const ids = req.body.ids;
     console.log('IDs ===>', ids);
 
     FacilitiesDetails.findAll({
@@ -164,17 +195,22 @@ exports.deleteSelected = (req, res, next) => {
             }
         }
     })
-        .then(facilities => {
+        .then(async facilities => {
             facilities.map(facility => {
-                facility.updateAttributes({ isActive: false });
+                facility.updateAttributes({ isActive: false },transaction);
             })
+            await transaction.commit();
 
             res.status(httpStatus.OK).json({
                 message: 'Deleted Successfully'
             });
         })
-        .catch(err => {
-            console.log('Error ===>', err);
+        .catch(async err => {
+            if(transaction) await transaction.rollback();
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
+    }catch(err){
+        if(transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    }
 }

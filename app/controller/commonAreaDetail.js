@@ -10,11 +10,15 @@ const CommonArea = db.commonArea;
 const AreaMachine = db.areaMachine;
 
 exports.create = async (req, res) => {
+    
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction()
         let body = req.body;
         body.userId = req.userId;
 
-        const commonAreaDetail = await CommonAreaDetail.create(body);
+        const commonAreaDetail = await CommonAreaDetail.create(body,transaction);
+        await transaction.commit()
 
         const commonAreaDetailId = commonAreaDetail.commonAreaDetailId;
 
@@ -22,32 +26,36 @@ exports.create = async (req, res) => {
 
         const updated = await AreaMachine.bulkCreate(body.machines, { returning: true }, {
             fields: ["machineDetailId", "commonAreaDetailId"],
-        });
-
+        },{transaction});
+        await transaction.commit();
         if (updated) {
             return res.status(httpStatus.CREATED).json({
                 message: "Created successfully"
             })
         }
     } catch (error) {
-        console.log(error);
+        if(transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message })
     }
 }
 
-exports.create1 = (req, res, next) => {
-    const body = req.body;
+exports.create1 = async(req, res, next) => {
+    let transaction;
+    try{
+        transaction = await db.sequelize.transaction()
+        const body = req.body;
     console.log('Body ===>', body);
     let success = 0;
     let error = 0;
     // body.machineDetailId = body.machineDetailId.split(',');
 
-    body.machineDetailId.map(item => {
+    body.machineDetailId.map(async(item) => {
         CommonAreaDetail.create({
             commonAreaId: body.commonAreaId,
             machineDetailId: item
-        })
-            .then(commonArea => {
+        },transaction)
+            .then(async(commonArea) => {
+                await transaction.commit();
                 if (commonArea !== null) {
                     success += 1;
                 }
@@ -65,10 +73,16 @@ exports.create1 = (req, res, next) => {
             message: 'Machine not added to common area. Please try again!'
         })
     }
+}catch(err){
+    if(transaction) await transaction.rollback();
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+}
 }
 
 exports.getAreaAndMachine = async (req, res) => {
+  
     try {
+       
         const commonAreaDetail = await CommonAreaDetail.findAll({
             where: { isActive: true },
             include: [{
@@ -93,7 +107,9 @@ exports.getAreaAndMachine = async (req, res) => {
 }
 
 exports.updateAreaAndMachine = async (req, res) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const commonAreaDetailId = req.params.id;
         let commonAreaDetailIds = [];
         let body = req.body;
@@ -107,13 +123,13 @@ exports.updateAreaAndMachine = async (req, res) => {
         });
 
         const updatedCommonArea = await CommonAreaDetail.find({ where: { commonAreaDetailId: commonAreaDetailId } }).then(commonAreaDetail => {
-            commonAreaDetail.updateAttributes(body);
+            commonAreaDetail.updateAttributes(body,transaction);
         })
         const areaMachine = await AreaMachine.findAll({ where: { isActive: true, commonAreaDetailId: commonAreaDetailId } });
         const areaMachineMasterId = areaMachine.map(areaMachine => {
             commonAreaDetailIds.push(areaMachine.areaMachineMasterId)
         });
-        const deleteAreaMachine = await AreaMachine.destroy({ where: { areaMachineMasterId: { [Op.in]: commonAreaDetailIds } } });
+        const deleteAreaMachine = await AreaMachine.destroy({ where: { areaMachineMasterId: { [Op.in]: commonAreaDetailIds } },transaction });
 
         const result = req.body.machines.forEach(function (element) {
             element.commonAreaDetailId = commonAreaDetailId
@@ -121,15 +137,20 @@ exports.updateAreaAndMachine = async (req, res) => {
         });
         const updatedAreaMachine = await AreaMachine.bulkCreate(req.body.machines, { returning: true }, {
             fields: ["machineDetailId", "commonAreaDetailId"],
-        });
+        },{transaction});
+        await transaction.commit();
         res.json({ message: 'Updated Successfully' });
     } catch (error) {
+        if(transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message });
     }
 }
 
-exports.update = (req, res, next) => {
-    const commonAreaDetailId = req.params.id;
+exports.update = async(req, res, next) => {
+    let transaction;
+    try{
+        transaction = await db.sequelize.transaction()
+        const commonAreaDetailId = req.params.id;
     const body = req.body;
     console.log('Body ===>', body);
 
@@ -155,9 +176,10 @@ exports.update = (req, res, next) => {
                         commonAreaDetailId: commonAreaDetailId
                     }
                 })
-                    .then(commonArea => {
+                    .then(async(commonArea) => {
                         if (commonArea !== null) {
-                            commonArea.updateAttributes(body);
+                            commonArea.updateAttributes(body,transaction);
+                            await transaction.commit();
                             res.status(httpStatus.CREATED).json({
                                 message: 'Updated successfully'
                             })
@@ -167,8 +189,9 @@ exports.update = (req, res, next) => {
                             })
                         }
                     })
-                    .catch(err => {
-                        console.log('Error ===>', err);
+                    .catch(async(err) => {
+                        
+                        if(transaction) await transaction.rollback()
                         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
                     })
             }
@@ -177,6 +200,10 @@ exports.update = (req, res, next) => {
             console.log('Error ===>', err);
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
+    }catch(err){
+        if(transaction) await transaction.rollback()
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    }
 }
 
 exports.get = (req, res, next) => {
@@ -210,13 +237,15 @@ exports.get = (req, res, next) => {
 }
 
 exports.delete = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         let commonAreaDetailIds = [];
         const commonAreaDetailId = req.params.id;
         console.log('ID ===>', commonAreaDetailId);
 
         const updatedAreaMachine = await CommonAreaDetail.find({ where: { commonAreaDetailId: commonAreaDetailId } }).then(commonDetail => {
-            return commonDetail.updateAttributes({ isActive: false })
+            return commonDetail.updateAttributes({ isActive: false },transaction)
         })
 
         const areaMachine = await AreaMachine.findAll({ where: { isActive: true, commonAreaDetailId: commonAreaDetailId } });
@@ -224,14 +253,15 @@ exports.delete = async (req, res, next) => {
             commonAreaDetailIds.push(areaMachine.areaMachineMasterId)
         });
         console.log("in here ==>", commonAreaDetailIds);
-        const deleteAreaMachine = await AreaMachine.destroy({ where: { areaMachineMasterId: { [Op.in]: commonAreaDetailIds } } });
+        const deleteAreaMachine = await AreaMachine.destroy({ where: { areaMachineMasterId: { [Op.in]: commonAreaDetailIds } },transaction });
         // if (deleteAreaMachine) {
+            await transaction.commit();
         return res.status(httpStatus.OK).json({
             message: "Area and machine deleted successfully"
         });
         // }
     } catch (error) {
-        console.log(error)
+        if(transaction) await transaction.rollback()
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -269,7 +299,9 @@ exports.delete = async (req, res, next) => {
 // }
 
 exports.deleteSelected = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const deleteSelected = req.body.ids;
         let commonAreaDetailIds = [];
         console.log("delete selected==>", deleteSelected);
@@ -277,21 +309,22 @@ exports.deleteSelected = async (req, res, next) => {
         if (!deleteSelected) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
-        const updatedAreaMachine = await CommonAreaDetail.update(update, { where: { commonAreaDetailId: { [Op.in]: deleteSelected } } });
+        const updatedAreaMachine = await CommonAreaDetail.update(update, { where: { commonAreaDetailId: { [Op.in]: deleteSelected } },transaction });
 
         const areaMachine = await AreaMachine.findAll({ where: { isActive: true, commonAreaDetailId: { [Op.in]: deleteSelected } } });
         const areaMachineId = areaMachine.map(areaMachine => {
             commonAreaDetailIds.push(areaMachine.areaMachineMasterId)
         });
         // console.log(towerIds);
-        const deleteAreaMachine = await AreaMachine.destroy({ where: { areaMachineMasterId: { [Op.in]: commonAreaDetailIds } } });
+        const deleteAreaMachine = await AreaMachine.destroy({ where: { areaMachineMasterId: { [Op.in]: commonAreaDetailIds } },transaction });
+        await transaction.commit();
         if (deleteAreaMachine) {
             return res.status(httpStatus.OK).json({
                 message: "Area and Machines deleted successfully",
             });
         }
     } catch (error) {
-        console.log(error)
+        if(transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

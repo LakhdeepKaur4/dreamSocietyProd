@@ -33,8 +33,11 @@ let decrypt = (text) => {
     return decryptedText;
 }
 
-exports.create = (req, res, next) => {
-    const complaintBody = req.body;
+exports.create = async (req, res, next) => {
+    let transaction;
+    try{
+        transaction = await db.sequelize.transaction();
+        const complaintBody = req.body;
     const vendorIds = [];
 
     console.log('Complaint ===>', complaintBody);
@@ -43,7 +46,7 @@ exports.create = (req, res, next) => {
     complaintBody.userId = req.userId;
 
     if (complaintBody !== null) {
-        Complaint.create(complaintBody)
+        Complaint.create(complaintBody,transaction)
             .then(complaint => {
                 if (complaint !== null) {
                     VendorService.findAll({
@@ -67,14 +70,15 @@ exports.create = (req, res, next) => {
                                     },
                                     attributes: ['vendorId']
                                 })
-                                    .then(vendorIdsRec => {
+                                    .then(async vendorIdsRec => {
                                         if (vendorIdsRec.length !== 0) {
                                             vendorIdsRec.map(item => {
                                                 VendorComplaints.create({
                                                     vendorId: item.vendorId,
                                                     complaintId: complaint.complaintId
-                                                })
+                                                },transaction)
                                             })
+                                            await transaction.commit();
                                         }
                                     })
                             }
@@ -89,8 +93,8 @@ exports.create = (req, res, next) => {
                     })
                 }
             })
-            .catch(err => {
-                console.log('Error ===>', err);
+            .catch(async err => {
+                if(transaction) await transaction.rollback();
                 res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
             })
     } else {
@@ -98,6 +102,10 @@ exports.create = (req, res, next) => {
             message: 'Please provide complete details'
         })
     }
+}catch(err){
+    if(transaction) await transaction.rollback();
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
+}
 }
 
 exports.get = (req, res, next) => {
@@ -209,12 +217,16 @@ exports.getByUserId = (req, res, next) => {
         })
 }
 
-exports.cancelRequestByUser = (req, res, next) => {
+exports.cancelRequestByUser = async(req, res, next) => {
+   let transaction;
+    try{
+    transaction = await db.sequelize.transaction()   
     const complaintId = req.body.complaintId;
     console.log('Complaint ID ===>', complaintId);
 
-    Complaint.update({ complaintStatusId: 5 }, { where: { complaintId: complaintId, isActive: true } })
-        .then(complaintCancelled => {
+    Complaint.update({ complaintStatusId: 5 }, { where: { complaintId: complaintId, isActive: true },transaction })
+        .then(async complaintCancelled => {
+            await transaction.commit();
             if (complaintCancelled[0] === 1) {
                 res.status(httpStatus.CREATED).json({
                     message: 'Complaint cancelled successfully'
@@ -225,13 +237,20 @@ exports.cancelRequestByUser = (req, res, next) => {
                 })
             }
         })
-        .catch(err => {
-            console.log('Error ===>', err);
+        .catch(async err => {
+            if(transaction) await transaction.rollback()
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
+    }catch(err){
+        if(transaction) await transaction.rollback()
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    }
 }
 
-exports.feedback = (req, res, next) => {
+exports.feedback = async(req, res, next) => {
+    let transaction;
+    try{
+    transaction = await db.sequelize.transaction()    
     const feedback = req.body;
     feedback.userId = req.userId;
     console.log('Feedback ===>', feedback);
@@ -245,7 +264,7 @@ exports.feedback = (req, res, next) => {
                         isActive: true
                     }
                 })
-                    .then(complaint => {
+                    .then(async complaint => {
                         complaint = complaint.toJSON();
                         delete complaint.complaintId;
                         delete complaint.createdAt;
@@ -255,8 +274,8 @@ exports.feedback = (req, res, next) => {
                         complaint.isAccepted = false;
                         complaint.complaintStatusId = 1;
                         complaint.userId = req.userId;
-                        Complaint.create(complaint)
-                            .then(complaintCreated => {
+                        Complaint.create(complaint,transaction)
+                            .then(async complaintCreated => {
                                 if (complaintCreated !== null) {
                                     delete feedback.complaintId;
                                     delete feedback.vendorId;
@@ -264,7 +283,7 @@ exports.feedback = (req, res, next) => {
                                     delete feedback.rating;
                                     delete feedback.status;
                                     delete feedback.feedback;
-                                    Complaint.update({ feedback }, { where: { complaintId: complaintCreated.complaintId } });
+                                    Complaint.update({ feedback }, { where: { complaintId: complaintCreated.complaintId },transaction });
                                     VendorService.findAll({
                                         where: {
                                             serviceId: complaintCreated.serviceId,
@@ -286,19 +305,21 @@ exports.feedback = (req, res, next) => {
                                                     },
                                                     attributes: ['vendorId']
                                                 })
-                                                    .then(vendorIdsRec => {
+                                                    .then(async vendorIdsRec => {
                                                         if (vendorIdsRec.length !== 0) {
                                                             vendorIdsRec.map(item => {
                                                                 VendorComplaints.create({
                                                                     vendorId: item.vendorId,
                                                                     complaintId: complaintCreated.complaintId
-                                                                })
+                                                                },transaction)
                                                             })
+                                                            await transaction.commit();
                                                         }
                                                     })
                                             }
 
                                         })
+                                        
                                     res.status(httpStatus.CREATED).json({
                                         message: 'Compalint registered successfully'
                                     })
@@ -310,14 +331,21 @@ exports.feedback = (req, res, next) => {
                 message: 'Feedback submitted successfully'
             })
         })
-        .catch(err => {
-            console.log('Error ===>', err);
+        .catch(async err => {
+            if(transaction) await transaction.rollback();
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
+    }catch(err){
+
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    }
 }
 
-exports.deleteComplaints = (req, res, next) => {
-    const ids = req.body.complaintIds;
+exports.deleteComplaints = async (req, res, next) => {
+    let transaction;
+    try{
+        transaction = await db.sequelize.transaction();
+        const ids = req.body.complaintIds;
     console.log('Comaplaint IDs ===>', ids);
 
     Complaint.findAll({
@@ -328,16 +356,21 @@ exports.deleteComplaints = (req, res, next) => {
             }
         }
     })
-        .then(complaints => {
+        .then(async complaints => {
             complaints.map(item => {
-                item.updateAttributes({ isActive: false })
+                item.updateAttributes({ isActive: false },transaction)
             })
+            await transaction.commit();
             res.status(httpStatus.OK).json({
                 message: 'Deleted successfully'
             })
         })
-        .catch(err => {
-            console.log('Error ===>', err);
+        .catch(async err => {
+            if(transaction) await transaction.rollback();
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
+    }catch(err){
+        if(transaction) await transaction.rollback();
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    }
 }

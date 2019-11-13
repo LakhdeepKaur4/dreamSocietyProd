@@ -22,8 +22,11 @@ let filterItem = (machineDetailIdsArr, arr) => {
     return resArr;
 }
 
-exports.create = (req, res, next) => {
-    const body = req.body;
+exports.create = async(req, res, next) => {
+    let transaction;
+    try{
+        transaction = await db.sequelize.transaction()
+        const body = req.body;
     body.userId = req.userId;
     console.log('Body ===>', body);
 
@@ -40,8 +43,9 @@ exports.create = (req, res, next) => {
                     message: 'Machine already in use for another flat'
                 })
             } else {
-                Machine.create(body)
-                    .then(machine => {
+                Machine.create(body,transaction)
+                    .then(async machine => {
+                        await transaction.commit();
                         if (machine !== null) {
                             res.status(httpStatus.CREATED).json({
                                 message: 'Machine registered successfully'
@@ -52,8 +56,8 @@ exports.create = (req, res, next) => {
                             })
                         }
                     })
-                    .catch(err => {
-                        console.log('Error', err);
+                    .catch(async err => {
+                       if(transaction) await transaction.rollback();
                         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
                     })
             }
@@ -62,44 +66,58 @@ exports.create = (req, res, next) => {
             console.log('Error', err);
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
+    }catch(err){
+        if(transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    }
+    
 }
 
-exports.get = (req, res, next) => {
-    Machine.findAll({
-        where: {
-            isActive: true
-        },
-        include: [
-            {
-                model: FlatDetail,
-                where: { isActive: true },
-                include: [
-                    { model: Tower, where: { isActive: true }, attributes: ['towerId', 'towerName'] },
-                    { model: Floor, where: { isActive: true }, attributes: ['floorId', 'floorName'] }
-                ]
+exports.get = async(req, res, next) => {
+    try{
+        Machine.findAll({
+            where: {
+                isActive: true
             },
-            { model: MachineDetail, where: { isActive: true } }
-        ]
-    })
-        .then(machines => {
-            if (machines.length !== 0) {
-                res.status(httpStatus.OK).json({
-                    Machines: machines
-                })
-            } else {
-                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'No data available'
-                })
-            }
+            include: [
+                {
+                    model: FlatDetail,
+                    where: { isActive: true },
+                    include: [
+                        { model: Tower, where: { isActive: true }, attributes: ['towerId', 'towerName'] },
+                        { model: Floor, where: { isActive: true }, attributes: ['floorId', 'floorName'] }
+                    ]
+                },
+                { model: MachineDetail, where: { isActive: true } }
+            ]
         })
-        .catch(err => {
-            console.log('Error', err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
+            .then(machines => {
+                if (machines.length !== 0) {
+                    res.status(httpStatus.OK).json({
+                        Machines: machines
+                    })
+                } else {
+                    res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                        message: 'No data available'
+                    })
+                }
+            })
+            .catch(err => {
+                console.log('Error', err);
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    }catch(err){
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    }
+
+    
 }
 
-exports.update = (req, res, next) => {
-    const body = req.body;
+exports.update = async (req, res) => {
+    let transaction;
+    try{
+        transaction = await db.sequelize.transaction();
+        const body = req.body;
     body.machineId = req.params.id;
     console.log('Body ===>', body);
 
@@ -125,7 +143,7 @@ exports.update = (req, res, next) => {
                         isActive: true
                     }
                 })
-                    .then(machine => {
+                    .then(async machine => {
                         if (machine !== null) {
                             if (body.machineId !== undefined) {
                                 delete body.machineId;
@@ -133,7 +151,8 @@ exports.update = (req, res, next) => {
                             if (body.flatDetailId !== undefined && (body.flatDetailId === '' || body.flatDetailId === null)) {
                                 delete body.flatDetailId;
                             }
-                            machine.updateAttributes(body);
+                            machine.updateAttributes(body,transaction);
+                            await transaction.commit();
                             res.status(httpStatus.CREATED).json({
                                 message: 'Machine updated successfully'
                             })
@@ -143,8 +162,8 @@ exports.update = (req, res, next) => {
                             })
                         }
                     })
-                    .catch(err => {
-                        console.log('Error', err);
+                    .catch(async err => {
+                        if(transaction) await transaction.rollback();
                         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
                     })
             }
@@ -153,10 +172,18 @@ exports.update = (req, res, next) => {
             console.log('Error', err);
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
+    }catch(err){
+        if(transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    }
+    
 }
 
-exports.delete = (req, res, next) => {
-    const machineId = req.params.id;
+exports.delete = async (req, res, next) => {
+    let transaction;
+    try{
+        transaction = await db.sequelize.transaction();
+        const machineId = req.params.id;
     console.log('ID ===>', machineId);
 
     Machine.findOne({
@@ -165,9 +192,10 @@ exports.delete = (req, res, next) => {
             isActive: true
         }
     })
-        .then(machine => {
+        .then(async machine => {
             if (machine !== null) {
-                machine.updateAttributes({ isActive: false });
+                machine.updateAttributes({ isActive: false },transaction);
+                await transaction.commit();
                 res.status(httpStatus.OK).json({
                     message: 'Deleted successfully'
                 })
@@ -177,14 +205,21 @@ exports.delete = (req, res, next) => {
                 })
             }
         })
-        .catch(err => {
-            console.log('Error ===>', err);
+        .catch(async err => {
+            if(transaction) await transaction.rollback();
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
+    }catch(err){
+        if(transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    }
 }
 
-exports.deleteSelected = (req, res, next) => {
-    const machineIds = req.body.ids;
+exports.deleteSelected = async (req, res, next) => {
+    let transaction;
+    try{
+        transaction = await db.sequelize.transaction()
+        const machineIds = req.body.ids;
     console.log('IDs ===>', machineIds);
 
     Machine.findAll({
@@ -195,11 +230,12 @@ exports.deleteSelected = (req, res, next) => {
             isActive: true
         }
     })
-        .then(machines => {
+        .then(async machines => {
             if (machines.length !== 0) {
                 machines.map(item => {
-                    item.updateAttributes({ isActive: false })
+                    item.updateAttributes({ isActive: false }, transaction)
                 })
+                await transaction.commit();
                 res.status(httpStatus.OK).json({
                     message: 'Deleted successfully'
                 })
@@ -209,10 +245,14 @@ exports.deleteSelected = (req, res, next) => {
                 })
             }
         })
-        .catch(err => {
-            console.log('Error ===>', err);
+        .catch(async err => {
+            if(transaction) await transaction.rollback();
             res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
         })
+    }catch(err){
+        if(transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    }
 }
 
 // exports.getMachineForCommonArea = (req, res, next) => {

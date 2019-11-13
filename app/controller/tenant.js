@@ -251,7 +251,9 @@ let filterFlats = item => {
 
 
 exports.deleteSelected = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const deleteSelected = req.body.ids;
         console.log("delete selected==>", deleteSelected);
         const update = { isActive: false };
@@ -259,17 +261,17 @@ exports.deleteSelected = async (req, res, next) => {
         if (!deleteSelected) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
-        const updatedTenant = await Tenant.update(update, { where: { tenantId: { [Op.in]: deleteSelected } } });
+        const updatedTenant = await Tenant.update(update, { where: { tenantId: { [Op.in]: deleteSelected } },transaction });
         const users = await Tenant.findAll({ where: { tenantId: { [Op.in]: deleteSelected } }, attributes: ['userName'] });
         users.map(item => {
             userNames.push(item.userName);
         })
         const userIds = await User.findAll({ where: { userName: { [Op.in]: userNames } } });
         if (updatedTenant) {
-            User.update({ isActive: false }, { where: { userName: { [Op.in]: userNames } } });
-            UserRoles.update({ isActive: false }, { where: { userId: { [Op.in]: userIds }, roleId: 4 } });
-            UserRFID.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } } });
-            TenantFlatDetail.update({ isActive: false }, { where: { tenantId: { [Op.in]: deleteSelected } } });
+            User.update({ isActive: false }, { where: { userName: { [Op.in]: userNames } },transaction });
+            UserRoles.update({ isActive: false }, { where: { userId: { [Op.in]: userIds }, roleId: 4 },transaction});
+            UserRFID.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } },transaction});
+            TenantFlatDetail.update({ isActive: false }, { where: { tenantId: { [Op.in]: deleteSelected } },transaction});
             TenantMembersDetail.findAll({
                 where: {
                     tenantId: { [Op.in]: deleteSelected }
@@ -277,25 +279,27 @@ exports.deleteSelected = async (req, res, next) => {
             })
                 .then(tenantMembers => {
                     tenantMembers.map(item => {
-                        item.updateAttributes({ isActive: false });
-                        User.update({ isActive: false }, { where: { userId: item.memberId } });
-                        UserRoles.update({ isActive: false }, { where: { userId: item.memberId, roleId: 4 } });
-                        UserRFID.update({ isActive: false }, { where: { userId: item.memberId } });
+                        item.updateAttributes({ isActive: false },transaction);
+                        User.update({ isActive: false }, { where: { userId: item.memberId },transaction});
+                        UserRoles.update({ isActive: false }, { where: { userId: item.memberId, roleId: 4 },transaction});
+                        UserRFID.update({ isActive: false }, { where: { userId: item.memberId },transaction});
                     })
                 })
-
+                await transaction.commit();
             return res.status(httpStatus.OK).json({
                 message: "Tenant deleted successfully",
             });
         }
     } catch (error) {
-        console.log(error)
+        if(transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.delete = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction(); 
         const id = req.params.id;
 
         if (!id) {
@@ -306,16 +310,16 @@ exports.delete = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
         const updatedTenant = await Tenant.find({ where: { tenantId: id } }).then(tenant => {
-            return tenant.updateAttributes(update)
+            return tenant.updateAttributes(update,transaction)
         })
         if (updatedTenant) {
-            User.update({ isActive: false }, { where: { userId: id } })
-            UserRoles.update({ isActive: false }, { where: { userId: id, roleId: 4 } });
-            UserRFID.update({ isActive: false }, { where: { userId: id } });
-            TenantFlatDetail.findAll({ where: { tenantId: id } })
+            User.update({ isActive: false }, { where: { userId: id },transaction })
+            UserRoles.update({ isActive: false }, { where: { userId: id, roleId: 4 },transaction });
+            UserRFID.update({ isActive: false }, { where: { userId: id },transaction });
+            TenantFlatDetail.findAll({ where: { tenantId: id },transaction })
                 .then(flats => {
                     flats.map(item => {
-                        item.updateAttributes({ isActive: false });
+                        item.updateAttributes({ isActive: false },transaction);
                     })
                 })
             TenantMembersDetail.findAll({
@@ -325,26 +329,29 @@ exports.delete = async (req, res, next) => {
             })
                 .then(tenantMembers => {
                     tenantMembers.map(item => {
-                        item.updateAttributes({ isActive: false });
-                        User.update({ isActive: false }, { where: { userId: item.memberId } });
-                        UserRoles.update({ isActive: false }, { where: { userId: item.memberId, roleId: 4 } });
-                        UserRFID.update({ isActive: false }, { where: { userId: item.memberId } });
+                        item.updateAttributes({ isActive: false },transaction);
+                        User.update({ isActive: false }, { where: { userId: item.memberId },transaction });
+                        UserRoles.update({ isActive: false }, { where: { userId: item.memberId, roleId: 4 },transaction });
+                        UserRFID.update({ isActive: false }, { where: { userId: item.memberId },transaction });
                     })
                 })
-
+                await transaction.commit();
             return res.status(httpStatus.OK).json({
                 message: "Tenant deleted successfully",
                 tenant: updatedTenant
             });
         }
     } catch (error) {
+        if(transaction) await transaction.rollback()
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 
 exports.createEncrypted = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         console.log('Creating Tenant');
 
         let randomNumber;
@@ -439,7 +446,7 @@ exports.createEncrypted = async (req, res, next) => {
                     societyId: tenant.societyId,
                     towerId: tenant.towerId,
                     // flatDetailId: tenant.flatDetailId
-                })
+                },transaction)
                     .then(async entry => {
                         console.log('Body ==>', entry);
                         tenantCreated = entry;
@@ -449,7 +456,7 @@ exports.createEncrypted = async (req, res, next) => {
                                 flatDetailId: tenant.flatDetailId,
                                 tenantId: entry.tenantId,
                                 // isActive: false
-                            })
+                            },transaction)
                         }
 
                         const roles = await Role.findOne({
@@ -470,12 +477,12 @@ exports.createEncrypted = async (req, res, next) => {
                             // parking: encrypt('...'),
                             towerId: tenant.towerId,
                             isActive: false
-                        })
+                        },transaction)
                             .then(user => {
                                 // user.setRoles(roles);
-                                UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false });
-                                UserRFID.create({ userId: tenant.tenantId, rfidId: tenant.rfidId, isActive: true });
-                                FingerprintData.create({ userId: user.userId });
+                                UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false },transaction);
+                                UserRFID.create({ userId: tenant.tenantId, rfidId: tenant.rfidId, isActive: true },transaction);
+                                FingerprintData.create({ userId: user.userId },transaction);
                             })
                         if (tenant.profilePicture) {
                             await saveToDisc(tenant.fileName, tenant.fileExt, tenant.profilePicture, (err, res) => {
@@ -486,7 +493,7 @@ exports.createEncrypted = async (req, res, next) => {
                                     const updatedImage = {
                                         picture: encrypt(res)
                                     };
-                                    Tenant.update(updatedImage, { where: { tenantId: entry.tenantId } });
+                                    Tenant.update(updatedImage, { where: { tenantId: entry.tenantId },transaction });
                                 }
                             })
                         }
@@ -542,11 +549,11 @@ exports.createEncrypted = async (req, res, next) => {
                                     // parking: encrypt('...'),
                                     towerId: tenant.towerId,
                                     isActive: false
-                                })
+                                },transaction)
                                     .then(user => {
                                         // user.setRoles(roles);
-                                        UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false });
-                                        UserRFID.create({ userId: user.userId, rfidId: item.rfidId, isActive: true });
+                                        UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false },transaction);
+                                        UserRFID.create({ userId: user.userId, rfidId: item.rfidId, isActive: true },transaction);
                                     })
                             })
                         }
@@ -578,23 +585,33 @@ exports.createEncrypted = async (req, res, next) => {
                                 const chatKitUserName = tenantSend
                                 // mailToOwner(ownerId, tenantSend);
                                 chatkit.createUser({ name: tenantSend.email, id: tenantSend.tenantId });
+                                await transaction.commit();
                                 return res.status(httpStatus.CREATED).json({
                                     message: "Tenant successfully created. please activate your account. click on the link delievered to your given email",
                                     // tenant: tenantSend
                                 });
                             })
-                            .catch(err => console.log(err))
+                            .catch(async err => {
+                                if(transaction) await transaction.rollback()
+
+                            })
                     })
-                    .catch(err => console.log(err))
+                    .catch(async err => {
+                        if(transaction) await transaction.rollback()
+                        console.log(err)
+                    })
             } else {
+                if(transaction) await transaction.rollback()
                 return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
             }
         } else {
+            if(transaction) await transaction.rollback()
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
                 message: 'User already exist for same email and contact'
             });
         }
     } catch (error) {
+        if(transaction) await transaction.rollback()
         console.log("error==>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
@@ -760,7 +777,10 @@ exports.getDecrypted = (req, res, next) => {
 }
 
 exports.updateEncrypted = async (req, res, next) => {
-    const id = req.params.id;
+    let transaction;
+    try{
+        transaction = await db.sequelize.transaction();
+        const id = req.params.id;
     const ownersArr = [];
     console.log("Id ===>", id)
     if (!id) {
@@ -874,7 +894,7 @@ exports.updateEncrypted = async (req, res, next) => {
                         const updatedImage = {
                             picture: encrypt(res)
                         };
-                        Tenant.update(updatedImage, { where: { tenantId: id } });
+                        Tenant.update(updatedImage, { where: { tenantId: id } },transaction);
                     }
                 })
             }
@@ -911,33 +931,44 @@ exports.updateEncrypted = async (req, res, next) => {
                     UserRFID.findOne({ where: { userId: tenant.tenantId, isActive: true } })
                         .then(tenantRfid => {
                             if (tenantRfid !== null) {
-                                tenantRfid.updateAttributes({ rfidId: update.rfidId })
+                                tenantRfid.updateAttributes({ rfidId: update.rfidId },transaction)
                             } else {
                                 UserRFID.create({
                                     userId: tenant.tenantId,
                                     rfidId: update.rfidId
-                                })
+                                },transaction)
                             }
                         })
                     updates.userId = tenant.tenantId;
-                    User.update(updates, { where: { userId: tenant.tenantId, isActive: true } });
-                    return tenant.updateAttributes(updates);
+                    User.update(updates, { where: { userId: tenant.tenantId, isActive: true },transaction });
+                    return tenant.updateAttributes(updates,transaction);
                 })
-                .then(tenant => {
+                .then(async tenant => {
+                    await transaction.commit();
                     return res.status(httpStatus.CREATED).json({
                         message: "Tenant successfully updated",
                         // tenant: tenant
                     });
                 })
-                .catch(err => console.log(err))
+                .catch(async err => {
+                    if(transaction) await transaction.rollback();  
+                    console.log(err)
+                })
         } else {
+            if(transaction) await transaction.rollback();
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
         }
     } else {
+        if(transaction) await transaction.rollback();
         return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
             message: 'User already exist for same email and contact'
         });
     }
+    }catch(err){
+        if(transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
+    }
+    
 }
 
 exports.getTenantMembers = async (req, res, next) => {

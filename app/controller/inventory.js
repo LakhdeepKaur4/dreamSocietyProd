@@ -9,7 +9,9 @@ const Op = db.Sequelize.Op;
 const shortId = require('short-id');
 
 exports.create = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const serialNumberExists = await Inventory.findAll({ where: { isActive: true, serialNumber: req.body.serialNumber } });
         if (serialNumberExists > 0) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'Serial Number already exists' });
@@ -28,8 +30,10 @@ exports.create = async (req, res, next) => {
             for (let i = 0; i < body.number; i++) {
                 serialNumber = assetName.toUpperCase().substring(0, 2) + shortId.generate();
                 body.serialNumber = serialNumber;
-                inventory = await Inventory.create(body);
+                inventory = await Inventory.create(body,transaction);
             }
+            await transaction.commit();
+
         }
         else {
             for (let i = 0; i < body.serialNumber.length; i++) {
@@ -41,15 +45,16 @@ exports.create = async (req, res, next) => {
                     serialNumber: body.serialNumber[i],
                     dateOfPurchase: body.dateOfPurchase,
                     userId: req.userId
-                })
+                },transaction)
             }
+            await transaction.commit();
         }
         return res.status(httpStatus.CREATED).json({
             message: "Inventory successfully created",
             inventory
         });
     } catch (error) {
-        console.log("error==>", error);
+        if(transaction) await transaction.commit();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -98,7 +103,9 @@ exports.getInventoryByAssetId = async (req, res, next) => {
 }
 
 exports.update = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const serialNumberExists = await Inventory.findAll({ where: { isActive: true, serialNumber: req.body.serialNumber } });
         if (serialNumberExists > 0) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'Serial Number already exists' });
@@ -116,8 +123,9 @@ exports.update = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
         const updatedInventory = await Inventory.find({ where: { inventoryId: id } }).then(inventory => {
-            return inventory.updateAttributes(update)
+            return inventory.updateAttributes(update,transaction)
         })
+        await transaction.commit();
         console.log(updatedInventory);
         if (updatedInventory) {
             return res.status(httpStatus.OK).json({
@@ -126,13 +134,15 @@ exports.update = async (req, res, next) => {
             });
         }
     } catch (error) {
-        console.log("error==>", error)
+        if(transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.delete = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
         if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
@@ -142,8 +152,9 @@ exports.delete = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
         const updatedInventory = await Inventory.find({ where: { inventoryId: id } }).then(inventory => {
-            return inventory.updateAttributes(update)
+            return inventory.updateAttributes(update,transaction)
         })
+        await transaction.commit();
         if (updatedInventory) {
             return res.status(httpStatus.OK).json({
                 message: "Inventory deleted successfully",
@@ -151,26 +162,30 @@ exports.delete = async (req, res, next) => {
             });
         }
     } catch (error) {
+        if(transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.deleteSelected = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const deleteSelected = req.body.ids;
         console.log("delete selected==>", deleteSelected);
         const update = { isActive: false };
         if (!deleteSelected) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
-        const updatedInventory = await Inventory.update(update, { where: { inventoryId: { [Op.in]: deleteSelected } } })
+        const updatedInventory = await Inventory.update(update, { where: { inventoryId: { [Op.in]: deleteSelected } },transaction})
+        await transaction.commit();
         if (updatedInventory) {
             return res.status(httpStatus.OK).json({
                 message: "Inventories deleted successfully",
             });
         }
     } catch (error) {
-        console.log(error)
+        if(transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

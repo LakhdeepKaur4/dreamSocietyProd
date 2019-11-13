@@ -187,7 +187,10 @@ let mailToUser = (owner) => {
 //   }
 
 exports.checkOtp = async (req, res, next) => {
-    console.log("my name is atin===>", req.query);
+    let transaction;
+    try{
+        transaction = await db.sequelize.transaction();
+        console.log("my name is atin===>", req.query);
     if (req.query.ownerId) {
         let ownerId = decrypt(key, req.query.ownerId);
         console.log(ownerId);
@@ -213,7 +216,8 @@ exports.checkOtp = async (req, res, next) => {
                 });
 
         }
-        let updatedOwner = await owner.updateAttributes({ isActive: true });
+        let updatedOwner = await owner.updateAttributes({ isActive: true },transaction);
+        await transaction.commit();
         if (updatedOwner) {
             //  console.log('owner Successfully activated');
             mailToUser(updatedOwner);
@@ -234,8 +238,9 @@ exports.checkOtp = async (req, res, next) => {
                 console.log("employee role", roles)
                 // user.setRoles(roles);
                 let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
-                role.updateAttributes({ isActive: true });
-                user.updateAttributes({ isActive: true });
+                role.updateAttributes({ isActive: true },transaction);
+                user.updateAttributes({ isActive: true },transaction);
+                await transaction.commit();
             }
             return res.status(200).json(
                 {
@@ -271,7 +276,8 @@ exports.checkOtp = async (req, res, next) => {
                 });
 
         }
-        let updatedOwnerMember = await ownerMember.updateAttributes({ isActive: true });
+        let updatedOwnerMember = await ownerMember.updateAttributes({ isActive: true },transaction);
+        await transaction.commit();
         if (updatedOwnerMember) {
             //  console.log('ownerMember Successfully activated');
             mailToUser1(updatedOwnerMember);
@@ -292,8 +298,9 @@ exports.checkOtp = async (req, res, next) => {
                 console.log("employee role", roles)
                 // user.setRoles(roles);
                 let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
-                role.updateAttributes({ isActive: true });
-                user.updateAttributes({ isActive: true });
+                role.updateAttributes({ isActive: true },transaction);
+                user.updateAttributes({ isActive: true },transaction);
+                await transaction.commit();
             }
             return res.status(200).json(
                 {
@@ -334,7 +341,8 @@ exports.checkOtp = async (req, res, next) => {
                 });
 
         }
-        let updatedVendor = await vendor.updateAttributes({ isActive: true });
+        let updatedVendor = await vendor.updateAttributes({ isActive: true },transaction);
+        await transaction.commit();
         if (updatedVendor) {
             //  console.log('owner Successfully activated');
             mailToUser(updatedVendor);
@@ -354,8 +362,9 @@ exports.checkOtp = async (req, res, next) => {
                 console.log("employee role", roles)
                 // user.setRoles(roles);
                 let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
-                role.updateAttributes({ isActive: true });
-                user.updateAttributes({ isActive: true });
+                role.updateAttributes({ isActive: true },transaction);
+                user.updateAttributes({ isActive: true },transaction);
+                await transaction.commit();
             }
             return res.status(200).json(
                 {
@@ -389,7 +398,7 @@ exports.checkOtp = async (req, res, next) => {
                     message: 'Otp is invalid or expired.Please contact admin.'
                 });
         }
-        let updatedEmployee = await employee.updateAttributes({ isActive: true });
+        let updatedEmployee = await employee.updateAttributes({ isActive: true },transaction);
         console.log(updatedEmployee);
         if (updatedEmployee) {
             mailToUser(updatedEmployee);
@@ -407,13 +416,11 @@ exports.checkOtp = async (req, res, next) => {
                 console.log("employee role", roles)
                 // user.setRoles(roles);
                 let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
-                role.updateAttributes({ isActive: true });
-                user.updateAttributes({ isActive: true });
+                role.updateAttributes({ isActive: true },transaction);
+                user.updateAttributes({ isActive: true },transaction);
+                await transaction.commit();
             }
-
-            // set roles
-
-            return res.status(200).json(
+                return res.status(200).json(
                 {
                     otpVerified: true,
                     message: 'Employee successfully activated.Check your email for your username and password.'
@@ -446,7 +453,7 @@ exports.checkOtp = async (req, res, next) => {
                 });
 
         }
-        let updatedIndividualVendor = await individualVendor.updateAttributes({ isActive: true });
+        let updatedIndividualVendor = await individualVendor.updateAttributes({ isActive: true },transaction);
         if (updatedIndividualVendor) {
             //  console.log('owner Successfully activated');
             mailToUser(updatedIndividualVendor);
@@ -467,8 +474,9 @@ exports.checkOtp = async (req, res, next) => {
                 console.log("employee role", roles)
                 // user.setRoles(roles);
                 let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
-                role.updateAttributes({ isActive: true });
-                user.updateAttributes({ isActive: true });
+                role.updateAttributes({ isActive: true },transaction);
+                user.updateAttributes({ isActive: true },transaction);
+                await transaction.commit();
             }
             return res.status(200).json(
                 {
@@ -501,7 +509,8 @@ exports.checkOtp = async (req, res, next) => {
                     message: 'Otp is invalid or expired.Please contact admin.'
                 });
         }
-        let updatedTenant = await tenant.updateAttributes({ isActive: true });
+        let updatedTenant = await tenant.updateAttributes({ isActive: true },transaction);
+        await transaction.commit();
         // let x = await TenantFlatDetail.findAll({where:{tenantId:updatedTenant.tenantId,isActive:false}});
         // x.forEach(tenantFlat => tenantFlat.updateAttributes({isActive:true}));
         // let y = await UserRfId.findOne({where:{isActive:false,userId:updatedTenant.tenantId}});
@@ -524,8 +533,9 @@ exports.checkOtp = async (req, res, next) => {
                 console.log("employee role", roles)
                 // user.setRoles(roles);
                 let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
-                role.updateAttributes({ isActive: true });
-                user.updateAttributes({ isActive: true });
+                role.updateAttributes({ isActive: true },transaction);
+                user.updateAttributes({ isActive: true },transaction);
+                await transaction.commit();
             }
 
             // set roles
@@ -562,8 +572,8 @@ exports.checkOtp = async (req, res, next) => {
                     message: 'Otp is invalid or expired.Please contact admin.'
                 });
         }
-        let updatedTenant = await tenantMember.updateAttributes({ isActive: true });
-
+        let updatedTenant = await tenantMember.updateAttributes({ isActive: true },transaction);
+        await transaction.commit();
         // let y = await UserRfId.findOne({where:{isActive:false,userId:updatedTenant.memberId}});
         // y.updateAttributes({isActive:true});
         console.log(updatedTenant);
@@ -589,8 +599,9 @@ exports.checkOtp = async (req, res, next) => {
                 console.log("tenant role", roles)
                 // user.setRoles(roles);
                 let role = await UserRoles.findOne({ where: { userId: user.userId, roleId: roles.id } });
-                role.updateAttributes({ isActive: true });
-                user.updateAttributes({ isActive: true });
+                role.updateAttributes({ isActive: true },transaction);
+                user.updateAttributes({ isActive: true },transaction);
+                await transaction.commit();
             }
             // set roles
             return res.status(200).json(
@@ -602,9 +613,8 @@ exports.checkOtp = async (req, res, next) => {
     }
 
 
-
-
-
-
-
+    }catch(err){
+        if(transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    }
 }

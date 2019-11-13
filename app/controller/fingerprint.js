@@ -592,13 +592,15 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
 }
 //API to add fingerprint data in machine through websocket
 exports.enableFingerPrintData = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction()
         let serialNumber;
         let socketResponse;
         const userId = parseInt(req.params.userId);
         const update = { isActive: true };
         // var sockets = [];
-        const updatedStatus = await FingerprintData.update(update, { where: { userId: userId } });
+        const updatedStatus = await FingerprintData.update(update, { where: { userId: userId },transaction });
         const fingerPrintData = await FingerprintData.findOne({ where: { isActive: true, userId: userId }, include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName'] }] });
         const firstName = decrypt(fingerPrintData.user.firstName);
         const lastName = decrypt(fingerPrintData.user.lastName);
@@ -640,13 +642,14 @@ exports.enableFingerPrintData = async (req, res, next) => {
             //Closing socket
             socket.on('close', () => { console.log('close') });
         })
+        await transaction.commit();
         // setTimeout(() => {
         //     res.status(httpStatus.OK).json({
         //         message: "Fingerprint enabled successfully"
         //     })
         // }, 5000);
     } catch (error) {
-        console.log("error==>", error);
+        if(transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
