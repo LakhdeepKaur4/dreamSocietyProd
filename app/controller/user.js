@@ -3266,13 +3266,13 @@ exports.releaseUsersResources = async (req, res, next) => {
 	}
 }
 
-let date = new Date(Date.now());
-let startTime = date.setHours(15);
-let endTime = date.setHours(18);
-rule.minute = new schedule.Range(0, 59, 1);
-var j = schedule.scheduleJob({ start: startTime, end: endTime, rule}, function () {
-	console.log('Time for tea!');
-})
+// let date = new Date(Date.now());
+// let startTime = date.setHours(15);
+// let endTime = date.setHours(18);
+// rule.minute = new schedule.Range(0, 59, 1);
+// var j = schedule.scheduleJob({ start: startTime, end: endTime, rule}, function () {
+// 	// console.log('Time for tea!');
+// })
 // function getAge(DOB) {
 //     var today = new Date();
 //     var birthDate = new Date(DOB);

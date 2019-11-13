@@ -5,16 +5,19 @@ const Parking = db.parking;
 const Op = db.Sequelize.Op;
 
 exports.create = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         let body = req.body;
         body.userId = req.userId;
         console.log("body==>", body);
-        const parking = await Parking.create(body);
+        const parking = await Parking.create(body,transaction);
         return res.status(httpStatus.CREATED).json({
             message: "Parking successfully created",
             parking
         });
     } catch (error) {
+        if(transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

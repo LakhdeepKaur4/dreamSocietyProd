@@ -13,7 +13,9 @@ const FlatParking = db.flatParking;
 
 
 exports.create = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         let body = req.body;
         console.log("flat body==>", body)
         body.userId = req.userId;
@@ -39,21 +41,22 @@ exports.create = async (req, res, next) => {
                 message: "Flat already exists",
             });
         }
-        const flatDetail = await FlatDetail.create(body);
+        const flatDetail = await FlatDetail.create(body,transaction);
         req.body.parkingDetails.forEach((element) => {
             element.flatDetailId = flatDetail.flatDetailId;
         });
 
-        const flatParkings = await FlatParking.bulkCreate(req.body.parkingDetails);
+        const flatParkings = await FlatParking.bulkCreate(req.body.parkingDetails,transaction);
         flatParkings.forEach( async element => {
-            let slot = await Slot.update({isAllocated:true},{where:{slotId:element.slotId}})
+            let slot = await Slot.update({isAllocated:true},{where:{slotId:element.slotId},transaction})
         });
-
+        await transaction.commit();
         return res.status(httpStatus.CREATED).json({
             message: "FlatDetail successfully created",
             flatDetail
         });
     } catch (error) {
+        if(transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -158,7 +161,9 @@ exports.getSlotNew = async(req,res,next) =>{
     }
 }
 exports.update = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
         console.log("id==>", id)
         if (!id) {
@@ -203,8 +208,9 @@ exports.update = async (req, res, next) => {
                 flatDetailId: id
             }
         }).then(flatDetail => {
-            return flatDetail.updateAttributes(update)
+            return flatDetail.updateAttributes(update,transaction)
         })
+        await transaction.commit();
         if (updatedFlatDetail) {
             return res.status(httpStatus.OK).json({
                 message: "FlatDetail Updated Page",
@@ -213,6 +219,7 @@ exports.update = async (req, res, next) => {
         }
     } catch (error) {
         console.log(error)
+        if(transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
             message: error.message
         });
@@ -220,7 +227,9 @@ exports.update = async (req, res, next) => {
 }
 
 exports.delete = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
 
         if (!id) {
@@ -239,8 +248,9 @@ exports.delete = async (req, res, next) => {
                 flatDetailId: id
             }
         }).then(flatDetail => {
-            return flatDetail.updateAttributes(update)
+            return flatDetail.updateAttributes(update,transaction)
         })
+        await transaction.commit();
         if (updatedFlatDetail) {
             return res.status(httpStatus.OK).json({
                 message: "FlatDetail deleted successfully",
@@ -248,12 +258,15 @@ exports.delete = async (req, res, next) => {
             });
         }
     } catch (error) {
+        if(transaction) await transaction.rollback()
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.deleteSelected = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const deleteSelected = req.body.ids;
         console.log("delete selected==>", deleteSelected);
         const update = {
@@ -270,7 +283,8 @@ exports.deleteSelected = async (req, res, next) => {
                     [Op.in]: deleteSelected
                 }
             }
-        })
+        },transaction);
+        await transaction.commit();
         if (updatedFlatDetail) {
             return res.status(httpStatus.OK).json({
                 message: "Flat Details deleted successfully",
@@ -278,6 +292,7 @@ exports.deleteSelected = async (req, res, next) => {
         }
     } catch (error) {
         console.log(error)
+        if(transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

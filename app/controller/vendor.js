@@ -369,7 +369,9 @@ let mailToUser = (email, vendorId) => {
 
 
 exports.create1 = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         let body = req.body;
         console.log("body===>", req.body);
 
@@ -428,7 +430,7 @@ exports.create1 = async (req, res, next) => {
             userId: req.userId,
             rfidId: body.rfidId
             // document: body.document
-        });
+        },transaction);
         const vendorId = vendor.vendorId;
         if (body.rate1) {
             console.log("in here rate 1")
@@ -439,7 +441,7 @@ exports.create1 = async (req, res, next) => {
                 dailyServices: body.dailyServices1,
                 userId: req.userId,
                 serviceId: body.serviceId1
-            })
+            },transaction)
         }
         if (body.rate2) {
             console.log("in here rate 2")
@@ -473,7 +475,7 @@ exports.create1 = async (req, res, next) => {
                 picture: encrypt(key, profileImage)
             };
             const imageUpdate = await Vendor.find({ where: { vendorId: vendorId } }).then(vendor => {
-                return vendor.updateAttributes(updateImage)
+                return vendor.updateAttributes(updateImage,transaction)
             })
             documentOne = req.files.documentOne[0].path;
             documentTwo = req.files.documentTwo[0].path;
@@ -483,7 +485,7 @@ exports.create1 = async (req, res, next) => {
             };
 
             const documentUpdate = await Vendor.find({ where: { vendorId: vendorId } }).then(vendor => {
-                return vendor.updateAttributes(updateDocument)
+                return vendor.updateAttributes(updateDocument,transaction)
             })
         }
         // const message1 = `Welcome to Dream society your username is ${userName} and password is ${password}.Do not share with anyone.`
@@ -519,14 +521,14 @@ exports.create1 = async (req, res, next) => {
             contact: vendor.contact,
             email: encrypt1(key, email),
             isActive: false
-        });
+        },transaction);
         let fingerPrintVendor = await FingerPrint.create({
             userId:user.userId
-          })
+          },transaction)
         let userRfId = await UserRfId.create({
             userId: user.userId,
             rfidId: vendor.rfidId
-        })
+        },transaction)
         // set roles
         console.log(vendor.password);
         console.log(user.password);
@@ -535,7 +537,8 @@ exports.create1 = async (req, res, next) => {
         });
 
         // user.setRoles(roles);
-        UserRoles.create({ userId: user.userId, roleId: roles.id });
+        UserRoles.create({ userId: user.userId, roleId: roles.id },transaction);
+        await transaction.commit();
         console.log("in api email", email);
         console.log("in api vendor id-->", vendorId)
         const message = mailToUser(req.body.email, vendorId);
@@ -543,6 +546,7 @@ exports.create1 = async (req, res, next) => {
             message: "Vendor successfully created. please activate your account. click on the link delievered to your given email"
         });
     } catch (error) {
+        if(transaction) await transaction.rollback();
         console.log("error==>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
@@ -639,7 +643,9 @@ exports.update1 = async (req, res, next) => {
     let attrArr = ['userName', 'firstName', 'lastName', 'permanentAddress', 'currentAddress', 'contact', 'email'];
     let attrFiles = ['profilePicture', 'documentOne', 'documentTwo'];
     let attrIds = ["rfidId"];
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         let existingContact = await Vendor.findOne({
             where: {
                 isActive: true,
@@ -701,7 +707,7 @@ exports.update1 = async (req, res, next) => {
                 }
 
             })
-            return vendor.updateAttributes(updAttr);
+            return vendor.updateAttributes(updAttr,transaction);
         })
         const updatedUser = await User.find({
             where: {
@@ -709,9 +715,9 @@ exports.update1 = async (req, res, next) => {
               isActive: true
             }
           });
-          let updatedUser1 = await updatedUser.updateAttributes(updAttr);
+          let updatedUser1 = await updatedUser.updateAttributes(updAttr,transaction);
           if(req.body.email!==null && req.body.email!==undefined && req.body.email!==""){
-              updatedUser1 = await updatedUser.updateAttributes({userName:encrypt(key,req.body.email)});
+              updatedUser1 = await updatedUser.updateAttributes({userName:encrypt(key,req.body.email)},transaction);
           }
         if (updatedVendor) {
             updatedVendor.userName = decrypt(key, updatedVendor.userName)
@@ -738,11 +744,11 @@ exports.update1 = async (req, res, next) => {
                 vendorService.updateAttributes({
                     rateId: req.body.rateId1,
                     rate: req.body.rate1
-                });
+                },transaction);
                 if (req.body.serviceId) {
                     vendorService.updateAttributes({
                         serviceId: req.body.serviceId
-                    });
+                    },transaction);
                 }
             }
             return res.status(httpStatus.OK).json({
@@ -750,8 +756,9 @@ exports.update1 = async (req, res, next) => {
                 vendor: updatedVendor
             });
         }
+        await transaction.commit();
     } catch (error) {
-        console.log(error)
+        if(transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -761,7 +768,9 @@ exports.update1 = async (req, res, next) => {
 
 
 exports.deleteVendorService = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
         if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
@@ -777,20 +786,23 @@ exports.deleteVendorService = async (req, res, next) => {
         // const updatedVendorService = await VendorService.find({ where: { vendorId: id } }).then(vendorService => {
         //     return vendorService.updateAttributes(update)
         // })
-        const updatedVendorService = await VendorService.update(update, { where: { vendorServiceId: id } })
+        const updatedVendorService = await VendorService.update(update, { where: { vendorServiceId: id },transaction })
         if (updatedVendorService) {
+            await transaction.commit();
             return res.status(httpStatus.OK).json({
                 message: "VendorService deleted successfully",
             });
         }
     } catch (error) {
-        console.log("error::", error)
+        if(transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.deleteSelectedVendorServices = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const deleteSelected = req.body.ids;
         console.log("delete selected==>", deleteSelected);
 
@@ -798,21 +810,24 @@ exports.deleteSelectedVendorServices = async (req, res, next) => {
         if (!deleteSelected) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
-        const updatedVendor = await VendorService.update(update, { where: { vendorServiceId: { [Op.in]: deleteSelected } } })
+        const updatedVendor = await VendorService.update(update, { where: { vendorServiceId: { [Op.in]: deleteSelected } },transaction })
         if (updatedVendor) {
+            await transaction.commit();
             return res.status(httpStatus.OK).json({
                 message: "VendorServices deleted successfully",
             });
         }
     } catch (error) {
-        console.log(error)
+        if(transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 
 exports.updateVendorService = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         let updAttr = {};
         let attrArr = ['serviceId', 'rateId', 'rate', 'dailyServices'];
         console.log("updating vendor");
@@ -853,13 +868,15 @@ exports.updateVendorService = async (req, res, next) => {
                     updAttr[attr] = req.body[attr];
                 }
             })
-            return vendorService.updateAttributes(updAttr);
+            return vendorService.updateAttributes(updAttr,transaction);
         });
+        await transaction.commit();
         return res.status(httpStatus.OK).json({
             message: "VendorService Updated Page",
             vendor: updatedVendorService
         });
     } catch (error) {
+        if(transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

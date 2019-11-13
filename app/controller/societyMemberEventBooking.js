@@ -108,7 +108,9 @@ exports.getByUserId = async (req, res, next) => {
 };
 
 exports.update = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
         console.log("Id ===>", id)
         if (!id) {
@@ -133,9 +135,10 @@ exports.update = async (req, res, next) => {
             });
         } else {
             const updatedEvent = await SocietyMemberEventBooking.find({ where: { societyMemberEventBookingId: id } }).then(event => {
-                return event.updateAttributes(update)
+                return event.updateAttributes(update,transaction)
             })
             if (updatedEvent) {
+                await transaction.commit();
                 return res.status(httpStatus.CREATED).json({
                     message: "Event Updated Page",
                     event: updatedEvent
@@ -143,12 +146,15 @@ exports.update = async (req, res, next) => {
             }
         }
     } catch (error) {
+        if(transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.delete = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
 
         if (!id) {
@@ -159,35 +165,40 @@ exports.delete = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
         const updatedEvent = await SocietyMemberEventBooking.find({ where: { societyMemberEventBookingId: id } }).then(event => {
-            return event.updateAttributes(update)
+            return event.updateAttributes(update,transaction)
         })
         if (updatedEvent) {
+            await transaction.commit();
             return res.status(httpStatus.OK).json({
                 message: "Event deleted successfully",
                 event: updatedEvent
             });
         }
     } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.deleteSelected = async (req, res, next) => {
+    let transaction
     try {
+        transaction = await db.sequelize.transaction();
         const deleteSelected = req.body.ids;
         console.log("delete selected==>", deleteSelected);
         const update = { isActive: false };
         if (!deleteSelected) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
-        const updatedEvent = await SocietyMemberEventBooking.update(update, { where: { societyMemberEventBookingId: { [Op.in]: deleteSelected } } })
+        const updatedEvent = await SocietyMemberEventBooking.update(update, { where: { societyMemberEventBookingId: { [Op.in]: deleteSelected } },transaction })
         if (updatedEvent) {
+            await transaction.commit();
             return res.status(httpStatus.OK).json({
                 message: "Events deleted successfully",
             });
         }
     } catch (error) {
-        console.log(error)
+        if (transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
