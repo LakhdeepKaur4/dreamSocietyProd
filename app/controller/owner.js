@@ -482,7 +482,7 @@ exports.create1 = async (req, res, next) => {
       userId: ownerBody.ownerId,
       firstName: encrypt1(key, firstName),
       lastName: encrypt1(key, lastName),
-      userName: encrypt1(key, email),
+      userName: encrypt1(key, email), 
       password: bcrypt.hashSync(owner.password, 8),
       contact: owner.contact,
       towerId: owner.towerId,
