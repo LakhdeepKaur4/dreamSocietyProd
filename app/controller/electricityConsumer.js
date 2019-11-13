@@ -10,7 +10,9 @@ const MaintenanceType = db.maintenanceType;
 const Op = db.Sequelize.Op;
 
 exports.create = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         console.log("creating event");
         let body = req.body;
         var nowDate = new Date();
@@ -21,20 +23,23 @@ exports.create = async (req, res, next) => {
             where: { isActive: true, flatDetailId: body.flatDetailId }
         });
         if (exists) {
-            exists.updateAttributes(body);
+            exists.updateAttributes(body, transaction);
+            await transaction.commit();
             return res.status(httpStatus.OK).json({ message: "Electricity Consumer successfully created" });
         }
         body.userId = req.userId;
         // const maintenanceType = await MaintenanceType.findOne({ where: { isActive: true, maintenanceId: 98 } });
         // // const rate = maintenanceType.rate
         // // body.totalConsumption = body.unitConsumed * rate;
-        const electricityConsumer = await ElectricityConsumer.create(body);
+        const electricityConsumer = await ElectricityConsumer.create(body, transaction);
+        await transaction.commit();
         return res.status(httpStatus.CREATED).json({
             message: "Electricity Consumer successfully created",
             electricityConsumer
         });
     } catch (error) {
         console.log("error==>", error);
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -81,7 +86,9 @@ exports.getByFlatNo = async (req, res, next) => {
 }
 
 exports.update = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
         console.log("id==>", id);
         const update = req.body;
@@ -95,8 +102,9 @@ exports.update = async (req, res, next) => {
         var date = nowDate.getFullYear() + '/' + (nowDate.getMonth() + 1) + '/' + nowDate.getDate();
         update.entryDate = date;
         const updatedElectricityConsumer = await ElectricityConsumer.find({ where: { electricityConsumerId: id } }).then(electricity => {
-            return electricity.updateAttributes(update)
+            return electricity.updateAttributes(update, transaction);
         })
+        await transaction.commit();
         if (updatedElectricityConsumer) {
             return res.status(httpStatus.OK).json({
                 message: "Electricity Consumer Updated Page",
@@ -105,12 +113,15 @@ exports.update = async (req, res, next) => {
         }
     } catch (error) {
         console.log(error)
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.delete = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
 
         if (!id) {
@@ -121,8 +132,9 @@ exports.delete = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
         const updatedElectricityConsumer = await ElectricityConsumer.find({ where: { electricityConsumerId: id } }).then(electricityConsumer => {
-            return electricityConsumer.updateAttributes(update)
-        })
+            return electricityConsumer.updateAttributes(update, transaction);
+        });
+        await transaction.commit();
         if (updatedElectricityConsumer) {
             return res.status(httpStatus.OK).json({
                 message: "Electricity Consumer deleted successfully",
@@ -130,19 +142,23 @@ exports.delete = async (req, res, next) => {
             });
         }
     } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.deleteSelected = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const deleteSelected = req.body.ids;
         console.log("delete selected==>", deleteSelected);
         const update = { isActive: false };
         if (!deleteSelected) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
-        const updatedElectricityConsumer = await ElectricityConsumer.update(update, { where: { electricityConsumerId: { [Op.in]: deleteSelected } } })
+        const updatedElectricityConsumer = await ElectricityConsumer.update(update, { where: { electricityConsumerId: { [Op.in]: deleteSelected } }, transaction });
+        await transaction.commit();
         if (updatedElectricityConsumer) {
             return res.status(httpStatus.OK).json({
                 message: "Electricity Consumer deleted successfully",
@@ -150,6 +166,7 @@ exports.deleteSelected = async (req, res, next) => {
         }
     } catch (error) {
         console.log(error)
+        if (transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

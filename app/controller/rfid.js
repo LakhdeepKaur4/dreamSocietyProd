@@ -21,45 +21,55 @@ let filterItem = (rfids, arr) => {
     return resArr;
 }
 
-exports.create = (req, res, next) => {
-    const body = req.body;
-    body.userId = req.userId;
-    console.log('Body ===>', body);
+exports.create = async (req, res, next) => {
+    let transaction;
+    try {
+        transaction = await db.sequelize.transaction();
+        const body = req.body;
+        body.userId = req.userId;
+        console.log('Body ===>', body);
 
-    RFID.findOne({
-        where: {
-            rfid: body.rfid,
-            isActive: true
-        }
-    })
-        .then(rfid => {
-            if (rfid !== null) {
-                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'Already exist'
-                })
-            } else {
-                RFID.create(body)
-                    .then(rfid => {
-                        if (rfid !== null) {
-                            res.status(httpStatus.CREATED).json({
-                                message: 'Created'
-                            })
-                        } else {
-                            res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                                message: 'Not created'
-                            })
-                        }
-                    })
-                    .catch(err => {
-                        console.log('Error', err);
-                        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-                    })
+        RFID.findOne({
+            where: {
+                rfid: body.rfid,
+                isActive: true
             }
         })
-        .catch(err => {
-            console.log('Error', err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
+            .then(rfid => {
+                if (rfid !== null) {
+                    res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                        message: 'Already exist'
+                    })
+                } else {
+                    RFID.create(body, transaction)
+                        .then(async rfid => {
+                            if (rfid !== null) {
+                                await transaction.commit();
+                                res.status(httpStatus.CREATED).json({
+                                    message: 'Created'
+                                })
+                            } else {
+                                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                                    message: 'Not created'
+                                })
+                            }
+                        })
+                        .catch(async err => {
+                            if (transaction) await transaction.rollback();
+                            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+                        })
+                }
+            })
+            .catch(async err => {
+                if (transaction) await transaction.rollback();
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    } catch (error) {
+        console.log(error);
+        if (transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+
 }
 
 exports.get = (req, res, next) => {
@@ -85,107 +95,133 @@ exports.get = (req, res, next) => {
         })
 }
 
-exports.update = (req, res, next) => {
-    const body = req.body;
-    body.rfidId = req.params.id;
-    console.log('Body ===>', body);
-
-    RFID.findOne({
-        where: { rfid: body.rfid, isActive: true, rfidId: { [Op.ne]: body.rfidId } }
-    })
-        .then((rfid) => {
-            if (rfid !== null) {
-                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'RFID already exist!'
-                })
-            }
-            else {
-                RFID.findOne({
-                    where: { rfidId: body.rfidId, isActive: true }
-                })
-                    .then((rfid) => {
-                        if (rfid !== null) {
-                            rfid.updateAttributes(body);
-                            res.status(httpStatus.CREATED).json({
-                                message: 'Updated successfully!'
-                            })
-                        }
-                        else {
-                            res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                                message: 'Data not available!'
-                            })
-                        }
-                    })
-                    .catch((err) => {
-                        console.log(err);
-                        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
-                    })
-            }
+exports.update = async (req, res, next) => {
+    let transaction;
+    try {
+        transaction = await db.sequelize.transaction();
+        const body = req.body;
+        body.rfidId = req.params.id;
+        console.log('Body ===>', body);
+        RFID.findOne({
+            where: { rfid: body.rfid, isActive: true, rfidId: { [Op.ne]: body.rfidId } }
         })
-        .catch((err) => {
-            console.log(err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
-        })
+            .then((rfid) => {
+                if (rfid !== null) {
+                    res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                        message: 'RFID already exist!'
+                    })
+                }
+                else {
+                    RFID.findOne({
+                        where: { rfidId: body.rfidId, isActive: true }
+                    })
+                        .then(async (rfid) => {
+                            if (rfid !== null) {
+                                rfid.updateAttributes(body, transaction);
+                                await transaction.commit();
+                                res.status(httpStatus.CREATED).json({
+                                    message: 'Updated successfully!'
+                                })
+                            }
+                            else {
+                                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                                    message: 'Data not available!'
+                                })
+                            }
+                        })
+                        .catch(async (err) => {
+                            if (transaction) await transaction.rollback();
+                            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
+                        })
+                }
+            })
+            .catch(async (err) => {
+                if (transaction) await transaction.rollback();
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
+            })
+    } catch (error) {
+        console.log(error);
+        if (transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
 }
 
-exports.delete = (req, res, next) => {
-    const rfidId = req.params.id;
-    console.log('ID ===>', rfidId);
-
-    RFID.findOne({
-        where: {
-            rfidId: rfidId,
-            isActive: true
-        }
-    })
-        .then(rfid => {
-            if (rfid !== null) {
-                rfid.updateAttributes({ isActive: false });
-                res.status(httpStatus.OK).json({
-                    message: 'Deleted successfully'
-                })
-            } else {
-                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'Not deleted'
-                })
+exports.delete = async (req, res, next) => {
+    let transaction;
+    try {
+        transaction = await db.sequelize.transaction();
+        const rfidId = req.params.id;
+        console.log('ID ===>', rfidId);
+        RFID.findOne({
+            where: {
+                rfidId: rfidId,
+                isActive: true
             }
         })
-        .catch(err => {
-            console.log('Error ===>', err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
+            .then(async rfid => {
+                if (rfid !== null) {
+                    rfid.updateAttributes({ isActive: false }, transaction);
+                    await transaction.commit();
+                    res.status(httpStatus.OK).json({
+                        message: 'Deleted successfully'
+                    })
+                } else {
+                    res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                        message: 'Not deleted'
+                    })
+                }
+            })
+            .catch(async err => {
+                console.log('Error ===>', err);
+                if (transaction) await transaction.rollback();
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    } catch (error) {
+        console.log(error);
+        if (transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
 }
 
-exports.deleteSelected = (req, res, next) => {
-    const rfidIds = req.body.ids;
-    console.log('IDs ===>', rfidIds);
+exports.deleteSelected = async (req, res, next) => {
+    let transaction;
+    try {
+        transaction = await db.sequelize.transaction();
+        const rfidIds = req.body.ids;
+        console.log('IDs ===>', rfidIds);
 
-    RFID.findAll({
-        where: {
-            rfidId: {
-                [Op.in]: rfidIds
-            },
-            isActive: true
-        }
-    })
-        .then(rfids => {
-            if (rfids.length !== 0) {
-                rfids.map(item => {
-                    item.updateAttributes({ isActive: false })
-                })
-                res.status(httpStatus.OK).json({
-                    message: 'Deleted successfully'
-                })
-            } else {
-                res.status(httpStatus.NO_CONTENT).json({
-                    message: 'No data found'
-                })
+        RFID.findAll({
+            where: {
+                rfidId: {
+                    [Op.in]: rfidIds
+                },
+                isActive: true
             }
         })
-        .catch(err => {
-            console.log('Error ===>', err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
+            .then(async rfids => {
+                if (rfids.length !== 0) {
+                    rfids.map(item => {
+                        item.updateAttributes({ isActive: false }, transaction)
+                    })
+                    await transaction.commit();
+                    res.status(httpStatus.OK).json({
+                        message: 'Deleted successfully'
+                    })
+                } else {
+                    res.status(httpStatus.NO_CONTENT).json({
+                        message: 'No data found'
+                    })
+                }
+            })
+            .catch(async err => {
+                if (transaction) await transaction.rollback();
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    } catch (error) {
+        console.log(error);
+        if (transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
 }
 
 exports.getRFID = (req, res, next) => {
@@ -266,11 +302,11 @@ exports.getRFIDByAll = (req, res, next) => {
         .then(async rfids => {
             if (rfids.length !== 0) {
                 userRFIDs = await UserRFID.findAll({ where: { isActive: true }, attributes: ['rfidId'] });
-                
+
                 userRFIDs.map(item => {
                     rfidsArr.push(item.rfidId);
                 })
-                
+
                 sendRFIDs = filterItem(rfids, rfidsArr);
                 res.status(httpStatus.OK).json({
                     rfids: sendRFIDs

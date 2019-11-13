@@ -11,30 +11,40 @@ const State = db.state;
 const User = db.user;
 const Op = db.Sequelize.Op;
 
-exports.create = (req, res) => {
-    console.log("creating society");
-    console.log("::::body==>", req.body);
-    Society.create({
-        societyName: req.body.societyName,
-        cityId: req.body.cityId,
-        countryId: req.body.countryId,
-        locationId: req.body.locationId,
-        stateId: req.body.stateId,
-        societyAddress: req.body.societyAddress,
-        contactNumber: req.body.contactNumber,
-        registrationNumber: req.body.registrationNumber,
-        totalBoardMembers: req.body.totalBoardMembers,
-        bankName: req.body.bankName,
-        email: req.body.email,
-        IFSCCode: req.body.IFSCCode,
-        accountHolderName: req.body.accountHolderName,
-        accountNumber: req.body.accountNumber,
-        userId: req.userId,
-    }).then(society => {
-        res.json({ message: "Society added successfully!", society: society });
-    }).catch(err => {
-        res.status(500).send("Fail! Error -> " + err);
-    })
+exports.create = async (req, res) => {
+    let transaction;
+    try {
+        transaction = await db.sequelize.transaction();
+        console.log("creating society");
+        console.log("::::body==>", req.body);
+        Society.create({
+            societyName: req.body.societyName,
+            cityId: req.body.cityId,
+            countryId: req.body.countryId,
+            locationId: req.body.locationId,
+            stateId: req.body.stateId,
+            societyAddress: req.body.societyAddress,
+            contactNumber: req.body.contactNumber,
+            registrationNumber: req.body.registrationNumber,
+            totalBoardMembers: req.body.totalBoardMembers,
+            bankName: req.body.bankName,
+            email: req.body.email,
+            IFSCCode: req.body.IFSCCode,
+            accountHolderName: req.body.accountHolderName,
+            accountNumber: req.body.accountNumber,
+            userId: req.userId,
+        }, transaction).then(async society => {
+            await transaction.commit();
+            res.json({ message: "Society added successfully!", society: society });
+        }).catch(async err => {
+            if (transaction) await transaction.rollback();
+            res.status(500).send("Fail! Error -> " + err);
+        })
+    } catch (error) {
+        console.log(error);
+        if (transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
 }
 
 exports.get = (req, res) => {
@@ -115,26 +125,38 @@ exports.getById = (req, res) => {
     })
 }
 
-exports.update = (req, res) => {
-    const id = req.params.id;
-    if (!id) {
-        res.json("Please enter id");
-    }
-    const updates = req.body;
-    Society.find({
-        where: { societyId: id }
-    })
-        .then(society => {
-            return society.updateAttributes(updates)
+exports.update = async (req, res) => {
+    let transaction;
+    try {
+        transaction = await db.sequelize.transaction();
+        const id = req.params.id;
+        if (!id) {
+            res.json("Please enter id");
+        }
+        const updates = req.body;
+        Society.find({
+            where: { societyId: id }
         })
-        .then(updatedSociety => {
-            res.json({ message: "State updated successfully!", updatedSociety: updatedSociety });
-        });
+            .then(society => {
+                return society.updateAttributes(updates, transaction)
+            })
+            .then(async updatedSociety => {
+                await transaction.commit();
+                res.json({ message: "State updated successfully!", updatedSociety: updatedSociety });
+            });
+    } catch (error) {
+        console.log(error);
+        if (transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
 }
 
 
+
 exports.delete = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
         if (!id) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
@@ -144,8 +166,9 @@ exports.delete = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
         const updatedSociety = await Society.find({ where: { societyId: id } }).then(society => {
-            return society.updateAttributes(update)
+            return society.updateAttributes(update, transaction)
         })
+        await transaction.commit();
         if (updatedSociety) {
             return res.status(httpStatus.OK).json({
                 message: "State deleted successfully",
@@ -153,26 +176,31 @@ exports.delete = async (req, res, next) => {
             });
         }
     } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.deleteSelected = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = db.sequelize.transaction();
         const deleteSelected = req.body.ids;
         console.log("delete selected==>", deleteSelected);
         const update = { isActive: false };
         if (!deleteSelected) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
-        const updatedSociety = await Society.update(update, { where: { societyId: { [Op.in]: deleteSelected } } })
+        const updatedSociety = await Society.update(update, { where: { societyId: { [Op.in]: deleteSelected } }, transaction });
+        await transaction.commit();
         if (updatedSociety) {
             return res.status(httpStatus.OK).json({
                 message: "Societies deleted successfully",
             });
         }
     } catch (error) {
-        console.log(error)
+        console.log(error);
+        if (transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -223,64 +251,73 @@ referenceConstraintReturn = (checkConstraint, object, property, entry) => {
 }
 
 exports.createEncrypted = async (req, res, next) => {
-    console.log('Creating Society');
-    console.log('Body ===>', req.body);
+    let transaction;
+    try {
+        transaction = await db.sequelize.transaction();
+        console.log('Creating Society');
+        console.log('Body ===>', req.body);
 
-    let existSocietyName = 0;
+        let existSocietyName = 0;
 
-    if (req.body['societyName'] !== undefined) {
-        societyNameErr = await Society.findAll({ attributes: ['societyName'] });
-    }
-    else {
-        societyNameErr = null;
-    }
+        if (req.body['societyName'] !== undefined) {
+            societyNameErr = await Society.findAll({ attributes: ['societyName'] });
+        }
+        else {
+            societyNameErr = null;
+        }
 
-    if (societyNameErr !== null) {
-        societyNameErr.map(item => {
-            if ((decrypt(item.societyName)).replace(/ /g, '') === req.body.societyName.replace(/ /g, '')) {
-                existSocietyName += 1;
-            }
-        })
-    }
-
-    if (existSocietyName !== 0) {
-        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-            message: "Society Name already in use",
-        });
-    } else {
-        Society.create({
-            societyName: encrypt(req.body.societyName),
-            societyAddress: encrypt(req.body.societyAddress),
-            cityId: req.body.cityId,
-            countryId: req.body.countryId,
-            locationId: req.body.locationId,
-            stateId: req.body.stateId,
-            contactNumber: encrypt(req.body.contactNumber),
-            registrationNumber: encrypt(req.body.registrationNumber),
-            totalBoardMembers: encrypt(req.body.totalBoardMembers),
-            bankName: encrypt(req.body.bankName),
-            email: encrypt(req.body.email),
-            IFSCCode: encrypt(req.body.IFSCCode),
-            accountHolderName: encrypt(req.body.accountHolderName),
-            accountNumber: encrypt(req.body.accountNumber),
-            userId: req.userId,
-        })
-            .then(society => {
-                society.societyName = decrypt(society.societyName);
-                society.societyAddress = decrypt(society.societyAddress);
-                society.contactNumber = decrypt(society.contactNumber);
-                society.registrationNumber = decrypt(society.registrationNumber);
-                society.totalBoardMembers = decrypt(society.totalBoardMembers);
-                society.bankName = decrypt(society.bankName);
-                society.email = decrypt(society.email);
-                society.IFSCCode = decrypt(society.IFSCCode);
-                society.accountHolderName = decrypt(society.accountHolderName);
-                society.accountNumber = decrypt(society.accountNumber);
-                res.json({ message: "Society added successfully!", society: society });
+        if (societyNameErr !== null) {
+            societyNameErr.map(item => {
+                if ((decrypt(item.societyName)).replace(/ /g, '') === req.body.societyName.replace(/ /g, '')) {
+                    existSocietyName += 1;
+                }
             })
-            .catch(err => {
-                res.status(500).send("Fail! Error -> " + err);
-            })
+        }
+
+        if (existSocietyName !== 0) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                message: "Society Name already in use",
+            });
+        } else {
+            Society.create({
+                societyName: encrypt(req.body.societyName),
+                societyAddress: encrypt(req.body.societyAddress),
+                cityId: req.body.cityId,
+                countryId: req.body.countryId,
+                locationId: req.body.locationId,
+                stateId: req.body.stateId,
+                contactNumber: encrypt(req.body.contactNumber),
+                registrationNumber: encrypt(req.body.registrationNumber),
+                totalBoardMembers: encrypt(req.body.totalBoardMembers),
+                bankName: encrypt(req.body.bankName),
+                email: encrypt(req.body.email),
+                IFSCCode: encrypt(req.body.IFSCCode),
+                accountHolderName: encrypt(req.body.accountHolderName),
+                accountNumber: encrypt(req.body.accountNumber),
+                userId: req.userId,
+            }, transaction)
+                .then(async society => {
+                    society.societyName = decrypt(society.societyName);
+                    society.societyAddress = decrypt(society.societyAddress);
+                    society.contactNumber = decrypt(society.contactNumber);
+                    society.registrationNumber = decrypt(society.registrationNumber);
+                    society.totalBoardMembers = decrypt(society.totalBoardMembers);
+                    society.bankName = decrypt(society.bankName);
+                    society.email = decrypt(society.email);
+                    society.IFSCCode = decrypt(society.IFSCCode);
+                    society.accountHolderName = decrypt(society.accountHolderName);
+                    society.accountNumber = decrypt(society.accountNumber);
+                    await transaction.commit();
+                    res.json({ message: "Society added successfully!", society: society });
+                })
+                .catch(err => {
+                    res.status(500).send("Fail! Error -> " + err);
+                })
+        }
+    } catch (error) {
+        console.log(error);
+        if (transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
@@ -392,102 +429,112 @@ exports.getByIdDecrypted = (req, res, next) => {
 }
 
 exports.updateEncrypted = async (req, res, next) => {
-    const id = req.params.id;
-    if (!id) {
-        res.json("Please enter id");
-    }
-    const update = req.body;
+    let transaction;
+    try {
+        transaction = await db.sequelize.transaction();
+        const id = req.params.id;
+        if (!id) {
+            res.json("Please enter id");
+        }
+        const update = req.body;
 
-    let existSocietyName = 0;
+        let existSocietyName = 0;
 
-    if (update['societyName'] !== undefined) {
-        societyNameErr = await Society.findAll({ attributes: ['societyName'], where: { societyId: { [Op.ne]: id } } });
-    }
-    else {
-        societyNameErr = null;
-    }
-
-    if (societyNameErr !== null) {
-        societyNameErr.map(item => {
-            if ((decrypt(item.societyName)).replace(/ /g, '') === req.body.societyName.replace(/ /g, '')) {
-                existSocietyName += 1;
-            }
-        })
-    }
-
-    if (existSocietyName !== 0) {
-        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-            message: "Society Name already in use",
-        });
-    } else {
-        society = await Society.find({ where: { societyId: id } });
-
-        societyNameCheck = constraintCheck('societyName', update);
-        societyAddressCheck = constraintCheck('societyAddress', update);
-        contactNumberCheck = constraintCheck('contactNumber', update);
-        registrationNumberCheck = constraintCheck('registrationNumber', update);
-        totalBoardMembersCheck = constraintCheck('totalBoardMembers', update);
-        bankNameCheck = constraintCheck('bankName', update);
-        emailCheck = constraintCheck('email', update);
-        IFSCCodeCheck = constraintCheck('IFSCCode', update);
-        accountHolderNameCheck = constraintCheck('accountHolderName', update);
-        accountNumberCheck = constraintCheck('accountNumber', update);
-        cityIdCheck = constraintCheck('cityId', update);
-        countryIdCheck = constraintCheck('countryId', update);
-        locationIdCheck = constraintCheck('locationId', update);
-        stateIdCheck = constraintCheck('stateId', update);
-
-        societyName = constraintReturn(societyNameCheck, update, 'societyName', society);
-        societyAddress = constraintReturn(societyAddressCheck, update, 'societyAddress', society);
-        contactNumber = constraintReturn(contactNumberCheck, update, 'contactNumber', society);
-        registrationNumber = constraintReturn(registrationNumberCheck, update, 'registrationNumber', society);
-        totalBoardMembers = constraintReturn(totalBoardMembersCheck, update, 'totalBoardMembers', society);
-        bankName = constraintReturn(bankNameCheck, update, 'bankName', society);
-        email = constraintReturn(emailCheck, update, 'email', society);
-        IFSCCode = constraintReturn(IFSCCodeCheck, update, 'IFSCCode', society);
-        accountHolderName = constraintReturn(accountHolderNameCheck, update, 'accountHolderName', society);
-        accountNumber = constraintReturn(accountNumberCheck, update, 'accountNumber', society);
-        cityId = referenceConstraintReturn(cityIdCheck, update, 'cityId', society);
-        countryId = referenceConstraintReturn(countryIdCheck, update, 'countryId', society);
-        locationId = referenceConstraintReturn(locationIdCheck, update, 'locationId', society);
-        stateId = referenceConstraintReturn(stateIdCheck, update, 'stateId', society);
-
-        const updates = {
-            societyName: societyName,
-            societyAddress: societyAddress,
-            cityId: cityId,
-            countryId: countryId,
-            locationId: locationId,
-            stateId: stateId,
-            contactNumber: contactNumber,
-            registrationNumber: registrationNumber,
-            totalBoardMembers: totalBoardMembers,
-            bankName: bankName,
-            email: email,
-            IFSCCode: IFSCCode,
-            accountHolderName: accountHolderName,
-            accountNumber: accountNumber,
-            userId: req.userId
+        if (update['societyName'] !== undefined) {
+            societyNameErr = await Society.findAll({ attributes: ['societyName'], where: { societyId: { [Op.ne]: id } } });
+        }
+        else {
+            societyNameErr = null;
         }
 
-        Society.find({
-            where: { societyId: id }
-        })
-            .then(society => {
-                return society.updateAttributes(updates)
+        if (societyNameErr !== null) {
+            societyNameErr.map(item => {
+                if ((decrypt(item.societyName)).replace(/ /g, '') === req.body.societyName.replace(/ /g, '')) {
+                    existSocietyName += 1;
+                }
             })
-            .then(updatedSociety => {
-                updatedSociety.societyName = decrypt(updatedSociety.societyName);
-                updatedSociety.societyAddress = decrypt(updatedSociety.societyAddress);
-                updatedSociety.contactNumber = decrypt(updatedSociety.contactNumber);
-                updatedSociety.registrationNumber = decrypt(updatedSociety.registrationNumber);
-                updatedSociety.totalBoardMembers = decrypt(updatedSociety.totalBoardMembers);
-                updatedSociety.bankName = decrypt(updatedSociety.bankName);
-                updatedSociety.email = decrypt(updatedSociety.email);
-                updatedSociety.IFSCCode = decrypt(updatedSociety.IFSCCode);
-                updatedSociety.accountHolderName = decrypt(updatedSociety.accountHolderName);
-                updatedSociety.accountNumber = decrypt(updatedSociety.accountNumber);
-                res.json({ message: "Society updated successfully!", updatedSociety: updatedSociety });
+        }
+
+        if (existSocietyName !== 0) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                message: "Society Name already in use",
             });
+        } else {
+            society = await Society.find({ where: { societyId: id } });
+
+            societyNameCheck = constraintCheck('societyName', update);
+            societyAddressCheck = constraintCheck('societyAddress', update);
+            contactNumberCheck = constraintCheck('contactNumber', update);
+            registrationNumberCheck = constraintCheck('registrationNumber', update);
+            totalBoardMembersCheck = constraintCheck('totalBoardMembers', update);
+            bankNameCheck = constraintCheck('bankName', update);
+            emailCheck = constraintCheck('email', update);
+            IFSCCodeCheck = constraintCheck('IFSCCode', update);
+            accountHolderNameCheck = constraintCheck('accountHolderName', update);
+            accountNumberCheck = constraintCheck('accountNumber', update);
+            cityIdCheck = constraintCheck('cityId', update);
+            countryIdCheck = constraintCheck('countryId', update);
+            locationIdCheck = constraintCheck('locationId', update);
+            stateIdCheck = constraintCheck('stateId', update);
+
+            societyName = constraintReturn(societyNameCheck, update, 'societyName', society);
+            societyAddress = constraintReturn(societyAddressCheck, update, 'societyAddress', society);
+            contactNumber = constraintReturn(contactNumberCheck, update, 'contactNumber', society);
+            registrationNumber = constraintReturn(registrationNumberCheck, update, 'registrationNumber', society);
+            totalBoardMembers = constraintReturn(totalBoardMembersCheck, update, 'totalBoardMembers', society);
+            bankName = constraintReturn(bankNameCheck, update, 'bankName', society);
+            email = constraintReturn(emailCheck, update, 'email', society);
+            IFSCCode = constraintReturn(IFSCCodeCheck, update, 'IFSCCode', society);
+            accountHolderName = constraintReturn(accountHolderNameCheck, update, 'accountHolderName', society);
+            accountNumber = constraintReturn(accountNumberCheck, update, 'accountNumber', society);
+            cityId = referenceConstraintReturn(cityIdCheck, update, 'cityId', society);
+            countryId = referenceConstraintReturn(countryIdCheck, update, 'countryId', society);
+            locationId = referenceConstraintReturn(locationIdCheck, update, 'locationId', society);
+            stateId = referenceConstraintReturn(stateIdCheck, update, 'stateId', society);
+
+            const updates = {
+                societyName: societyName,
+                societyAddress: societyAddress,
+                cityId: cityId,
+                countryId: countryId,
+                locationId: locationId,
+                stateId: stateId,
+                contactNumber: contactNumber,
+                registrationNumber: registrationNumber,
+                totalBoardMembers: totalBoardMembers,
+                bankName: bankName,
+                email: email,
+                IFSCCode: IFSCCode,
+                accountHolderName: accountHolderName,
+                accountNumber: accountNumber,
+                userId: req.userId
+            }
+
+            Society.find({
+                where: { societyId: id }
+            })
+                .then(society => {
+                    return society.updateAttributes(updates, transaction)
+                })
+                .then(async updatedSociety => {
+                    updatedSociety.societyName = decrypt(updatedSociety.societyName);
+                    updatedSociety.societyAddress = decrypt(updatedSociety.societyAddress);
+                    updatedSociety.contactNumber = decrypt(updatedSociety.contactNumber);
+                    updatedSociety.registrationNumber = decrypt(updatedSociety.registrationNumber);
+                    updatedSociety.totalBoardMembers = decrypt(updatedSociety.totalBoardMembers);
+                    updatedSociety.bankName = decrypt(updatedSociety.bankName);
+                    updatedSociety.email = decrypt(updatedSociety.email);
+                    updatedSociety.IFSCCode = decrypt(updatedSociety.IFSCCode);
+                    updatedSociety.accountHolderName = decrypt(updatedSociety.accountHolderName);
+                    updatedSociety.accountNumber = decrypt(updatedSociety.accountNumber);
+                    await transaction.commit();
+                    res.json({ message: "Society updated successfully!", updatedSociety: updatedSociety });
+                });
+        }
+    } catch (error) {
+        console.log(error);
+        if (transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
+
 }

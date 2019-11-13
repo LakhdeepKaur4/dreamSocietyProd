@@ -8,7 +8,9 @@ const Size = db.size;
 const Op = db.Sequelize.Op;
 
 exports.create = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         console.log("creating maintenance");
         let body = req.body;
         body.userId = req.userId;
@@ -16,11 +18,11 @@ exports.create = async (req, res, next) => {
         const maintenanceTypes = await MaintenanceType.findAll({
             where: {
                 isActive: true,
-                startDate:body.startDate,
-                endDate:body.endDate
+                startDate: body.startDate,
+                endDate: body.endDate
             }
         })
-        if(maintenanceTypes){
+        if (maintenanceTypes) {
             let error = maintenanceTypes.some(maintenance => {
                 if (maintenance.maintenanceId == req.body.maintenanceId && maintenance.sizeId == req.body.sizeId)
                     return true;
@@ -29,7 +31,8 @@ exports.create = async (req, res, next) => {
                 return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Maintainance Name already Exists" })
             }
         }
-        const maintenance = await MaintenanceType.create(body);
+        const maintenance = await MaintenanceType.create(body, transaction);
+        await transaction.commit();
         if (maintenance) {
             return res.status(httpStatus.CREATED).json({
                 message: "Maintenance successfully created",
@@ -38,6 +41,7 @@ exports.create = async (req, res, next) => {
         }
     } catch (error) {
         console.log("error==>", error);
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -45,17 +49,18 @@ exports.create = async (req, res, next) => {
 exports.getMaintenanceForElectricity = async (req, res, next) => {
     try {
         const maintenance = await Maintenance.findOne({
-         where:{
-             isActive:true,
-             category:{
-                 [Op.like]: '%Electricity%'
-             }
-         }   
+            where: {
+                isActive: true,
+                category: {
+                    [Op.like]: '%Electricity%'
+                }
+            }
         })
-    
+
         const maintenanceType = await MaintenanceType.findAll({
-            where: { isActive: true ,
-            maintenanceId:maintenance.maintenanceId
+            where: {
+                isActive: true,
+                maintenanceId: maintenance.maintenanceId
             },
             order: [['createdAt', 'DESC']],
             include: [
@@ -98,7 +103,9 @@ exports.get = async (req, res, next) => {
 }
 
 exports.update = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         console.log("maintenannce>>")
         const id = req.params.id;
         console.log("id==>", id)
@@ -110,7 +117,7 @@ exports.update = async (req, res, next) => {
         if (!update) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
-        const alreadyExist = await MaintenanceType.findOne({ where: { isActive: true, maintenanceId: update.maintenanceId, sizeId: update.sizeId, startDate:update.startDate,endDate:update.endDate,maintenanceTypeId: { [Op.ne]: id } } });
+        const alreadyExist = await MaintenanceType.findOne({ where: { isActive: true, maintenanceId: update.maintenanceId, sizeId: update.sizeId, startDate: update.startDate, endDate: update.endDate, maintenanceTypeId: { [Op.ne]: id } } });
 
         if (alreadyExist !== null) {
             console.log(alreadyExist.rate)
@@ -122,8 +129,9 @@ exports.update = async (req, res, next) => {
             }
         } else {
             const updatedMaintenanceType = await MaintenanceType.find({ where: { maintenanceTypeId: id } }).then(maintenanceType => {
-                return maintenanceType.updateAttributes(update)
+                return maintenanceType.updateAttributes(update, transaction)
             })
+            await transaction.commit();
             if (updatedMaintenanceType) {
                 return res.status(httpStatus.OK).json({
                     message: "Maintenance Type Updated Page",
@@ -132,13 +140,16 @@ exports.update = async (req, res, next) => {
             }
         }
     } catch (error) {
-        console.log(error)
+        console.log(error);
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.delete = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
 
         if (!id) {
@@ -149,8 +160,9 @@ exports.delete = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
         const updatedMaintenanceType = await MaintenanceType.find({ where: { maintenanceTypeId: id } }).then(maintenanceType => {
-            return maintenanceType.updateAttributes(update)
+            return maintenanceType.updateAttributes(update, transaction);
         })
+        await transaction.commit();
         if (updatedMaintenanceType) {
             return res.status(httpStatus.OK).json({
                 message: "Maintenance Type deleted successfully",
@@ -158,28 +170,33 @@ exports.delete = async (req, res, next) => {
             });
         }
     } catch (error) {
-        console.log(error)
+        console.log(error);
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.deleteSelected = async (req, res, next) => {
+    let transaction;
     try {
-        console.log("maintenance Type delete")
+        transaction = await db.sequelize.transaction();
+        console.log("maintenance Type delete");
         const deleteSelected = req.body.ids;
         console.log("delete selected==>", deleteSelected);
         const update = { isActive: false };
         if (!deleteSelected) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
-        const updatedMaintenanceType = await MaintenanceType.update(update, { where: { maintenanceTypeId: { [Op.in]: deleteSelected } } })
+        const updatedMaintenanceType = await MaintenanceType.update(update, { where: { maintenanceTypeId: { [Op.in]: deleteSelected } }, transaction });
+        await transaction.commit();
         if (updatedMaintenanceType) {
             return res.status(httpStatus.OK).json({
                 message: "Maintenance Types deleted successfully",
             });
         }
     } catch (error) {
-        console.log(error)
+        console.log(error);
+        if (transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

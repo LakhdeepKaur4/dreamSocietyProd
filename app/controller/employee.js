@@ -170,7 +170,9 @@ exports.deletePhoto = function (req, res) {
 };
 
 exports.delete = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
         console.log("id==>", id)
         if (!id) {
@@ -182,11 +184,12 @@ exports.delete = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
         const updatedEmployee = await Employee.find({ where: { employeeId: id } }).then(employee => {
-            User.update({ isActive: false }, { where: { userId: id } });
-            UserRoles.update({ isActive: false }, { where: { userId: id } });
-            UserRFID.update({ isActive: false }, { where: { userId: id } });
-            return employee.updateAttributes(update)
+            User.update({ isActive: false }, { where: { userId: id }, transaction });
+            UserRoles.update({ isActive: false }, { where: { userId: id }, transaction });
+            UserRFID.update({ isActive: false }, { where: { userId: id }, transaction });
+            return employee.updateAttributes(update, transaction)
         })
+        await transaction.commit();
         if (updatedEmployee) {
             return res.status(httpStatus.OK).json({
                 message: "Employee deleted successfully",
@@ -194,30 +197,34 @@ exports.delete = async (req, res, next) => {
             });
         }
     } catch (error) {
-        console.log(error)
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Mysql error' });
     }
 }
 
 exports.deleteSelected = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const deleteSelected = req.body.ids;
         console.log("delete selected==>", deleteSelected);
         const update = { isActive: false };
         if (!deleteSelected) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
-        const updatedEmployee = await Employee.update(update, { where: { employeeId: { [Op.in]: deleteSelected } } })
+        const updatedEmployee = await Employee.update(update, { where: { employeeId: { [Op.in]: deleteSelected } }, transaction })
         if (updatedEmployee) {
-            User.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } } });
-            UserRoles.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } } });
-            UserRFID.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } } });
+            User.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } }, transaction });
+            UserRoles.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } }, transaction });
+            UserRFID.update({ isActive: false }, { where: { userId: { [Op.in]: deleteSelected } }, transaction });
+            await transaction.commit();
             return res.status(httpStatus.OK).json({
                 message: "Employees deleted successfully",
             });
         }
     } catch (error) {
-        console.log(error)
+        console.log(error);
+        if (transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -273,7 +280,9 @@ generateRandomId = () => {
 }
 
 exports.createEncrypt = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         let body = req.body;
         let randomNumber;
         randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
@@ -291,8 +300,8 @@ exports.createEncrypt = async (req, res, next) => {
             numbers: true
         });
 
-        user1 = await User.findOne({ where: { [Op.and]: [{ email: encrypt(body.email) }, { isActive: true }] } });
-        user2 = await User.findOne({ where: { [Op.and]: [{ contact: encrypt(body.contact) }, { isActive: true }] } });
+        user1 = await User.findOne({ where: { [Op.and]: [{ email: encrypt(body.email) }, { isActive: true }] }, transaction });
+        user2 = await User.findOne({ where: { [Op.and]: [{ contact: encrypt(body.contact) }, { isActive: true }] }, transaction });
 
         if (body['email'] !== undefined) {
             bodyEmailErr = await Employee.findOne({ where: { email: encrypt(body.email), isActive: true } });
@@ -386,7 +395,7 @@ exports.createEncrypt = async (req, res, next) => {
                         })
                         .then(employee => {
                             // console.log(employeeId);
-                            employee.updateAttributes(updateImage);
+                            employee.updateAttributes(updateImage, transaction);
                         })
                         .catch(err => console.log(err))
                     documentOne = req.files.documentOne[0].path;
@@ -401,7 +410,7 @@ exports.createEncrypt = async (req, res, next) => {
                         }
                     })
                         .then(employee => {
-                            employee.updateAttributes(updateDocument);
+                            employee.updateAttributes(updateDocument, transaction);
                         })
                         .catch(err => console.log(err))
 
@@ -453,7 +462,7 @@ exports.createEncrypt = async (req, res, next) => {
                             contact: encrypt(employee.contact),
                             email: encrypt(employee.email),
                             isActive: false
-                        });
+                        }, transaction);
                         // set roles
                         // console.log(employee.password);
                         // console.log(employee.password);
@@ -462,15 +471,19 @@ exports.createEncrypt = async (req, res, next) => {
                         });
                         console.log("employee role", roles)
                         // user.setRoles(roles);
-                        UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false });
-                        UserRFID.create({ userId: user.userId, rfidId: body.rfidId });
-                        FingerprintData.create({ userId: user.userId });
+                        UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false }, transaction);
+                        UserRFID.create({ userId: user.userId, rfidId: body.rfidId }, transaction);
+                        FingerprintData.create({ userId: user.userId }, transaction);
                         const message = mailToUser(req.body.email, employeeId);
+                        await transaction.commit();
                         return res.status(httpStatus.CREATED).json({
                             message: "Employee successfully created. please activate your account. click on the link delievered to your given email"
                         });
                     })
-                    .catch(err => console.log(err))
+                    .catch(async err => {
+                        if (transaction) await transaction.rollback();
+                        console.log(err)
+                    })
             } else {
                 return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
             }
@@ -570,7 +583,9 @@ exports.getDecrypt = async (req, res, next) => {
 
 
 exports.updateEncrypt = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
         // console.log(id);
         let profileImage;
@@ -759,11 +774,11 @@ exports.updateEncrypt = async (req, res, next) => {
                     }
                 })
                     .then(employee => {
-                        return employee.updateAttributes(toBeUpdated);
+                        return employee.updateAttributes(toBeUpdated, transaction);
                     })
-                    .then(employee => {
+                    .then(async employee => {
                         toBeUpdated.userId = employee.employeeId;
-                        User.update(toBeUpdated, { where: { isActive: true, userId: employee.employeeId } });
+                        User.update(toBeUpdated, { where: { isActive: true, userId: employee.employeeId } }, transaction);
                         UserRFID.findOne({ where: { userId: id, isActive: true } })
                             .then(emplpoyeeRfid => {
                                 if (emplpoyeeRfid !== null) {
@@ -772,7 +787,7 @@ exports.updateEncrypt = async (req, res, next) => {
                                     UserRFID.create({
                                         userId: id,
                                         rfidId: update.rfidId
-                                    })
+                                    }, transaction)
                                 }
                             })
                         employee.userName = decrypt(employee.userName);
@@ -790,6 +805,7 @@ exports.updateEncrypt = async (req, res, next) => {
                         employee.picture = decrypt(employee.picture);
                         employee.documentOne = decrypt(employee.documentOne);
                         employee.documentTwo = decrypt(employee.documentTwo);
+                        await transaction.commit();
                         return res.status(httpStatus.OK).json({
                             message: "Employee Updated Page",
                             employee
@@ -797,9 +813,11 @@ exports.updateEncrypt = async (req, res, next) => {
                     })
                     .catch(err => console.log(err))
             } else {
+                if (transaction) await transaction.rollback();
                 return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
             }
         } else {
+            if (transaction) await transaction.rollback();
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
                 message: 'User already exist for same email and contact'
             });

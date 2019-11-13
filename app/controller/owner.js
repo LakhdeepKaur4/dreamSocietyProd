@@ -115,8 +115,8 @@ let mailToUser1 = (email, memberId) => {
     data: 'foo'
   },
     'secret', {
-      expiresIn: '1h'
-    });
+    expiresIn: '1h'
+  });
   memberId = encrypt(key, memberId.toString());
   const request = mailjet.post("send", {
     'version': 'v3.1'
@@ -150,8 +150,8 @@ let mailToUser = (email, ownerId) => {
     data: 'foo'
   },
     'secret', {
-      expiresIn: '1h'
-    });
+    expiresIn: '1h'
+  });
   ownerId = encrypt(key, ownerId.toString());
   const request = mailjet.post("send", {
     'version': 'v3.1'
@@ -380,11 +380,11 @@ exports.create1 = async (req, res, next) => {
       console.log("hello", memberNewArray);
       const ownerMember = await OwnerMembersDetail.bulkCreate(
         memberNewArray, {
-          returning: true
-        }, {
-          fields: ["memberId", "memberFirstName", "memberLastName", "memberUserName", "memberEmail", "memberContact", "password", "memberDob", "gender", "relationId", "memberRfId", "flatDetailId"]
-          // updateOnDuplicate: ["name"]
-        }
+        returning: true
+      }, {
+        fields: ["memberId", "memberFirstName", "memberLastName", "memberUserName", "memberEmail", "memberContact", "password", "memberDob", "gender", "relationId", "memberRfId", "flatDetailId"]
+        // updateOnDuplicate: ["name"]
+      }
       );
 
       ownerMember.map(x => ids.push(x.memberId));
@@ -421,14 +421,14 @@ exports.create1 = async (req, res, next) => {
           lastName: encrypt1(key, lastName),
           userName: encrypt1(key, email),
           password: bcrypt.hashSync(member.password, 8),
-          contact:  member.memberContact,
+          contact: member.memberContact,
           towerId: owner.towerId,
           email: encrypt1(key, email),
           isActive: false
         });
 
         let fingerPrintOwnerMember = await FingerPrint.create({
-          userId:user.userId
+          userId: user.userId
         })
 
         // if (member.merberRfId !== null && member.memberRfId !== undefined && member.memberRfId !== '') {
@@ -482,14 +482,14 @@ exports.create1 = async (req, res, next) => {
       lastName: encrypt1(key, lastName),
       userName: encrypt1(key, email),
       password: bcrypt.hashSync(owner.password, 8),
-      contact:  owner.contact,
+      contact: owner.contact,
       towerId: owner.towerId,
       email: encrypt1(key, email),
       isActive: false
     });
 
     let fingerPrintOwner = await FingerPrint.create({
-      userId:user.userId
+      userId: user.userId
     })
 
     let userRfId = await UserRfId.create({
@@ -1173,9 +1173,9 @@ exports.update2 = async (req, res, next) => {
     console.log("updated attributes,", updAttr);
     let updatedOwner1 = await updatedOwner.updateAttributes(updAttr);
     let updatedUser = await user.updateAttributes(updUserAttr);
-    if(req.body.email!==null && req.body.email!==undefined && req.body.email!==""){
-      updatedOwner1 = await updatedOwner.updateAttributes({userName:encrypt(key,req.body.email)});
-      updatedUser = await user.updateAttributes({userName:encrypt(key,req.body.email)});
+    if (req.body.email !== null && req.body.email !== undefined && req.body.email !== "") {
+      updatedOwner1 = await updatedOwner.updateAttributes({ userName: encrypt(key, req.body.email) });
+      updatedUser = await user.updateAttributes({ userName: encrypt(key, req.body.email) });
     }
 
     if (updatedOwner1) {
@@ -1406,7 +1406,9 @@ exports.delete = async (req, res, next) => {
 }
 
 exports.deleteSelected = async (req, res, next) => {
+  let transaction;
   try {
+    transaction = await db.sequelize.transaction();
     let userEmails = [];
     const deleteSelected = req.body.ids;
     console.log("delete selected==>", deleteSelected);
@@ -1423,7 +1425,8 @@ exports.deleteSelected = async (req, res, next) => {
       where: {
         ownerId: {
           [Op.in]: deleteSelected
-        }
+        },
+        transaction
       }
     });
     let usersToUpdate = await Owner.findAll({
@@ -1456,8 +1459,8 @@ exports.deleteSelected = async (req, res, next) => {
             userId: user.userId
           }
         });
-        role.updateAttributes(update);
-        return user.updateAttributes(update);
+        role.updateAttributes(update, transaction);
+        return user.updateAttributes(update, transaction);
       });
     }
 
@@ -1493,15 +1496,15 @@ exports.deleteSelected = async (req, res, next) => {
       });
       console.log("user_rf_id ====>", urfId);
       if (urfId) {
-        urfId.updateAttributes(update);
+        urfId.updateAttributes(update, transaction);
       }
       if (role) {
-        role.updateAttributes(update);
+        role.updateAttributes(update, transaction);
       }
       if (memberUser) {
-        memberUser.updateAttributes(update);
+        memberUser.updateAttributes(update, transaction);
       }
-      member.updateAttributes(update);
+      member.updateAttributes(update, transaction);
     })
 
 
@@ -1530,30 +1533,30 @@ exports.deleteSelected = async (req, res, next) => {
               let memberRfId = await UserRfId.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
               let memberRole = await UserRoles.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
               if (userMember) {
-                userMember.updateAttributes({ isActive: false });
+                userMember.updateAttributes({ isActive: false }, transaction);
               }
               if (memberRfId) {
-                memberRfId.updateAttributes({ isActive: false });
+                memberRfId.updateAttributes({ isActive: false }, transaction);
               }
               if (memberRole) {
-                memberRole.updateAttributes({ isActive: false });
+                memberRole.updateAttributes({ isActive: false }, transaction);
               }
-              tenantMember.updateAttributes({ isActive: false });
+              tenantMember.updateAttributes({ isActive: false }, transaction);
             })
             if (tenantToDeactivate) {
-              tenantToDeactivate.updateAttributes({ isActive: false });
+              tenantToDeactivate.updateAttributes({ isActive: false }, transaction);
             }
             if (user1) {
-              user1.updateAttributes({ isActive: false });
+              user1.updateAttributes({ isActive: false }, transaction);
             }
             if (rfId) {
-              rfId.updateAttributes({ isActive: false });
+              rfId.updateAttributes({ isActive: false }, transaction);
             }
             if (role) {
-              role.updateAttributes({ isActive: false });
+              role.updateAttributes({ isActive: false }, transaction);
             }
             if (tenant) {
-              tenant.updateAttributes({ isActive: false });
+              tenant.updateAttributes({ isActive: false }, transaction);
             }
 
           })
@@ -1566,17 +1569,19 @@ exports.deleteSelected = async (req, res, next) => {
         isActive: true,
         ownerId: {
           [Op.in]: deleteSelected
-        }
+        },
+        transaction
       }
     });
 
     if (updatedOwners && updatedOwnersMembers && flatDetails) {
+      await transaction.commit();
       return res.status(httpStatus.OK).json({
         message: "Owners deleted successfully",
       });
     };
   } catch (error) {
-    console.log(error)
+    if (transaction) await transaction.rollback();
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
 }
@@ -1622,63 +1627,73 @@ exports.getMembers = async (req, res, next) => {
 }
 
 exports.deleteMember = async (req, res, next) => {
-  let ownerMemberId = req.params.id;
-  //let ownerId = req.params.ownerId;
-  if (!ownerMemberId) {
-    return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-      message: "Id is missing"
+  let transaction;
+  try {
+    transaction = await db.sequelize.transaction();
+    let ownerMemberId = req.params.id;
+    //let ownerId = req.params.ownerId;
+    if (!ownerMemberId) {
+      return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+        message: "Id is missing"
+      });
+    }
+    let update = {
+      isActive: false
+    };
+
+    const updatedOwnerMembersDetail = await OwnerMembersDetail.findOne({
+      where: {
+        memberId: ownerMemberId,
+        isActive: true
+      },
+      transaction
+    })
+    let memberUser = await User.findOne({
+      where: {
+        isActive: true,
+        userId: updatedOwnerMembersDetail.memberId
+      }
     });
-  }
-  let update = {
-    isActive: false
-  };
+    if (memberUser) {
+      memberUser.updateAttributes(update, transaction);
 
-  const updatedOwnerMembersDetail = await OwnerMembersDetail.findOne({
-    where: {
-      memberId: ownerMemberId,
-      isActive: true
     }
-  })
-  let memberUser = await User.findOne({
-    where: {
-      isActive: true,
-      userId: updatedOwnerMembersDetail.memberId
-    }
-  });
-  if (memberUser) {
-    memberUser.updateAttributes(update);
-
-  }
-  let role = await UserRoles.findOne({
-    where: {
-      isActive: true,
-      userId: ownerMemberId
-    }
-  });
-  if (role) {
-    role.updateAttributes(update);
-  }
-  let urfId = await UserRfId.findOne({
-    where: {
-      isActive: true,
-      userId: ownerMemberId
-    }
-  });
-  console.log("user_rf_id ====>", urfId);
-  if (urfId) {
-    urfId.updateAttributes(update);
-  }
-  updatedOwnerMembersDetail.updateAttributes(update);
-
-  if (updatedOwnerMembersDetail) {
-    return res.status(httpStatus.OK).json({
-      message: "OwnerMember deleted successfully",
+    let role = await UserRoles.findOne({
+      where: {
+        isActive: true,
+        userId: ownerMemberId
+      }
     });
+    if (role) {
+      role.updateAttributes(update, transaction);
+    }
+    let urfId = await UserRfId.findOne({
+      where: {
+        isActive: true,
+        userId: ownerMemberId
+      }
+    });
+    console.log("user_rf_id ====>", urfId);
+    if (urfId) {
+      urfId.updateAttributes(update, transaction);
+    }
+    updatedOwnerMembersDetail.updateAttributes(update, transaction);
+
+    if (updatedOwnerMembersDetail) {
+      return res.status(httpStatus.OK).json({
+        message: "OwnerMember deleted successfully",
+      });
+    }
+  } catch (error) {
+    if (transaction) await transaction.rollback();
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
 }
 
 exports.deleteSelectedMembers = async (req, res, next) => {
+  let transaction;
   try {
+    transaction = await db.sequelize.transaction();
     const deleteSelected = req.body.ids;
     console.log("delete selected==>", deleteSelected);
 
@@ -1709,7 +1724,7 @@ exports.deleteSelectedMembers = async (req, res, next) => {
         }
       });
       if (memberUser) {
-        await memberUser.updateAttributes(update);
+        await memberUser.updateAttributes(update, transaction);
       }
       let urfId = await UserRfId.findOne({
         where: {
@@ -1719,7 +1734,7 @@ exports.deleteSelectedMembers = async (req, res, next) => {
       });
       // console.log("user_rf_id ====>", urfId)
       if (urfId) {
-        await urfId.updateAttributes(update);
+        await urfId.updateAttributes(update, transaction);
       }
       let role = await UserRoles.findOne({
         where: {
@@ -1727,24 +1742,27 @@ exports.deleteSelectedMembers = async (req, res, next) => {
         }
       });
       if (role) {
-        await role.updateAttributes(update);
+        await role.updateAttributes(update, transaction);
       }
-      await member.updateAttributes(update);
+      await member.updateAttributes(update, transaction);
     })
+    await transaction.commit();
     return res.status(httpStatus.OK).json({
       message: "Owners deleted successfully",
     });
 
   } catch (error) {
     console.log(error)
+    if (transaction) await transaction.rollback();
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
 };
 
 
 exports.updateMember = async (req, res, next) => {
+  let transaction;
   try {
-
+    transaction = await db.sequelize.transaction();
     if (req.body.memberEmail !== undefined && req.body.memberEmail !== null) {
       let existingOwnerMember = await OwnerMembersDetail.find({
         where: {
@@ -1838,7 +1856,7 @@ exports.updateMember = async (req, res, next) => {
         }
       });
       if (uRfId) {
-        uRfId.updateAttributes({ rfidId: req.body.memberRfId });
+        uRfId.updateAttributes({ rfidId: req.body.memberRfId }, transaction);
       }
     };
     attrArr.forEach(attr => {
@@ -1870,25 +1888,25 @@ exports.updateMember = async (req, res, next) => {
       }
     });
 
-    let updatedOwner1 = await updatedOwnerMember.updateAttributes(updAttr);
+    let updatedOwner1 = await updatedOwnerMember.updateAttributes(updAttr, transaction);
 
-    if(req.body.memberFirstName!==null && req.body.memberFirstName!==undefined && req.body.memberFirstName!=='' ){
+    if (req.body.memberFirstName !== null && req.body.memberFirstName !== undefined && req.body.memberFirstName !== '') {
       userUpd.firstName = encrypt(key, req.body.memberFirstName);
     }
 
-    if(req.body.memberLastName!==null && req.body.memberLastName!==undefined && req.body.memberLastName!=='' ){
-      userUpd.lastName = encrypt(key, req.body.memberLastName);      
+    if (req.body.memberLastName !== null && req.body.memberLastName !== undefined && req.body.memberLastName !== '') {
+      userUpd.lastName = encrypt(key, req.body.memberLastName);
     }
 
-    if(req.body.memberEmail!==null && req.body.memberEmail!==undefined && req.body.memberEmail!=='' ){
+    if (req.body.memberEmail !== null && req.body.memberEmail !== undefined && req.body.memberEmail !== '') {
       userUpd.email = encrypt(key, req.body.memberEmail);
       userUpd.userName = encrypt(key, req.body.memberEmail);
-      
+
     }
 
-    if(req.body.memberContact!==null && req.body.memberContact!==undefined && req.body.memberContact!=='' ){
+    if (req.body.memberContact !== null && req.body.memberContact !== undefined && req.body.memberContact !== '') {
       userUpd.contact = encrypt(key, req.body.memberContact);
-      
+
     }
 
     const updatedUser = await User.find({
@@ -1897,8 +1915,8 @@ exports.updateMember = async (req, res, next) => {
         isActive: true
       }
     });
-    let updatedUser1 = await updatedUser.updateAttributes(userUpd);
-
+    let updatedUser1 = await updatedUser.updateAttributes(userUpd, transaction);
+    await transaction.commit();
     return res.status(httpStatus.OK).json({
       message: "Owner Updated Page",
       owner: updatedOwner1
@@ -1906,13 +1924,16 @@ exports.updateMember = async (req, res, next) => {
 
   } catch (error) {
     console.log(error);
+    if (transaction) await transaction.rollback();
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
 };
 
 
 exports.addMember = async (req, res, next) => {
+  let transaction;
   try {
+    transaction = await db.sequelize.transaction();
     let existingOwner = await OwnerMembersDetail.find({
       where: {
         isActive: true,
@@ -1974,7 +1995,7 @@ exports.addMember = async (req, res, next) => {
 
     console.log(fields);
 
-    let member = await OwnerMembersDetail.create(fields);
+    let member = await OwnerMembersDetail.create(fields, transaction);
     if (member.memberFirstName !== '' && member.memberLastName !== '') {
       firstName = decrypt(key, member.memberFirstName);
       lastName = decrypt(key, member.memberLastName);
@@ -1992,16 +2013,16 @@ exports.addMember = async (req, res, next) => {
       lastName: encrypt1(key, lastName),
       userName: encrypt1(key, email),
       password: bcrypt.hashSync(member.password, 8),
-      contact:  member.memberContact,
+      contact: member.memberContact,
       towerId: req.body.towerId,
       email: encrypt1(key, email),
       isActive: false
-    });
+    }, transaction);
 
     let userRfId = await UserRfId.create({
       userId: user.userId,
       rfidId: member.memberRfId
-    })
+    }, transaction)
     let roles = await Role.findOne({
       where: {
         id: 3
@@ -2013,20 +2034,23 @@ exports.addMember = async (req, res, next) => {
     await UserRoles.create({
       userId: user.userId,
       roleId: roles.id
-    });
+    }, transaction);
     const message = mailToUser1(email, member.memberId);
+    await transaction.commit();
     res.status(httpStatus.OK).json({
       message: "Member Added Sucessfully to respective Owner",
     })
 
   } catch (error) {
-    console.log(error);
+    if (transaction) await transaction.rollback();
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
 }
 
 exports.addMoreFlats = async (req, res, next) => {
+  let transaction;
   try {
+    transaction = await db.sequelize.transaction();
     console.log("api is running");
     let ownerId = req.body.ownerId;
     let flatDetailId = req.body.flatDetailId;
@@ -2047,7 +2071,8 @@ exports.addMoreFlats = async (req, res, next) => {
     if (check) {
       check.updateAttributes({
         isActive: true
-      });
+      }, transaction);
+      await transaction.commit();
       res.status(httpStatus.OK).json({
         message: "Flat Added Sucessfully to respective Owner",
         result: check
@@ -2056,8 +2081,9 @@ exports.addMoreFlats = async (req, res, next) => {
       let result = await OwnerFlatDetail.create({
         flatDetailId: flatDetailId,
         ownerId: ownerId
-      });
+      }, transaction);
       if (result) {
+        await transaction.commit();
         res.status(httpStatus.OK).json({
           message: "Flat Added Sucessfully to respective Owner",
           result: result
@@ -2143,7 +2169,9 @@ exports.getflats = async (req, res, next) => {
 
 
 exports.deleteFlat = async (req, res, next) => {
+  let transaction;
   try {
+    transaction = await db.sequelize.transaction();
     console.log("deleteflat is running", req.params.id, req.body.flatDetailId);
     let ownerId = req.params.id;
     let flatDetailId = req.body.flatDetailId;
@@ -2157,12 +2185,12 @@ exports.deleteFlat = async (req, res, next) => {
     let result = await OwnerFlatDetail.update({
       isActive: false
     }, {
-        where: {
-          flatDetailId: flatDetailId,
-          ownerId: ownerId
-        }
-
-      });
+      where: {
+        flatDetailId: flatDetailId,
+        ownerId: ownerId
+      },
+      transaction
+    });
     let tenants = await TenantFlatDetail.findAll({ where: { isActive: true, flatDetailId: flatDetailId } });
     if (tenants) {
       tenants.forEach(async tenant => {
@@ -2176,35 +2204,36 @@ exports.deleteFlat = async (req, res, next) => {
           let memberRfId = await UserRfId.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
           let memberRole = await UserRoles.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
           if (userMember) {
-            userMember.updateAttributes({ isActive: false });
+            userMember.updateAttributes({ isActive: false }, transaction);
           }
           if (memberRfId) {
-            memberRfId.updateAttributes({ isActive: false });
+            memberRfId.updateAttributes({ isActive: false }, transaction);
           }
           if (memberRole) {
-            memberRole.updateAttributes({ isActive: false });
+            memberRole.updateAttributes({ isActive: false }, transaction);
           }
-          tenantMember.updateAttributes({ isActive: false });
+          tenantMember.updateAttributes({ isActive: false }, transaction);
         })
         if (tenantToDeactivate) {
-          tenantToDeactivate.updateAttributes({ isActive: false });
+          tenantToDeactivate.updateAttributes({ isActive: false }, transaction);
         }
         if (user1) {
-          user1.updateAttributes({ isActive: false });
+          user1.updateAttributes({ isActive: false }, transaction);
         }
         if (rfId) {
-          rfId.updateAttributes({ isActive: false });
+          rfId.updateAttributes({ isActive: false }, transaction);
         }
         if (role) {
-          role.updateAttributes({ isActive: false });
+          role.updateAttributes({ isActive: false }, transaction);
         }
         if (tenant) {
-          tenant.updateAttributes({ isActive: false });
+          tenant.updateAttributes({ isActive: false }, transaction);
         }
       }
       )
     }
     if (result) {
+      await transaction.commit();
       res.status(httpStatus.OK).json({
         message: "Flat deleted Successfully",
         result: result
@@ -2212,7 +2241,7 @@ exports.deleteFlat = async (req, res, next) => {
     }
 
   } catch (error) {
-    console.log(error);
+    if (transaction) await transaction.rollback();
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
 
@@ -2220,7 +2249,9 @@ exports.deleteFlat = async (req, res, next) => {
 
 
 exports.editFlat = async (req, res, next) => {
+  let transaction;
   try {
+    transaction = await db.sequelize.transaction();
     console.log("editing flat");
     let ownerId = req.params.id;
     let previousFlatId = req.body.previousId;
@@ -2236,7 +2267,7 @@ exports.editFlat = async (req, res, next) => {
     }
     let deleteFlat = await OwnerFlatDetail.findOne({ where: { isActive: true, flatDetailId: previousFlatId, ownerId: ownerId } });
     if (deleteFlat) {
-      deleteFlat.updateAttributes({ isActive: false });
+      deleteFlat.updateAttributes({ isActive: false }, transaction);
       let tenants = await TenantFlatDetail.findAll({ where: { isActive: true, flatDetailId: previousFlatId } });
 
       tenants.forEach(async tenant => {
@@ -2250,30 +2281,30 @@ exports.editFlat = async (req, res, next) => {
           let memberRfId = await UserRfId.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
           let memberRole = await UserRoles.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
           if (userMember) {
-            userMember.updateAttributes({ isActive: false });
+            userMember.updateAttributes({ isActive: false }, transaction);
           }
           if (memberRfId) {
-            memberRfId.updateAttributes({ isActive: false });
+            memberRfId.updateAttributes({ isActive: false }, transaction);
           }
           if (memberRole) {
-            memberRole.updateAttributes({ isActive: false });
+            memberRole.updateAttributes({ isActive: false }, transaction);
           }
-          tenantMember.updateAttributes({ isActive: false });
+          tenantMember.updateAttributes({ isActive: false }, transaction);
         })
         if (tenantToDeactivate) {
-          tenantToDeactivate.updateAttributes({ isActive: false });
+          tenantToDeactivate.updateAttributes({ isActive: false }, transaction);
         }
         if (user1) {
-          user1.updateAttributes({ isActive: false });
+          user1.updateAttributes({ isActive: false }, transaction);
         }
         if (rfId) {
-          rfId.updateAttributes({ isActive: false });
+          rfId.updateAttributes({ isActive: false }, transaction);
         }
         if (role) {
-          role.updateAttributes({ isActive: false });
+          role.updateAttributes({ isActive: false }, transaction);
         }
         if (tenant) {
-          tenant.updateAttributes({ isActive: false });
+          tenant.updateAttributes({ isActive: false }, transaction);
         }
       }
 
@@ -2281,7 +2312,7 @@ exports.editFlat = async (req, res, next) => {
 
       let checkprev = await OwnerFlatDetail.findOne({ where: { isActive: false, ownerId: ownerId, flatDetailId: newFlatId } });
       if (checkprev) {
-        checkprev.updateAttributes({ isActive: true });
+        checkprev.updateAttributes({ isActive: true }, transaction);
         res.status(httpStatus.OK).json({
           message: "Flat edit successfully"
         })
@@ -2289,7 +2320,8 @@ exports.editFlat = async (req, res, next) => {
         let newFlat = await OwnerFlatDetail.create({
           ownerId: ownerId,
           flatDetailId: newFlatId
-        });
+        }, transaction);
+        await transaction.commit();
         if (newFlat) {
           res.status(httpStatus.OK).json({
             message: "Flat edit successfully",
@@ -2299,7 +2331,7 @@ exports.editFlat = async (req, res, next) => {
       }
     }
   } catch (error) {
-    console.log(error);
+    if (transaction) await transaction.rollback();
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
 }

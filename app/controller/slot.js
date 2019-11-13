@@ -8,7 +8,9 @@ const Op = db.Sequelize.Op;
 const Flat = db.flat;
 
 exports.create = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         console.log("creating parking api");
         let body = req.body;
         body.userId = req.userId;
@@ -19,8 +21,9 @@ exports.create = async (req, res, next) => {
             slot = await Slots.create({
                 slots: 'Slot ' + slots,
                 parkingId: parkingId
-            });
+            }, transaction);
         }
+        await transaction.commit();
         if (slot) {
             res.status(httpStatus.CREATED).json({
                 message: "Parking successfully created"

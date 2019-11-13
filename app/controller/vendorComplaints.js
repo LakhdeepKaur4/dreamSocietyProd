@@ -109,138 +109,181 @@ exports.getById = (req, res, next) => {
         })
 }
 
-exports.rejectComplaint = (req, res, next) => {
-    const id = req.body.complaintId;
-    console.log('Complaint ID ===>', id);
+exports.rejectComplaint = async (req, res, next) => {
+    let transaction;
+    try {
+        transaction = await db.sequelize.transaction();
+        const id = req.body.complaintId;
+        console.log('Complaint ID ===>', id);
 
-    VendorComplaints.findOne({
-        where: {
-            complaintId: id,
-            vendorId: req.userId,
-            isActive: true
-        }
-    })
-        .then(complaint => {
-            complaint.destroy();
-            VendorComplaints.update({ isActive: true }, { where: { complaintId: id, vendorId: { [Op.ne]: req.userId } } });
-            Complaint.findOne({
-                where: {
-                    complaintId: id,
-                    isActive: true,
-                    isAccepted: true
+        VendorComplaints.findOne({
+            where: {
+                complaintId: id,
+                vendorId: req.userId,
+                isActive: true
+            }
+        })
+            .then(async complaint => {
+                complaint.destroy({}, { transaction });
+                VendorComplaints.update({ isActive: true }, { where: { complaintId: id, vendorId: { [Op.ne]: req.userId }, transaction } });
+                Complaint.findOne({
+                    where: {
+                        complaintId: id,
+                        isActive: true,
+                        isAccepted: true
+                    }
+                })
+                    .then(complaint => {
+                        complaint.updateAttributes({ vendorId: null, isAccepted: false, complaintStatusId: 1 }, transaction);
+                    })
+                await transaction.commit();
+                res.status(httpStatus.OK).json({
+                    message: 'Complaint rejected successfully'
+                })
+            })
+            .catch(async err => {
+                if (transaction) await transaction.rollback();
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    } catch (error) {
+        if (transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
+
+exports.acceptComplaint = async (req, res, next) => {
+    let transaction;
+    try {
+        transaction = await db.sequelize.transaction();
+        const id = req.body.complaintId;
+        console.log('Complaint ID ===>', id);
+
+        Complaint.findOne({
+            where: {
+                complaintId: id,
+                isActive: true,
+                isAccepted: false
+            }
+        })
+            .then(async complaint => {
+                if (complaint !== null) {
+                    complaint.updateAttributes({ isAccepted: true, vendorId: req.userId, complaintStatusId: 6 }, transaction);
+                    await transaction.commit();
+                    res.status(httpStatus.OK).json({
+                        message: 'Complaint accepted by vendor.'
+                    })
+                } else {
+                    res.status(httpStatus.OK).json({
+                        message: "Please refresh complaint may be already have been in accepted state or doesn't exist anymore."
+                    })
                 }
             })
-                .then(complaint => {
-                    complaint.updateAttributes({ vendorId: null, isAccepted: false, complaintStatusId: 1 });
-                })
-
-            res.status(httpStatus.OK).json({
-                message: 'Complaint rejected successfully'
+            .catch(async err => {
+                if (transaction) await transaction.rollback();
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
             })
-        })
-        .catch(err => {
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
+    } catch (error) {
+        if (transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
 }
 
-exports.acceptComplaint = (req, res, next) => {
-    const id = req.body.complaintId;
-    console.log('Complaint ID ===>', id);
+exports.selectSlot = async (req, res, next) => {
+    let transaction;
+    try {
+        transaction = await db.sequelize.transaction();
+        const body = req.body;
+        console.log('Slot selected ===>', body);
 
-    Complaint.findOne({
-        where: {
-            complaintId: id,
-            isActive: true,
-            isAccepted: false
-        }
-    })
-        .then(complaint => {
-            if (complaint !== null) {
-                complaint.updateAttributes({ isAccepted: true, vendorId: req.userId, complaintStatusId: 6 });
-                res.status(httpStatus.OK).json({
-                    message: 'Complaint accepted by vendor.'
-                })
-            } else {
-                res.status(httpStatus.OK).json({
-                    message: "Please refresh complaint may be already have been in accepted state or doesn't exist anymore."
-                })
+        Complaint.findOne({
+            where: {
+                complaintId: body.complaintId,
+                isActive: true,
+                isAccepted: true
             }
         })
-        .catch(err => {
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
-}
-
-exports.selectSlot = (req, res, next) => {
-    const body = req.body;
-    console.log('Slot selected ===>', body);
-
-    Complaint.findOne({
-        where: {
-            complaintId: body.complaintId,
-            isActive: true,
-            isAccepted: true
-        }
-    })
-        .then(complaint => {
-            complaint.updateAttributes({ selectedSlot: body.updatedSlots, complaintStatusId: 3 });
-            VendorComplaints.update({ isActive: false }, { where: { complaintId: body.complaintId, vendorId: { [Op.ne]: req.userId } } });
-            res.status(httpStatus.CREATED).json({
-                message: 'Complaint in progress now'
+            .then(async complaint => {
+                complaint.updateAttributes({ selectedSlot: body.updatedSlots, complaintStatusId: 3 });
+                VendorComplaints.update({ isActive: false }, { where: { complaintId: body.complaintId, vendorId: { [Op.ne]: req.userId } }, transaction });
+                await transaction.commit();
+                res.status(httpStatus.CREATED).json({
+                    message: 'Complaint in progress now'
+                })
             })
-        })
-        .catch(err => {
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
-}
-
-exports.completedComplaint = (req, res, next) => {
-    const id = req.body.complaintId;
-    console.log('Complaint ID ===>', id);
-
-    Complaint.findOne({
-        where: {
-            complaintId: id,
-            isActive: true,
-            isAccepted: true
-        }
-    })
-        .then(complaint => {
-            complaint.updateAttributes({ complaintStatusId: 4 });
-            res.status(httpStatus.OK).json({
-                message: 'Complaint status changed to completed'
+            .catch(async err => {
+                if (transaction) await transaction.rollback();
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
             })
-        })
-        .catch(err => {
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
+    } catch (error) {
+        if (transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
 }
 
-exports.deleteComplaints = (req, res, next) => {
-    const ids = req.body.ids;
-    console.log('Comaplaint IDs ===>', ids);
+exports.completedComplaint = async (req, res, next) => {
+    let transaction;
+    try {
+        transaction = await db.sequelize.transaction();
+        const id = req.body.complaintId;
+        console.log('Complaint ID ===>', id);
 
-    VendorComplaints.findAll({
-        where: {
-            vendorId: req.userId,
-            isActive: true,
-            complaintId: {
-                [Op.in]: ids
+        Complaint.findOne({
+            where: {
+                complaintId: id,
+                isActive: true,
+                isAccepted: true
             }
-        }
-    })
-        .then(complaints => {
-            complaints.map(item => {
-                item.destroy();
-            })
-            res.status(httpStatus.OK).json({
-                message: 'Deleted successfully'
-            })
         })
-        .catch(err => {
-            console.log('Error ===>', err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            .then(async complaint => {
+                complaint.updateAttributes({ complaintStatusId: 4 }, transaction);
+                await transaction.commit();
+                res.status(httpStatus.OK).json({
+                    message: 'Complaint status changed to completed'
+                })
+            })
+            .catch(async err => {
+                if (transaction) await transaction.rollback();
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    } catch (error) {
+        if (transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+}
+
+exports.deleteComplaints = async (req, res, next) => {
+    let transaction;
+    try {
+        transaction = await db.sequelize.transaction();
+        const ids = req.body.ids;
+        console.log('Comaplaint IDs ===>', ids);
+
+        VendorComplaints.findAll({
+            where: {
+                vendorId: req.userId,
+                isActive: true,
+                complaintId: {
+                    [Op.in]: ids
+                }
+            }
         })
+            .then(async complaints => {
+                complaints.map(item => {
+                    item.destroy({}, { transaction });
+                })
+                await transaction.commit();
+                res.status(httpStatus.OK).json({
+                    message: 'Deleted successfully'
+                })
+            })
+            .catch(async err => {
+                if (transaction) await transaction.rollback();
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    } catch (error) {
+        if (transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
 }
 
 exports.getFeedback = (req, res, next) => {

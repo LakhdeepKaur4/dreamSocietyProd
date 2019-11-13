@@ -9,16 +9,18 @@ const Role = db.role;
 const Op = db.Sequelize.Op;
 
 decrypt = (text) => {
-	let key = config.secret;
-	let algorithm = 'aes-128-cbc';
-	let decipher = crypto.createDecipher(algorithm, key);
-	let decryptedText = decipher.update(text, 'hex', 'utf8');
-	decryptedText += decipher.final('utf8');
-	return decryptedText;
+    let key = config.secret;
+    let algorithm = 'aes-128-cbc';
+    let decipher = crypto.createDecipher(algorithm, key);
+    let decryptedText = decipher.update(text, 'hex', 'utf8');
+    decryptedText += decipher.final('utf8');
+    return decryptedText;
 }
 
 exports.create = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         console.log("creating event");
         let body = req.body;
         body.userId = req.userId;
@@ -34,30 +36,32 @@ exports.create = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Event Name already Exists" })
         }
         console.log("body===>", body)
-        const event = await Event.create(body);
+        const event = await Event.create(body, transaction);
+        await transaction.commit();
         return res.status(httpStatus.CREATED).json({
             message: "Event successfully created",
             event
         });
     } catch (error) {
         console.log("error==>", error);
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.get = async (req, res, next) => {
     try {
-        let events= [];
+        let events = [];
         const event = await Event.findAll({
             where: { isActive: true },
             order: [['createdAt', 'DESC']],
             include: [{
                 model: User,
                 as: 'organiser',
-                attributes: ['userId','firstName','lastName'],
+                attributes: ['userId', 'firstName', 'lastName'],
             }]
         });
-        event.map(e=>{
+        event.map(e => {
             e.organiser.firstName = decrypt(e.organiser.firstName);
             e.organiser.lastName = decrypt(e.organiser.lastName);
             events.push(e)
@@ -76,7 +80,9 @@ exports.get = async (req, res, next) => {
 }
 
 exports.update = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
         console.log("id==>", id);
         const update = req.body;
@@ -84,57 +90,62 @@ exports.update = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
         }
         const event = await Event.findOne({
-            where:{
-                eventId:id,
-                isActive:true
+            where: {
+                eventId: id,
+                isActive: true
             }
         })
-    
-        if(event.eventName === update.eventName){
+
+        if (event.eventName === update.eventName) {
             const updatedEvent = await Event.find({ where: { eventId: id } }).then(event => {
-                return event.updateAttributes(update)
+                return event.updateAttributes(update, transaction)
             })
+            await transaction.commit();
             if (updatedEvent) {
                 return res.status(httpStatus.OK).json({
                     message: "Event Updated Page",
                     updatedEvent: updatedEvent
                 });
             }
-        }else{
-        const events = await Event.findAll({
-            where: {
-                isActive: true
-            }
-        })
-        let error = events.some(event => {
-            return event.eventName.toLowerCase().replace(/ /g, '') == req.body.eventName.toLowerCase().replace(/ /g, '');
-        });
-        if (error) {
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Event Name already Exists" })
-        }
-  
-        // console.log("update==>", update)
-        // if (!update) {
-        //     return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
-        // }
-        const updatedEvent = await Event.find({ where: { eventId: id } }).then(event => {
-            return event.updateAttributes(update)
-        })
-        if (updatedEvent) {
-            return res.status(httpStatus.OK).json({
-                message: "Event Updated Page",
-                event: updatedEvent
+        } else {
+            const events = await Event.findAll({
+                where: {
+                    isActive: true
+                }
+            })
+            let error = events.some(event => {
+                return event.eventName.toLowerCase().replace(/ /g, '') == req.body.eventName.toLowerCase().replace(/ /g, '');
             });
+            if (error) {
+                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Event Name already Exists" })
+            }
+
+            // console.log("update==>", update)
+            // if (!update) {
+            //     return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
+            // }
+            const updatedEvent = await Event.find({ where: { eventId: id } }).then(event => {
+                return event.updateAttributes(update, transaction)
+            })
+            await transaction.commit();
+            if (updatedEvent) {
+                return res.status(httpStatus.OK).json({
+                    message: "Event Updated Page",
+                    event: updatedEvent
+                });
+            }
         }
-    }
     } catch (error) {
-        console.log(error)
+        console.log(error);
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.delete = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
 
         if (!id) {
@@ -145,8 +156,9 @@ exports.delete = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
         const updatedEvent = await Event.find({ where: { eventId: id } }).then(event => {
-            return event.updateAttributes(update)
-        })
+            return event.updateAttributes(update, transaction)
+        });
+        await transaction.commit();
         if (updatedEvent) {
             return res.status(httpStatus.OK).json({
                 message: "Event deleted successfully",
@@ -154,16 +166,17 @@ exports.delete = async (req, res, next) => {
             });
         }
     } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.getEventOrganiser = async (req, res, next) => {
     try {
-        let events=[];
+        let events = [];
         const user = await User.findAll({
-            attributes: ['userId', 'firstName','lastName'],
-             include: [{
+            attributes: ['userId', 'firstName', 'lastName'],
+            include: [{
                 model: Role,
                 where: { id: { [Op.in]: [1, 2] } },
                 // where:{ [Op.and]:{ roleName: 'ADMIN' },{roleName:''}},
@@ -172,7 +185,7 @@ exports.getEventOrganiser = async (req, res, next) => {
             ]
         });
         // console.log("user==>",user)
-        user.map(e=>{
+        user.map(e => {
             e.firstName = decrypt(e.firstName);
             e.lastName = decrypt(e.lastName);
             events.push(e)
@@ -190,21 +203,25 @@ exports.getEventOrganiser = async (req, res, next) => {
 }
 
 exports.deleteSelected = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const deleteSelected = req.body.ids;
         console.log("delete selected==>", deleteSelected);
         const update = { isActive: false };
         if (!deleteSelected) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
-        const updatedEvent = await Event.update(update, { where: { eventId: { [Op.in]: deleteSelected } } })
+        const updatedEvent = await Event.update(update, { where: { eventId: { [Op.in]: deleteSelected } }, transaction });
+        await transaction.commit();
         if (updatedEvent) {
             return res.status(httpStatus.OK).json({
                 message: "Events deleted successfully",
             });
         }
     } catch (error) {
-        console.log(error)
+        console.log(error);
+        if (transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

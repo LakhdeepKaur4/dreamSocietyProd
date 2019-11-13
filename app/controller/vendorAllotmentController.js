@@ -10,7 +10,7 @@ exports.get = async (req, res, next) => {
         // let slotArray = [];
         // const alreadyBooked = 
         const vendorslot = await VendorAllotment.findAll({
-            where: { isActive: true,booked:false},
+            where: { isActive: true, booked: false },
             // attributes:{exclude:[]},
             include: [{
                 model: IndividualVendor,
@@ -58,18 +58,21 @@ exports.get = async (req, res, next) => {
     }
 }
 
-exports.bookVendorSlot = async(req,res,next) =>{
-    try{
-    const vendorAllotment = await VendorAllotment.find({where:{isActive:true,booked:false,vendorAllotmentId:req.params.id}});
-    if(vendorAllotment){
-        VendorAllotment.update({ booked: true ,bookedBy:req.userId,userId:req.userId}, { where: { vendorAllotmentId: req.params.id, isActive: true } });
-        return res.status(httpStatus.OK).json({
-            message: "Slot booked successfully",
-        });
-    }
-    }catch(error){
-        console.log("error==>", error)
-        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error); 
+exports.bookVendorSlot = async (req, res, next) => {
+    let transaction;
+    try {
+        transaction = await db.sequelize.transaction();
+        const vendorAllotment = await VendorAllotment.find({ where: { isActive: true, booked: false, vendorAllotmentId: req.params.id } });
+        if (vendorAllotment) {
+            VendorAllotment.update({ booked: true, bookedBy: req.userId, userId: req.userId }, { where: { vendorAllotmentId: req.params.id, isActive: true },transaction });
+            await transaction.commit();
+            return res.status(httpStatus.OK).json({
+                message: "Slot booked successfully",
+            });
+        }
+    } catch (error) {
+        if (transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 

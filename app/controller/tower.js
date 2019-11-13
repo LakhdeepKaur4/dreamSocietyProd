@@ -12,16 +12,18 @@ const Op = db.Sequelize.Op;
 const OwnerFlatDetail = db.ownerFlatDetail;
 
 exports.create = async (req, res) => {
+    let transaction;
     console.log("creating tower");
     let body = req.body;
     body.userId = req.userId;
     try {
+        transaction = await db.sequelize.transaction();
         const towers = await Tower.findAll({
             where: {
                 isActive: true
             }
         })
-    
+
         let error = towers.some(tower => {
             return tower.towerName.toLowerCase().replace(/ /g, '') == req.body.towerName.toLowerCase().replace(/ /g, '');
         });
@@ -29,16 +31,17 @@ exports.create = async (req, res) => {
         if (error) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Tower Name already Exists" })
         }
-        const tower = await Tower.create(body);
+        const tower = await Tower.create(body, transaction);
+        await transaction.commit();
         const towerId = tower.towerId;
 
         const result = body.floors.forEach(function (element) { element.towerId = towerId });
         const updatedTowerFloor = await TowerFloor.bulkCreate(body.floors, { returning: true }, {
             fields: ["floorId", "towerId"],
-        },
+        }, { transaction }
         );
         // const updatedTower = await TowerFloor.update(bodyToUpdate, { where: { floorId: { [Op.in]: req.body.floorIds } } });
-
+        await transaction.commit();
         if (updatedTowerFloor) {
             return res.status(httpStatus.CREATED).json({
                 message: "Tower Created successfully"
@@ -46,6 +49,7 @@ exports.create = async (req, res) => {
         }
     } catch (error) {
         console.log(error);
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message })
     }
 
@@ -161,7 +165,7 @@ exports.getFloorByTowerId = async (req, res) => {
         console.log(error)
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message })
     }
-} 
+}
 
 exports.getFloorByTowerId = async (req, res) => {
     try {
@@ -204,7 +208,7 @@ exports.getFloorByTowerId = async (req, res) => {
         console.log(error)
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message })
     }
-} 
+}
 
 exports.getFloorByTowerIdForTenant = async (req, res, next) => {
     const towerId = req.params.id;
@@ -353,7 +357,7 @@ exports.getFloorByTowerIdForTenant = async (req, res, next) => {
                             }
                         })
                             .then(flats => {
-                                console.log(towerId,floorArr)
+                                console.log(towerId, floorArr)
                                 if (flats.length !== 0) {
                                     res.status(httpStatus.OK).json({
                                         message: 'Flats Found',
@@ -399,99 +403,110 @@ exports.getById = (req, res) => {
 }
 
 exports.update = async (req, res) => {
-    console.log("-----update---------");
-    const id = req.params.id;
-    const towerId = req.params.id;
+    let transaction;
+    try {
+        console.log("-----update---------");
+        transaction = await db.sequelize.transaction();
+        const id = req.params.id;
+        const towerId = req.params.id;
 
-    let towerIds = [];
-    const updates = req.body;
-    if (!id) {
-        res.json("Please enter id");
-    }
-    const tower = await Tower.findOne({
-        where: {
-            [Op.and]: [
-                { isActive: true },
-                { towerId: id },
-            ]
+        let towerIds = [];
+        const updates = req.body;
+        if (!id) {
+            res.json("Please enter id");
         }
-    })
-
-    if (tower.towerName === updates.towerName) {
-        const updatedTower = await Tower.find({ where: { towerId: id } }).then(tower => {
-            return tower.updateAttributes(updates)
-        })
-        if (req.body.floors) {
-            const towerFloor = await TowerFloor.findAll({ where: { isActive: true, towerId: towerId } });
-            const towerFloorId = towerFloor.map(towerFloor => {
-                towerIds.push(towerFloor.towerFloorId)
-            });
-
-            await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds } } });
-
-            const result = req.body.floors.forEach(function (element) {
-                element.towerId = towerId
-                console.log(element.towerId)
-            });
-            const updatedTowerFloor = await TowerFloor.bulkCreate(req.body.floors, { returning: true }, {
-                fields: ["floorId", "towerId"],
-            },
-            );
-        }
-        // if (updatedTowerFloor) {
-        return res.status(httpStatus.OK).json({
-            message: "Tower Updated Succussfully"
-        });
-        // }
-    } else {
-        const towers = await Tower.findAll({
+        const tower = await Tower.findOne({
             where: {
-                isActive: true
+                [Op.and]: [
+                    { isActive: true },
+                    { towerId: id },
+                ]
             }
         })
-        let error = towers.some(tower => {
-            return tower.towerName.toLowerCase().replace(/ /g, '') == req.body.towerName.toLowerCase().replace(/ /g, '');
-        });
-        if (error) {
-            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Tower Name already Exists" })
-        }
-        const updatedTower = await Tower.find({ where: { towerId: id } }).then(tower => {
-            return tower.updateAttributes(updates)
-        })
-        if (req.body.floors) {
-            const towerFloor = await TowerFloor.findAll({ where: { isActive: true, towerId: towerId } });
-            const towerFloorId = towerFloor.map(towerFloor => {
-                towerIds.push(towerFloor.towerFloorId)
-            });
 
-            await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds } } });
+        if (tower.towerName === updates.towerName) {
+            const updatedTower = await Tower.find({ where: { towerId: id } }).then(tower => {
+                return tower.updateAttributes(updates, transaction)
+            })
+            if (req.body.floors) {
+                const towerFloor = await TowerFloor.findAll({ where: { isActive: true, towerId: towerId } });
+                const towerFloorId = towerFloor.map(towerFloor => {
+                    towerIds.push(towerFloor.towerFloorId)
+                });
 
-            const result = req.body.floors.forEach(function (element) {
-                element.towerId = towerId
-                console.log(element.towerId)
+                await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds } }, transaction });
+
+                const result = req.body.floors.forEach(function (element) {
+                    element.towerId = towerId
+                    console.log(element.towerId)
+                });
+                const updatedTowerFloor = await TowerFloor.bulkCreate(req.body.floors, { returning: true }, {
+                    fields: ["floorId", "towerId"],
+                }, { transaction }
+                );
+            }
+            await transaction.commit();
+            // if (updatedTowerFloor) {
+            return res.status(httpStatus.OK).json({
+                message: "Tower Updated Succussfully"
             });
-            const updatedTowerFloor = await TowerFloor.bulkCreate(req.body.floors, { returning: true }, {
-                fields: ["floorId", "towerId"],
-            },
-            );
+            // }
+        } else {
+            const towers = await Tower.findAll({
+                where: {
+                    isActive: true
+                }
+            })
+            let error = towers.some(tower => {
+                return tower.towerName.toLowerCase().replace(/ /g, '') == req.body.towerName.toLowerCase().replace(/ /g, '');
+            });
+            if (error) {
+                return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Tower Name already Exists" })
+            }
+            const updatedTower = await Tower.find({ where: { towerId: id } }).then(tower => {
+                return tower.updateAttributes(updates, transaction)
+            })
+            if (req.body.floors) {
+                const towerFloor = await TowerFloor.findAll({ where: { isActive: true, towerId: towerId } });
+                const towerFloorId = towerFloor.map(towerFloor => {
+                    towerIds.push(towerFloor.towerFloorId)
+                });
+
+                await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds } }, transaction });
+
+                const result = req.body.floors.forEach(function (element) {
+                    element.towerId = towerId
+                    console.log(element.towerId)
+                });
+                const updatedTowerFloor = await TowerFloor.bulkCreate(req.body.floors, { returning: true }, {
+                    fields: ["floorId", "towerId"],
+                }, { transaction }
+                );
+            }
+            await transaction.commit();
+            return res.status(httpStatus.OK).json({
+                message: "Tower Updated Succussfully"
+            });
         }
-        return res.status(httpStatus.OK).json({
-            message: "Tower Updated Succussfully"
-        });
+    } catch (error) {
+        if (transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message })
     }
+
 }
 
 exports.updateTowerAndFloor = async (req, res) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const towerId = req.params.id;
-        
         let towerIds = [];
         const towerFloor = await TowerFloor.findAll({ where: { isActive: true, towerId: towerId } });
         const towerFloorId = towerFloor.map(towerFloor => {
             towerIds.push(towerFloor.towerFloorId)
         });
         // console.log(towerIds);
-        const deleteTowerFloor = await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds } } });
+        const deleteTowerFloor = await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds } }, transaction });
 
         const result = req.body.floors.forEach(function (element) {
             element.towerId = towerId
@@ -499,17 +514,20 @@ exports.updateTowerAndFloor = async (req, res) => {
         });
         const updatedTowerFloor = await TowerFloor.bulkCreate(req.body.floors, { returning: true }, {
             fields: ["floorId", "towerId"],
-        },
+        }, { transaction }
         );
-
-        res.json({ message: 'Updated Successfully' });
+        await transaction.commit();
+        res.status(httpStatus.OK).json({ message: 'Updated Successfully' });
     } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error.message });
     }
 }
 
 exports.delete = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
         let towerIds = [];
 
@@ -521,7 +539,7 @@ exports.delete = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
         const updatedTower = await Tower.find({ where: { towerId: id } }).then(tower => {
-            return tower.updateAttributes(update)
+            return tower.updateAttributes(update, transaction)
         })
 
         const towerFloor = await TowerFloor.findAll({ where: { isActive: true, towerId: id } });
@@ -529,19 +547,23 @@ exports.delete = async (req, res, next) => {
             towerIds.push(towerFloor.towerFloorId)
         });
         // console.log(towerIds);
-        const deleteTowerFloor = await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds } } });
+        const deleteTowerFloor = await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds } }, transaction });
+        await transaction.commit();
         if (deleteTowerFloor) {
             return res.status(httpStatus.OK).json({
                 message: "Tower and Floor deleted successfully"
             });
         }
     } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.deleteSelected = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const deleteSelected = req.body.ids;
         let towerIds = [];
         console.log("delete selected==>", deleteSelected);
@@ -549,21 +571,23 @@ exports.deleteSelected = async (req, res, next) => {
         if (!deleteSelected) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
-        const updatedTower = await Tower.update(update, { where: { towerId: { [Op.in]: deleteSelected } } });
+        const updatedTower = await Tower.update(update, { where: { towerId: { [Op.in]: deleteSelected } }, transaction });
 
         const towerFloor = await TowerFloor.findAll({ where: { isActive: true, towerId: id } });
         const towerFloorId = towerFloor.map(towerFloor => {
-            towerIds.push(towerFloor.towerFloorId)
+            towerIds.push(towerFloor.towerFloorId);
         });
         // console.log(towerIds);
-        const deleteTowerFloor = await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds } } });
+        const deleteTowerFloor = await TowerFloor.destroy({ where: { towerFloorId: { [Op.in]: towerIds }, transaction } });
+        await transaction.commit();
         if (deleteTowerFloor) {
             return res.status(httpStatus.OK).json({
                 message: "Tower and Floors deleted successfully",
             });
         }
     } catch (error) {
-        console.log(error)
+        console.log(error);
+        if (transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

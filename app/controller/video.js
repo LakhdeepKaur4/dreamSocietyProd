@@ -7,16 +7,19 @@ const Video = db.video;
 const User = db.user;
 
 exports.addVideo = async (req, res, next) => {
+  let transaction;
   try {
+    transaction = await db.sequelize.transaction();
     const body = req.body;
     // body.videoId = body.userId;
-    const video = await UserVideo.create(body);
+    const video = await UserVideo.create(body, transaction);
+    await transaction.commit();
     return res.status(httpStatus.CREATED).json({
       message: "Video successfully created",
       video
     });
   } catch (error) {
-    console.log(error)
+    if (transaction) await transaction.rollback();
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error.message);
   }
 }
@@ -64,7 +67,7 @@ exports.getAllVideoOfUser = async (req, res, next) => {
       }
     })
     res.status(httpStatus.OK).json({ videoData: filteredData });
-  } catch (error) {     
+  } catch (error) {
     console.log(error)
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error.message);
   }

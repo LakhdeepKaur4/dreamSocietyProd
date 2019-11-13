@@ -75,7 +75,7 @@ let decrypt = (text) => {
     return decryptedText;
 }
 
-constraintCheck = (property, object) => {   
+constraintCheck = (property, object) => {
     if ((property in object) && object[property] !== undefined && object[property] !== null) {
         return true;
     } else {
@@ -1031,7 +1031,9 @@ exports.getTenantMembers = async (req, res, next) => {
 }
 
 exports.deleteTenantMember = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         const id = req.params.id;
         console.log('Tenant Member-ID ===>', id);
 
@@ -1051,11 +1053,12 @@ exports.deleteTenantMember = async (req, res, next) => {
                 memberId: id
             }
         })
-            .then(member => {
-                member.updateAttributes({ isActive: false });
-                User.update({ isActive: false }, { where: { userId: member.memberId } });
-                UserRoles.update({ isActive: false }, { where: { userId: member.memberId } });
-                UserRFID.update({ isActive: false }, { where: { userId: member.memberId } });
+            .then(async member => {
+                member.updateAttributes({ isActive: false },transaction);
+                User.update({ isActive: false }, { where: { userId: member.memberId },transaction });
+                UserRoles.update({ isActive: false }, { where: { userId: member.memberId },transaction });
+                UserRFID.update({ isActive: false }, { where: { userId: member.memberId },transaction });
+                await transaction.commit();
                 return res.status(httpStatus.OK).json({
                     message: "Member deleted successfully"
                 });
@@ -1067,241 +1070,277 @@ exports.deleteTenantMember = async (req, res, next) => {
 }
 
 exports.addTenantMembers = async (req, res, next) => {
-    const member = req.body;
-    const flatIds = [];
-    member.userId = req.userId;
+    let transaction;
+    try {
+        transaction = await sequelize.transaction();
+        const member = req.body;
+        const flatIds = [];
+        member.userId = req.userId;
 
-    let randomNumber;
-    randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
-    const tenantExists = await TenantMembersDetail.findOne({ where: { isActive: true, memberId: randomNumber } });
-    const userExists = await User.findOne({ where: { isActive: true, userId: randomNumber } });
-    if (tenantExists !== null || userExists !== null) {
-        console.log("duplicate random number")
+        let randomNumber;
         randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
-    }
-    let uniqueId = generateRandomId();
-    // let userName = member.firstName.replace(/ /g, '') + 'T' + uniqueId.toString(36);
-    // member.userName = userName;
-    const password = passwordGenerator.generate({
-        length: 10,
-        numbers: true
-    });
-    member.firstName = encrypt(member.firstName);
-    member.lastName = encrypt(member.lastName);
-    member.userName = encrypt(member.email);
-    member.email = encrypt(member.email);
-    member.contact = encrypt(member.contact);
-    member.aadhaarNumber = encrypt(member.aadhaarNumber);
-    member.gender = encrypt(member.gender);
-    member.password = password;
-    member.memberId = randomNumber;
-    member.isActive = false;
+        const tenantExists = await TenantMembersDetail.findOne({ where: { isActive: true, memberId: randomNumber } });
+        const userExists = await User.findOne({ where: { isActive: true, userId: randomNumber } });
+        if (tenantExists !== null || userExists !== null) {
+            console.log("duplicate random number")
+            randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+        }
+        let uniqueId = generateRandomId();
+        // let userName = member.firstName.replace(/ /g, '') + 'T' + uniqueId.toString(36);
+        // member.userName = userName;
+        const password = passwordGenerator.generate({
+            length: 10,
+            numbers: true
+        });
+        member.firstName = encrypt(member.firstName);
+        member.lastName = encrypt(member.lastName);
+        member.userName = encrypt(member.email);
+        member.email = encrypt(member.email);
+        member.contact = encrypt(member.contact);
+        member.aadhaarNumber = encrypt(member.aadhaarNumber);
+        member.gender = encrypt(member.gender);
+        member.password = password;
+        member.memberId = randomNumber;
+        member.isActive = false;
 
-    TenantMembersDetail.create(member)
-        .then(async memberCreated => {
-            member.password = bcrypt.hashSync(member.password, 8);
-            member.userId = member.memberId;
-            User.create(member)
-                .then(user => {
-                    UserRoles.create({
-                        userId: member.userId,
-                        roleId: 4,
-                        isActive: false
+        TenantMembersDetail.create(member, transaction)
+            .then(async memberCreated => {
+                member.password = bcrypt.hashSync(member.password, 8);
+                member.userId = member.memberId;
+                User.create(member, transaction)
+                    .then(user => {
+                        UserRoles.create({
+                            userId: member.userId,
+                            roleId: 4,
+                            isActive: false
+                        }, transaction)
+                        UserRFID.create({
+                            userId: member.userId,
+                            rfidId: member.rfidId,
+                            // isActive: false
+                        }, transaction)
                     })
-                    UserRFID.create({
-                        userId: member.userId,
-                        rfidId: member.rfidId,
-                        // isActive: false
-                    })
+
+                const flats = await TenantFlatDetail.findAll({
+                    where: {
+                        isActive: true,
+                        tenantId: member.tenantId
+                    },
+                    attributes: ['flatDetailId']
                 })
 
-            const flats = await TenantFlatDetail.findAll({
-                where: {
-                    isActive: true,
-                    tenantId: member.tenantId
-                },
-                attributes: ['flatDetailId']
-            })
+                flats.map(item => {
+                    flatIds.push(item.flatDetailId);
+                })
 
-            flats.map(item => {
-                flatIds.push(item.flatDetailId);
+                const owners = await OwnerFlatDetail.findAll({
+                    where: {
+                        isActive: true,
+                        flatDetailId: {
+                            [Op.in]: flatIds
+                        }
+                    },
+                    attributes: ['ownerId']
+                })
+                owners.map(item => {
+                    ownerId = item.ownerId;
+                    mailToOwner1(ownerId, member.email, member.memberId, member.userName);
+                });
+                await transaction.commit();
+                return res.status(httpStatus.CREATED).json({
+                    message: 'Member created successfully. Please check email and contact to your flat owner for account activation.'
+                });
             })
-
-            const owners = await OwnerFlatDetail.findAll({
-                where: {
-                    isActive: true,
-                    flatDetailId: {
-                        [Op.in]: flatIds
-                    }
-                },
-                attributes: ['ownerId']
+            .catch(async err => {
+                if (transaction) await transaction.rollback();
+                return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
             })
-            owners.map(item => {
-                ownerId = item.ownerId;
-                mailToOwner1(ownerId, member.email, member.memberId, member.userName);
-            });
-            return res.status(httpStatus.CREATED).json({
-                message: 'Member created successfully. Please check email and contact to your flat owner for account activation.'
-            });
-        })
-        .catch(err => {
-            console.log('Error ===>', err);
-            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
+    } catch (error) {
+        if (transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
 }
 
 exports.editTenantMembers = async (req, res, next) => {
-    const id = req.params.id;
+    try {
+        transaction = await sequelize.transaction();
+        const id = req.params.id;
 
-    if (!id) {
-        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json('Id is missing');
-    }
-
-    console.log('ID ===>', id);
-
-    const update = req.body;
-
-    if (!update) {
-        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json('Please try again');
-    }
-
-    console.log('Body ===>', update);
-
-    member = await TenantMembersDetail.findOne({ where: { memberId: id } });
-
-    firstNameCheck = constraintCheck('firstName', update);
-    lastNameCheck = constraintCheck('lastName', update);
-    emailCheck = constraintCheck('email', update);
-    contactCheck = constraintCheck('contact', update);
-    aadhaarNumberCheck = constraintCheck('aadhaarNumber', update);
-    genderCheck = constraintCheck('gender', update);
-
-    update.firstName = constraintReturn(firstNameCheck, update, 'firstName', member);
-    update.lastName = constraintReturn(lastNameCheck, update, 'lastName', member);
-    update.email = constraintReturn(emailCheck, update, 'email', member);
-    update.contact = constraintReturn(contactCheck, update, 'contact', member);
-    update.aadhaarNumber = constraintReturn(aadhaarNumberCheck, update, 'aadhaarNumber', member);
-    update.gender = constraintReturn(genderCheck, update, 'gender', member);
-
-    TenantMembersDetail.findOne({
-        where: {
-            memberId: id
+        if (!id) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json('Id is missing');
         }
-    })
-        .then(member => {
-            member.updateAttributes(update);
-            User.update(update, { where: { userId: member.memberId } })
-            UserRFID.findOne({ where: { userId: member.memberId, isActive: true } })
-                .then(memberRfid => {
-                    if (memberRfid !== null) {
-                        memberRfid.updateAttributes({ rfidId: update.rfidId })
-                    } else {
-                        UserRFID.create({
-                            userId: member.memberId,
-                            rfidId: update.rfidId
-                        })
-                    }
+
+        console.log('ID ===>', id);
+
+        const update = req.body;
+
+        if (!update) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json('Please try again');
+        }
+
+        console.log('Body ===>', update);
+
+        member = await TenantMembersDetail.findOne({ where: { memberId: id } });
+
+        firstNameCheck = constraintCheck('firstName', update);
+        lastNameCheck = constraintCheck('lastName', update);
+        emailCheck = constraintCheck('email', update);
+        contactCheck = constraintCheck('contact', update);
+        aadhaarNumberCheck = constraintCheck('aadhaarNumber', update);
+        genderCheck = constraintCheck('gender', update);
+
+        update.firstName = constraintReturn(firstNameCheck, update, 'firstName', member);
+        update.lastName = constraintReturn(lastNameCheck, update, 'lastName', member);
+        update.email = constraintReturn(emailCheck, update, 'email', member);
+        update.contact = constraintReturn(contactCheck, update, 'contact', member);
+        update.aadhaarNumber = constraintReturn(aadhaarNumberCheck, update, 'aadhaarNumber', member);
+        update.gender = constraintReturn(genderCheck, update, 'gender', member);
+
+        TenantMembersDetail.findOne({
+            where: {
+                memberId: id
+            }
+        })
+            .then(member => {
+                member.updateAttributes(update, transaction);
+                User.update(update, { where: { userId: member.memberId }, transaction })
+                UserRFID.findOne({ where: { userId: member.memberId, isActive: true } })
+                    .then(async memberRfid => {
+                        if (memberRfid !== null) {
+                            memberRfid.updateAttributes({ rfidId: update.rfidId }, transaction);
+                            await transaction.commit();
+                        } else {
+                            UserRFID.create({
+                                userId: member.memberId,
+                                rfidId: update.rfidId
+                            }, transaction)
+                            await transaction.commit();
+                        }
+                    })
+                return res.status(httpStatus.CREATED).json({
+                    message: 'Member updated successfully',
                 })
-            return res.status(httpStatus.CREATED).json({
-                message: 'Member updated successfully',
             })
-        })
-        .catch(err => {
-            console.log('Error ===>', err);
-            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
+            .catch(async err => {
+                if (transaction) await transaction.rollback();
+                return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    } catch (error) {
+        console.log(error);
+        if (transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
 }
 
-exports.deleteSelectedTenantMembers = (req, res, next) => {
-    const ids = req.body.ids;
+exports.deleteSelectedTenantMembers = async (req, res, next) => {
+    let transaction;
+    try {
+        transaction = await sequelize.transaction();
+        const ids = req.body.ids;
 
-    if (!ids) {
-        return res.status(httpStatus.UNPROCESSABLE_ENTITY).json('Ids are missing');
+        if (!ids) {
+            return res.status(httpStatus.UNPROCESSABLE_ENTITY).json('Ids are missing');
+        }
+
+        const deleteUpdate = { isActive: false };
+
+        TenantMembersDetail.findAll({
+            where: {
+                memberId: {
+                    [Op.or]: ids
+                }
+            }
+        })
+            .then(members => {
+                members.map(item => {
+                    item.updateAttributes(deleteUpdate);
+                    User.update(deleteUpdate, { where: { userId: item.memberId }, transaction });
+                    UserRoles.update(deleteUpdate, { where: { userId: item.memberId }, transaction });
+                    UserRFID.update(deleteUpdate, { where: { userId: item.memberId }, transaction });
+                })
+                return res.status(httpStatus.OK).json({
+                    message: 'Members deleted successfully'
+                });
+            })
+            .catch(async err => {
+                if (transaction) await transaction.rollback();
+                return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    } catch (error) {
+        if (transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 
-    const deleteUpdate = { isActive: false };
-
-    TenantMembersDetail.findAll({
-        where: {
-            memberId: {
-                [Op.or]: ids
-            }
-        }
-    })
-        .then(members => {
-            members.map(item => {
-                item.updateAttributes(deleteUpdate);
-                User.update(deleteUpdate, { where: { userId: item.memberId } });
-                UserRoles.update(deleteUpdate, { where: { userId: item.memberId } });
-                UserRFID.update(deleteUpdate, { where: { userId: item.memberId } });
-            })
-            return res.status(httpStatus.OK).json({
-                message: 'Members deleted successfully'
-            });
-        })
-        .catch(err => {
-            console.log('Error ===>', err);
-            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
 }
 
 exports.addFlats = async (req, res, next) => {
-    const body = req.body;
+    let transaction;
+    try {
+        transaction = await sequelize.transaction();
+        const body = req.body;
 
-    console.log('Body ===>', body);
+        console.log('Body ===>', body);
 
-    const flat = await TenantFlatDetail.findOne({ where: { isActive: true, tenantId: body.tenantId, flatDetailId: body.flatDetailId } });
-    const flatCount = await TenantFlatDetail.findAll({ where: { isActive: true, tenantId: body.tenantId } });
+        const flat = await TenantFlatDetail.findOne({ where: { isActive: true, tenantId: body.tenantId, flatDetailId: body.flatDetailId } });
+        const flatCount = await TenantFlatDetail.findAll({ where: { isActive: true, tenantId: body.tenantId } });
 
-    if (flatCount.length === 5) {
-        res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-            message: 'Maximum flats for this tenant'
-        })
-    } else {
-        if (flat !== null) {
+        if (flatCount.length === 5) {
             res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                message: 'Flat already exist for this tenant'
+                message: 'Maximum flats for this tenant'
             })
         } else {
-            if (body !== null) {
-                TenantFlatDetail.findOne({
-                    where: {
-                        tenantId: body.tenantId,
-                        flatDetailId: body.flatDetailId
-                    }
+            if (flat !== null) {
+                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                    message: 'Flat already exist for this tenant'
                 })
-                    .then(tenant => {
-                        if (tenant !== null) {
-                            tenant.updateAttributes({ isActive: true });
-                            res.status(httpStatus.CREATED).json({
-                                message: 'Flat added successfully'
-                            })
-                        } else {
-                            TenantFlatDetail.create(body)
-                                .then(flat => {
-                                    if (flat !== null) {
-                                        res.status(httpStatus.CREATED).json({
-                                            message: 'Flat added successfully'
-                                        })
-                                    } else {
-                                        res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                                            message: 'Flat not added'
-                                        })
-                                    }
-                                })
-                                .catch(err => {
-                                    console.log('Error ===>', err);
-                                    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-                                })
+            } else {
+                if (body !== null) {
+                    TenantFlatDetail.findOne({
+                        where: {
+                            tenantId: body.tenantId,
+                            flatDetailId: body.flatDetailId
                         }
                     })
+                        .then(async tenant => {
+                            if (tenant !== null) {
+                                tenant.updateAttributes({ isActive: true }, transaction);
+                                await transaction.commit();
+                                res.status(httpStatus.CREATED).json({
+                                    message: 'Flat added successfully'
+                                })
+                            } else {
+                                TenantFlatDetail.create(body, transaction)
+                                    .then(async flat => {
+                                        if (flat !== null) {
+                                            await transaction.commit();
+                                            res.status(httpStatus.CREATED).json({
+                                                message: 'Flat added successfully'
+                                            })
+                                        } else {
+                                            res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                                                message: 'Flat not added'
+                                            })
+                                        }
+                                    })
+                                    .catch(async err => {
+                                        if (transaction) await transaction.rollback();
+                                        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+                                    })
+                            }
+                        })
 
-            } else {
-                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'Please provide required data'
-                })
+                } else {
+                    if (transaction) await transaction.rollback();
+                    res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                        message: 'Please provide required data'
+                    })
+                }
             }
         }
+    } catch (error) {
+        console.log(error);
+        if (transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
@@ -1346,98 +1385,119 @@ exports.getFlats = (req, res, next) => {
         })
 }
 
-exports.editFlat = (req, res, next) => {
-    const body = req.body;
-    console.log('Body ===>', body);
+exports.editFlat = async (req, res, next) => {
+    let transaction;
+    try {
+        if (transaction) await transaction.rollback();
+        const body = req.body;
+        console.log('Body ===>', body);
 
-    TenantFlatDetail.findOne({
-        where: {
-            tenantId: body.tenantId,
-            flatDetailId: body.previousFlatDetailId,
-            isActive: true
-        }
-    })
-        .then(flat => {
-            if (flat !== null) {
-                TenantFlatDetail.findOne({
-                    where: {
-                        tenantId: body.tenantId,
-                        flatDetailId: body.flatDetailId,
-                        isActive: true
-                    }
-                })
-                    .then(flatExisting => {
-                        if (flatExisting !== null) {
-                            res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                                message: 'Flat details already exist for same tenant'
-                            })
-                        } else {
-                            TenantFlatDetail.findOne({
-                                where: {
-                                    tenantId: body.tenantId,
-                                    flatDetailId: body.flatDetailId
-                                }
-                            })
-                                .then(flatExistingNotActive => {
-                                    if (flatExistingNotActive !== null) {
-                                        flatExistingNotActive.updateAttributes({ isActive: true });
-                                        flat.updateAttributes({ isActive: false });
-                                        res.status(httpStatus.CREATED).json({
-                                            message: 'Flat details updated successfully'
-                                        });
-                                    } else {
-                                        flat.updateAttributes({ flatDetailId: body.flatDetailId });
-                                        res.status(httpStatus.CREATED).json({
-                                            message: 'Flat details updated successfully'
-                                        });
-                                    }
-                                })
+        TenantFlatDetail.findOne({
+            where: {
+                tenantId: body.tenantId,
+                flatDetailId: body.previousFlatDetailId,
+                isActive: true
+            }
+        })
+            .then(async flat => {
+                if (flat !== null) {
+                    TenantFlatDetail.findOne({
+                        where: {
+                            tenantId: body.tenantId,
+                            flatDetailId: body.flatDetailId,
+                            isActive: true
                         }
                     })
-                    .catch(err => {
-                        console.log('Error ===>', err);
-                        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+                        .then(flatExisting => {
+                            if (flatExisting !== null) {
+                                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                                    message: 'Flat details already exist for same tenant'
+                                })
+                            } else {
+                                TenantFlatDetail.findOne({
+                                    where: {
+                                        tenantId: body.tenantId,
+                                        flatDetailId: body.flatDetailId
+                                    }
+                                })
+                                    .then(async flatExistingNotActive => {
+                                        if (flatExistingNotActive !== null) {
+                                            flatExistingNotActive.updateAttributes({ isActive: true }, transaction);
+                                            flat.updateAttributes({ isActive: false }, transaction);
+                                            await transaction.commit();
+                                            res.status(httpStatus.CREATED).json({
+                                                message: 'Flat details updated successfully'
+                                            });
+                                        } else {
+                                            flat.updateAttributes({ flatDetailId: body.flatDetailId }, transaction);
+                                            await transaction.commit();
+                                            res.status(httpStatus.CREATED).json({
+                                                message: 'Flat details updated successfully'
+                                            });
+                                        }
+                                    })
+                            }
+                        })
+                        .catch(async err => {
+                            if (transaction) await transaction.rollback();
+                            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+                        })
+                } else {
+                    if (transaction) await transaction.rollback();
+                    res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                        message: 'Flat details not updated'
                     })
-            } else {
-                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'Flat details not updated'
-                })
-            }
-        })
-        .catch(err => {
-            console.log('Error ===>', err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
+                }
+            })
+            .catch(async err => {
+                if (transaction) await transaction.rollback();
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    } catch (error) {
+        console.log(error);
+        if (transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
+
 }
 
-exports.deleteFlat = (req, res, next) => {
-    const body = req.body;
-    console.log('Body ===>', body);
+exports.deleteFlat = async (req, res, next) => {
+    let transaction;
+    try {
+        transaction = await sequelize.transaction();
+        const body = req.body;
+        console.log('Body ===>', body);
 
-    TenantFlatDetail.findOne({
-        where: {
-            tenantId: body.tenantId,
-            flatDetailId: body.flatDetailId,
-            isActive: true
-        }
-    })
-        .then(flat => {
-            console.log(flat);
-            if (flat !== null) {
-                flat.updateAttributes({ isActive: false });
-                res.status(httpStatus.OK).json({
-                    message: 'Flat deleted successfully'
-                })
-            } else {
-                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'Flat not deleted'
-                })
+        TenantFlatDetail.findOne({
+            where: {
+                tenantId: body.tenantId,
+                flatDetailId: body.flatDetailId,
+                isActive: true
             }
         })
-        .catch(err => {
-            console.log('Error ===>', err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
+            .then(async flat => {
+                console.log(flat);
+                if (flat !== null) {
+                    flat.updateAttributes({ isActive: false }, transaction);
+                    await transaction.commit();
+                    res.status(httpStatus.OK).json({
+                        message: 'Flat deleted successfully'
+                    })
+                } else {
+                    res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                        message: 'Flat not deleted'
+                    })
+                }
+            })
+            .catch(err => {
+                console.log('Error ===>', err);
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    } catch (error) {
+        console.log(error);
+        if (transaction) await transaction.rollback();
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+    }
 }
 
 

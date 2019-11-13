@@ -10,7 +10,9 @@ const EventSpaceMaster = db.eventSpace;
 const Op = db.Sequelize.Op;
 
 exports.create = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         console.log("----> creating event");
         let body = req.body;
         body.userId = req.userId;
@@ -26,10 +28,12 @@ exports.create = async (req, res, next) => {
             //     numberOfGuestExpected: body.numberOfGuestExpected,
             //     userId: body.userId
             // }
-            defaults: body
+            defaults: body,
+            transaction
         })
-            .spread((event, created) => {
+            .spread(async (event, created) => {
                 if (created) {
+                    await transaction.commit();
                     return res.status(httpStatus.CREATED).json({
                         message: "Event successfully created",
                         event
@@ -43,7 +47,7 @@ exports.create = async (req, res, next) => {
             })
             .catch(err => console.log(err))
     } catch (error) {
-        console.log("error==>", error);
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 };
@@ -148,7 +152,9 @@ exports.update = async (req, res, next) => {
 }
 
 exports.delete = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const id = req.params.id;
 
         if (!id) {
@@ -159,8 +165,9 @@ exports.delete = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
         const updatedEvent = await SocietyMemberEventBooking.find({ where: { societyMemberEventBookingId: id } }).then(event => {
-            return event.updateAttributes(update)
+            return event.updateAttributes(update, transaction)
         })
+        await transaction.commit();
         if (updatedEvent) {
             return res.status(httpStatus.OK).json({
                 message: "Event deleted successfully",
@@ -168,6 +175,7 @@ exports.delete = async (req, res, next) => {
             });
         }
     } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

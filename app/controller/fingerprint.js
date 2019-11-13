@@ -5,7 +5,7 @@ var crypto = require('crypto');
 const WebSocket = require('ws');
 const wss = new WebSocket.Server({ port: config.machinePort, perMessageDeflate: false });
 var schedule = require('node-schedule');
-
+const userHandler = require('../handlers/user');
 const FingerprintData = db.fingerprintData;
 const FingerprintMachineData = db.fingerprintMachineData;
 const PunchedData = db.punchedfingerprintMachineData;
@@ -43,17 +43,20 @@ let filterItem = (arrToBeFiltered) => {
 }
 
 exports.addFingerPrintData = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         const body = req.body;
-        const fingerprintData = await FingerprintData.create(body);
+        const fingerprintData = await FingerprintData.create(body, transaction);
         if (fingerprintData) {
+            await transaction.commit();
             return res.status(httpStatus.CREATED).json({
                 message: "Finger Print successfully added",
                 fingerprintData
             });
         }
     } catch (error) {
-        console.log("error==>", error);
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -443,23 +446,27 @@ exports.test = async (req, res, next) => {
     res.json(tenant);
 }
 exports.updateFingerPrintData = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const update = req.body;
         console.log("update----->", update);
         update.fingerprintData = req.body.fingerPrintData;
         const userId = req.params.userId;
-        const fingerprintData = await FingerprintData.update(update, { where: { userId: userId } });
+        const fingerprintData = await FingerprintData.update(update, { where: { userId: userId }, transaction });
         if (fingerprintData[0] != 0) {
+            await transaction.commit();
             return res.status(httpStatus.OK).json({
                 message: "Finger Print successfully added"
             });
         } else {
+            if (transaction) await transaction.rollback();
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
                 message: "Please try again.Something went wrong",
             });
         }
     } catch (error) {
-        console.log("error==>", error);
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -504,201 +511,14 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                     fingerprint.map(item => {
                         userIds.push(item.userId);
                     })
-                    // console.log(userIds);
+                    console.log(userIds);
 
-                    const promise = userIds.map(async id => {
-                        await User.findOne({
-                            where: {
-                                userId: id,
-                                // isActive: true
-                            },
-                            include: [
-                                {
-                                    model: Role,
-                                    where: {
-                                        id: { [Op.in]: [3, 4] }
-                                    }
-                                },
-
-
-                            ]
-                        })
-                            .then(async user => {
-                                if (user !== null) {
-                                    user = user.toJSON();
-                                    user.firstName = decrypt(user.firstName);
-                                    user.lastName = decrypt(user.lastName);
-                                    user.userName = decrypt(user.userName);
-                                    user.contact = decrypt(user.contact);
-                                    user.email = decrypt(user.email);
-                                    user.flatDisable = true;
-                                    const flatIds = [];
-                                    if (user.roles.length === 1) {
-                                        if (user.roles[0].id === 3) {
-                                            const OwnerFlats = await OwnerFlatDetail.findAll({
-                                                where: {
-                                                    ownerId: user.userId,
-                                                    isActive: true,
-                                                },
-                                                attributes: ['flatDetailId']
-                                            })
-
-                                            if (OwnerFlats.length !== 0) {
-                                                OwnerFlats.map(item => {
-                                                    flatIds.push(item.flatDetailId);
-                                                })
-                                            }
-                                            else {
-                                                const OwnerMemberFlat = await OwnerMembersDetail.findOne({
-                                                    where: {
-                                                        memberId: user.userId,
-                                                        isActive: true,
-                                                    },
-                                                    attributes: ['flatDetailId']
-                                                })
-
-                                                if (OwnerMemberFlat !== null) {
-                                                    flatIds.push(OwnerMemberFlat.flatDetailId);
-                                                }
-                                            }
-                                            const Flats = await FlatDetail.findAll({
-                                                where: {
-                                                    flatDetailId: {
-                                                        [Op.in]: flatIds
-                                                    },
-                                                    isActive: true,
-                                                },
-                                                include: [Tower, Floor]
-                                            })
-                                            user.flats = Flats;
-                                        }
-
-                                        if (user.roles[0].id === 4) {
-                                            const TenantFlats = await TenantFlatDetail.findAll({
-                                                where: {
-                                                    tenantId: user.userId,
-                                                    isActive: true,
-                                                },
-                                                attributes: ['flatDetailId']
-                                            })
-
-                                            if (TenantFlats.length !== 0) {
-                                                TenantFlats.map(item => {
-                                                    flatIds.push(item.flatDetailId);
-                                                })
-                                            }
-                                            else {
-                                                const TenantMemberFlat = await TenantMembersDetail.findOne({
-                                                    where: {
-                                                        memberId: user.userId,
-                                                        isActive: true,
-                                                    },
-                                                    attributes: ['flatDetailId']
-                                                })
-
-                                                if (TenantMemberFlat !== null) {
-                                                    flatIds.push(TenantMemberFlat.flatDetailId);
-                                                }
-                                            }
-                                            const Flats = await FlatDetail.findAll({
-                                                where: {
-                                                    flatDetailId: {
-                                                        [Op.in]: flatIds
-                                                    },
-                                                    isActive: true
-                                                }, include: [Tower, Floor]
-
-                                            })
-                                            user.flats = Flats;
-                                        }
-                                    }
-
-                                    if (user.roles.length === 2) {
-                                        if (user.roles[1].id === 3) {
-                                            const OwnerFlats = await OwnerFlatDetail.findAll({
-                                                where: {
-                                                    ownerId: user.userId,
-                                                    isActive: true,
-                                                },
-                                                attributes: ['flatDetailId']
-                                            })
-
-                                            if (OwnerFlats.length !== 0) {
-                                                OwnerFlats.map(item => {
-                                                    flatIds.push(item.flatDetailId);
-                                                })
-                                            }
-                                            else {
-                                                const OwnerMemberFlat = await OwnerMembersDetail.findOne({
-                                                    where: {
-                                                        memberId: user.userId,
-                                                        isActive: true,
-                                                    },
-                                                    attributes: ['flatDetailId']
-                                                })
-
-                                                if (OwnerMemberFlat !== null) {
-                                                    flatIds.push(OwnerMemberFlat.flatDetailId);
-                                                }
-                                            }
-                                            const Flats = await FlatDetail.findAll({
-                                                where: {
-                                                    flatDetailId: {
-                                                        [Op.in]: flatIds
-                                                    },
-                                                    isActive: true,
-                                                }, include: [Tower, Floor]
-                                            })
-                                            user.flats = Flats;
-                                        }
-
-                                        if (user.roles[1].id === 4) {
-                                            const TenantFlats = await TenantFlatDetail.findAll({
-                                                where: {
-                                                    tenantId: user.userId,
-                                                    isActive: true,
-                                                },
-                                                attributes: ['flatDetailId']
-                                            })
-
-                                            if (TenantFlats.length !== 0) {
-                                                TenantFlats.map(item => {
-                                                    flatIds.push(item.flatDetailId);
-                                                })
-                                            }
-                                            else {
-                                                const TenantMemberFlat = await TenantMembersDetail.findOne({
-                                                    where: {
-                                                        memberId: user.userId,
-                                                        isActive: true,
-                                                    },
-                                                    attributes: ['flatDetailId']
-                                                })
-
-                                                if (TenantMemberFlat !== null) {
-                                                    flatIds.push(TenantMemberFlat.flatDetailId);
-                                                }
-                                            }
-                                            const Flats = await FlatDetail.findAll({
-                                                where: {
-                                                    flatDetailId: {
-                                                        [Op.in]: flatIds
-                                                    },
-                                                    isActive: true,
-                                                },
-                                                include: [Tower, Floor]
-                                            })
-                                            user.flats = Flats;
-                                        }
-                                    }
-                                    userData.push(user);
-                                }
-                            })
+                    const promise = userIds.map(id => {
+                        return userHandler(id, userData)
                     })
-
                     Promise.all(promise)
                         .then(result => {
-                            console.log("&&&&=>", userData);
+                            console.log(userData);
                             res.status(httpStatus.OK).json({
                                 userData,
                                 // disableFlat:true
@@ -722,198 +542,9 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                         userIds.push(item.userId);
                     })
                     // console.log(userIds);
-
-                    const promise = userIds.map(async id => {
-                        await User.findOne({
-                            where: {
-                                userId: id,
-                                // isActive: true
-                            },
-                            include: [
-                                {
-                                    model: Role,
-                                    where: {
-                                        id: { [Op.in]: [3, 4] }
-                                    }
-                                },
-
-
-                            ]
-                        })
-                            .then(async user => {
-                                if (user !== null) {
-                                    user = user.toJSON();
-                                    user.firstName = decrypt(user.firstName);
-                                    user.lastName = decrypt(user.lastName);
-                                    user.userName = decrypt(user.userName);
-                                    user.contact = decrypt(user.contact);
-                                    user.email = decrypt(user.email);
-                                    user.flatDisable = true;
-                                    const flatIds = [];
-                                    if (user.roles.length === 1) {
-                                        if (user.roles[0].id === 3) {
-                                            const OwnerFlats = await OwnerFlatDetail.findAll({
-                                                where: {
-                                                    ownerId: user.userId,
-                                                    isActive: true,
-                                                },
-                                                attributes: ['flatDetailId']
-                                            })
-
-                                            if (OwnerFlats.length !== 0) {
-                                                OwnerFlats.map(item => {
-                                                    flatIds.push(item.flatDetailId);
-                                                })
-                                            }
-                                            else {
-                                                const OwnerMemberFlat = await OwnerMembersDetail.findOne({
-                                                    where: {
-                                                        memberId: user.userId,
-                                                        isActive: true,
-                                                    },
-                                                    attributes: ['flatDetailId']
-                                                })
-
-                                                if (OwnerMemberFlat !== null) {
-                                                    flatIds.push(OwnerMemberFlat.flatDetailId);
-                                                }
-                                            }
-                                            const Flats = await FlatDetail.findAll({
-                                                where: {
-                                                    flatDetailId: {
-                                                        [Op.in]: flatIds
-                                                    },
-                                                    isActive: true,
-                                                },
-                                                include: [Tower, Floor]
-                                            })
-                                            user.flats = Flats;
-                                        }
-
-                                        if (user.roles[0].id === 4) {
-                                            const TenantFlats = await TenantFlatDetail.findAll({
-                                                where: {
-                                                    tenantId: user.userId,
-                                                    isActive: true,
-                                                },
-                                                attributes: ['flatDetailId']
-                                            })
-
-                                            if (TenantFlats.length !== 0) {
-                                                TenantFlats.map(item => {
-                                                    flatIds.push(item.flatDetailId);
-                                                })
-                                            }
-                                            else {
-                                                const TenantMemberFlat = await TenantMembersDetail.findOne({
-                                                    where: {
-                                                        memberId: user.userId,
-                                                        isActive: true,
-                                                    },
-                                                    attributes: ['flatDetailId']
-                                                })
-
-                                                if (TenantMemberFlat !== null) {
-                                                    flatIds.push(TenantMemberFlat.flatDetailId);
-                                                }
-                                            }
-                                            const Flats = await FlatDetail.findAll({
-                                                where: {
-                                                    flatDetailId: {
-                                                        [Op.in]: flatIds
-                                                    },
-                                                    isActive: true
-                                                },
-                                                include: [Tower, Floor]
-                                            })
-                                            user.flats = Flats;
-                                        }
-                                    }
-
-                                    if (user.roles.length === 2) {
-                                        if (user.roles[1].id === 3) {
-                                            const OwnerFlats = await OwnerFlatDetail.findAll({
-                                                where: {
-                                                    ownerId: user.userId,
-                                                    isActive: true,
-                                                },
-                                                attributes: ['flatDetailId']
-                                            })
-
-                                            if (OwnerFlats.length !== 0) {
-                                                OwnerFlats.map(item => {
-                                                    flatIds.push(item.flatDetailId);
-                                                })
-                                            }
-                                            else {
-                                                const OwnerMemberFlat = await OwnerMembersDetail.findOne({
-                                                    where: {
-                                                        memberId: user.userId,
-                                                        isActive: true,
-                                                    },
-                                                    attributes: ['flatDetailId']
-                                                })
-
-                                                if (OwnerMemberFlat !== null) {
-                                                    flatIds.push(OwnerMemberFlat.flatDetailId);
-                                                }
-                                            }
-                                            const Flats = await FlatDetail.findAll({
-                                                where: {
-                                                    flatDetailId: {
-                                                        [Op.in]: flatIds
-                                                    },
-                                                    isActive: true,
-                                                },
-                                                include: [Tower, Floor]
-                                            })
-                                            user.flats = Flats;
-                                        }
-
-                                        if (user.roles[1].id === 4) {
-                                            const TenantFlats = await TenantFlatDetail.findAll({
-                                                where: {
-                                                    tenantId: user.userId,
-                                                    isActive: true,
-                                                },
-                                                attributes: ['flatDetailId']
-                                            })
-
-                                            if (TenantFlats.length !== 0) {
-                                                TenantFlats.map(item => {
-                                                    flatIds.push(item.flatDetailId);
-                                                })
-                                            }
-                                            else {
-                                                const TenantMemberFlat = await TenantMembersDetail.findOne({
-                                                    where: {
-                                                        memberId: user.userId,
-                                                        isActive: true,
-                                                    },
-                                                    attributes: ['flatDetailId']
-                                                })
-
-                                                if (TenantMemberFlat !== null) {
-                                                    flatIds.push(TenantMemberFlat.flatDetailId);
-                                                }
-                                            }
-                                            const Flats = await FlatDetail.findAll({
-                                                where: {
-                                                    flatDetailId: {
-                                                        [Op.in]: flatIds
-                                                    },
-                                                    isActive: true,
-                                                },
-                                                include: [Tower, Floor]
-                                            })
-                                            user.flats = Flats;
-                                        }
-                                    }
-                                    userData.push(user);
-                                }
-                            })
+                    const promise = userIds.map(id => {
+                        return userHandler(id, userData)
                     })
-
                     Promise.all(promise)
                         .then(result => {
                             console.log("&&&&=>", userData);
@@ -927,7 +558,6 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                 })
             break;
         case 'activated':
-            // userData.unshift({disabled:true});
             FingerprintData.findAll({
                 where: {
                     isActive: true,
@@ -940,195 +570,8 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                     fingerprint.map(item => {
                         userIds.push(item.userId);
                     })
-
-                    const promise = userIds.map(async id => {
-                        await User.findOne({
-                            where: {
-                                userId: id,
-                                // isActive: true
-                            },
-                            include: [
-                                {
-                                    model: Role,
-                                    where: {
-                                        id: { [Op.in]: [3, 4] }
-                                    }
-                                },
-
-
-                            ]
-                        })
-                            .then(async user => {
-                                if (user !== null) {
-                                    user = user.toJSON();
-                                    user.firstName = decrypt(user.firstName);
-                                    user.lastName = decrypt(user.lastName);
-                                    user.userName = decrypt(user.userName);
-                                    user.contact = decrypt(user.contact);
-                                    user.email = decrypt(user.email);
-                                    user.flatDisable = true;
-                                    const flatIds = [];
-                                    if (user.roles.length === 1) {
-                                        if (user.roles[0].id === 3) {
-                                            const OwnerFlats = await OwnerFlatDetail.findAll({
-                                                where: {
-                                                    ownerId: user.userId,
-                                                    isActive: true,
-                                                },
-                                                attributes: ['flatDetailId']
-                                            })
-
-                                            if (OwnerFlats.length !== 0) {
-                                                OwnerFlats.map(item => {
-                                                    flatIds.push(item.flatDetailId);
-                                                })
-                                            }
-                                            else {
-                                                const OwnerMemberFlat = await OwnerMembersDetail.findOne({
-                                                    where: {
-                                                        memberId: user.userId,
-                                                        isActive: true,
-                                                    },
-                                                    attributes: ['flatDetailId']
-                                                })
-
-                                                if (OwnerMemberFlat !== null) {
-                                                    flatIds.push(OwnerMemberFlat.flatDetailId);
-                                                }
-                                            }
-                                            const Flats = await FlatDetail.findAll({
-                                                where: {
-                                                    flatDetailId: {
-                                                        [Op.in]: flatIds
-                                                    },
-                                                    isActive: true,
-                                                },
-                                                include: [Tower, Floor]
-                                            })
-                                            user.flats = Flats;
-                                        }
-                                        if (user.roles[0].id === 4) {
-                                            const TenantFlats = await TenantFlatDetail.findAll({
-                                                where: {
-                                                    tenantId: user.userId,
-                                                    isActive: true,
-                                                },
-                                                attributes: ['flatDetailId']
-                                            })
-
-                                            if (TenantFlats.length !== 0) {
-                                                TenantFlats.map(item => {
-                                                    flatIds.push(item.flatDetailId);
-                                                })
-                                            }
-                                            else {
-                                                const TenantMemberFlat = await TenantMembersDetail.findOne({
-                                                    where: {
-                                                        memberId: user.userId,
-                                                        isActive: true,
-                                                    },
-                                                    attributes: ['flatDetailId']
-                                                })
-
-                                                if (TenantMemberFlat !== null) {
-                                                    flatIds.push(TenantMemberFlat.flatDetailId);
-                                                }
-                                            }
-                                            const Flats = await FlatDetail.findAll({
-                                                where: {
-                                                    flatDetailId: {
-                                                        [Op.in]: flatIds
-                                                    },
-                                                    isActive: true
-                                                },
-                                                include: [Tower, Floor]
-                                            })
-                                            user.flats = Flats;
-                                        }
-                                    }
-
-                                    if (user.roles.length === 2) {
-                                        if (user.roles[1].id === 3) {
-                                            const OwnerFlats = await OwnerFlatDetail.findAll({
-                                                where: {
-                                                    ownerId: user.userId,
-                                                    isActive: true,
-                                                },
-                                                attributes: ['flatDetailId']
-                                            })
-
-                                            if (OwnerFlats.length !== 0) {
-                                                OwnerFlats.map(item => {
-                                                    flatIds.push(item.flatDetailId);
-                                                })
-                                            }
-                                            else {
-                                                const OwnerMemberFlat = await OwnerMembersDetail.findOne({
-                                                    where: {
-                                                        memberId: user.userId,
-                                                        isActive: true,
-                                                    },
-                                                    attributes: ['flatDetailId']
-                                                })
-
-                                                if (OwnerMemberFlat !== null) {
-                                                    flatIds.push(OwnerMemberFlat.flatDetailId);
-                                                }
-                                            }
-                                            const Flats = await FlatDetail.findAll({
-                                                where: {
-                                                    flatDetailId: {
-                                                        [Op.in]: flatIds
-                                                    },
-                                                    isActive: true,
-                                                },
-                                                include: [Tower, Floor]
-                                            })
-                                            user.flats = Flats;
-                                        }
-
-                                        if (user.roles[1].id === 4) {
-                                            const TenantFlats = await TenantFlatDetail.findAll({
-                                                where: {
-                                                    tenantId: user.userId,
-                                                    isActive: true,
-                                                },
-                                                attributes: ['flatDetailId']
-                                            })
-
-                                            if (TenantFlats.length !== 0) {
-                                                TenantFlats.map(item => {
-                                                    flatIds.push(item.flatDetailId);
-                                                })
-                                            }
-                                            else {
-                                                const TenantMemberFlat = await TenantMembersDetail.findOne({
-                                                    where: {
-                                                        memberId: user.userId,
-                                                        isActive: true,
-                                                    },
-                                                    attributes: ['flatDetailId']
-                                                })
-
-                                                if (TenantMemberFlat !== null) {
-                                                    flatIds.push(TenantMemberFlat.flatDetailId);
-                                                }
-                                            }
-                                            const Flats = await FlatDetail.findAll({
-                                                where: {
-                                                    flatDetailId: {
-                                                        [Op.in]: flatIds
-                                                    },
-                                                    isActive: true,
-                                                },
-                                                include: [Tower, Floor]
-                                            })
-                                            user.flats = Flats;
-                                        }
-                                    }
-                                    userData.push(user);
-                                }
-                            })
+                    const promise = userIds.map(id => {
+                        return userHandler(id, userData)
                     })
 
                     Promise.all(promise)
@@ -1211,11 +654,12 @@ exports.enableFingerPrintData = async (req, res, next) => {
 
 //API to disable fingerprint data in machine through websocket
 exports.disableFingerPrintData = async (req, res, next) => {
+    let transaction;
     try {
-        console.log("**disabling ")
+        transaction = await sequelize.transaction();
         const userId = parseInt(req.params.userId);
         const update = { isActive: false };
-        const updatedStatus = await FingerprintData.update(update, { where: { userId: userId } });
+        const updatedStatus = await FingerprintData.update(update, { where: { userId: userId }, transaction });
         wss.on('connection', (socket, req) => {
             socket.on('open', () => {
                 console.log('websocket is connected ...')
@@ -1242,8 +686,9 @@ exports.disableFingerPrintData = async (req, res, next) => {
                 message: "Fingerprint disabled successfully"
             })
         }, 3000);
+        await transaction.commit();
     } catch (error) {
-        console.log("error==>", error);
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

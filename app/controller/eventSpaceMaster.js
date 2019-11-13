@@ -8,7 +8,9 @@ const Size = db.size;
 const Op = db.Sequelize.Op;
 
 exports.create = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         console.log("creating event Space");
         let body = req.body;
         console.log(body);
@@ -24,14 +26,14 @@ exports.create = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Event Space Name already Exists" })
         }
         body.userId = req.userId;
-        const eventSpace = await EventSpace.create(body);
-        console.log("eventSpace ==>",eventSpace);
+        const eventSpace = await EventSpace.create(body, transaction);
+        await transaction.commit();
         return res.status(httpStatus.CREATED).json({
             message: "Event Space registered successfully",
             eventSpace
         });
     } catch (error) {
-        console.log("error==>", error);
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -60,10 +62,11 @@ exports.get = async (req, res, next) => {
 
 
 exports.update = async (req, res, next) => {
+    let transaction;
     let updAttr = {};
     let attrArr = ['spaceName', 'capacity', 'spaceType', 'area', 'description', 'sizeId'];
-
     try {
+        transaction = await db.sequelize.transaction();
         console.log("updating event Space");
         console.log(":::::req.body==>", req.body)
         const id = req.params.id;
@@ -86,8 +89,9 @@ exports.update = async (req, res, next) => {
 
         if (eventSpaces.spaceName === update.spaceName) {
             const updatedEventSpace = await EventSpace.find({ where: { eventSpaceId: id } }).then(eventSpace => {
-                return eventSpace.updateAttributes(update)
+                return eventSpace.updateAttributes(update, transaction)
             })
+            await transaction.commit();
             if (updatedEventSpace) {
                 return res.status(httpStatus.OK).json({
                     message: "Event Space Updated Page",
@@ -107,30 +111,30 @@ exports.update = async (req, res, next) => {
                 return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Event Space Name already Exists" })
             }
             const updatedEventSpace = await EventSpace.find({ where: { eventSpaceId: id } }).then(eventSpace => {
-
                 attrArr.forEach(attr => {
                     if (attr in req.body && req.body[attr] !== undefined && req.body[attr] !== null) {
                         updAttr[attr] = req.body[attr];
                     }
                 })
-
-                return eventSpace.updateAttributes(updAttr);
+                return eventSpace.updateAttributes(updAttr, transaction);
             })
-
+            await transaction.commit();
             return res.status(httpStatus.OK).json({
                 message: "Event Space Updated Page",
                 vendor: updatedEventSpace
             });
         }
     } catch (error) {
-        console.log(error)
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 
 exports.delete = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = db.sequelize.transaction();
         const id = req.params.id;
 
         if (!id) {
@@ -141,10 +145,12 @@ exports.delete = async (req, res, next) => {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Please try again " });
         }
         const eventSpace = await EventSpace.find({ where: { eventSpaceId: id } }).then(eventSpace => {
-            return eventSpace.updateAttributes(update);
+            return eventSpace.updateAttributes(update, transaction);
         });
-        const societyMemberEventBooking = await SocietMemberEventBooking.findAll({where: {eventSpaceId: id}});
-        societyMemberEventBooking.map(x => x.updateAttributes({isActive: false}));
+
+        const societyMemberEventBooking = await SocietMemberEventBooking.findAll({ where: { eventSpaceId: id } });
+        societyMemberEventBooking.map(x => x.updateAttributes({ isActive: false }, transaction));
+        await transaction.commit();
         if (eventSpace) {
             return res.status(httpStatus.OK).json({
                 message: "Event Space deleted successfully",
@@ -152,13 +158,15 @@ exports.delete = async (req, res, next) => {
             });
         }
     } catch (error) {
-        console.log(error);
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
 
 exports.deleteSelected = async (req, res, next) => {
+    let transaction;
     try {
+        transaction = await db.sequelize.transaction();
         const deleteSelected = req.body.ids
         console.log("delete selected==>", deleteSelected);
 
@@ -166,14 +174,15 @@ exports.deleteSelected = async (req, res, next) => {
         if (!deleteSelected) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
-        const updatedEventSpace = await EventSpace.update(update, { where: { eventSpaceId: { [Op.in]: deleteSelected } } })
+        const updatedEventSpace = await EventSpace.update(update, { where: { eventSpaceId: { [Op.in]: deleteSelected } }, transaction });
+        await transaction.commit();
         if (updatedEventSpace) {
             return res.status(httpStatus.OK).json({
                 message: "EventSpaces deleted successfully",
             });
         }
     } catch (error) {
-        console.log(error)
+        if (transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
