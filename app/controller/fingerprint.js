@@ -493,7 +493,6 @@ exports.getRoles = async (req, res, next) => {
 }
 
 exports.getFingerprintAndManchineData = (req, res, next) => {
-    // console.log(1)
     const type = req.params.type;
     const userData = [];
     console.log("***", type)
@@ -517,12 +516,14 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                         return userHandler(id, userData)
                     })
                     Promise.all(promise)
-                        .then(result => {
-                            console.log(userData);
+                        .then(result => {       
                             res.status(httpStatus.OK).json({
                                 userData,
                                 // disableFlat:true
                             })
+                            
+                        }).catch(err=>{
+                            console.log("errrrr",err);
                         })
                 })
             break;
@@ -552,7 +553,8 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                 userData,
                                 // disableFlat:true
                             })
-                        }).catch(error => {
+                           })
+                        .catch(error => {
                             console.log(";;;;;;", error);
                         })
                 })
