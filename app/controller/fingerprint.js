@@ -495,7 +495,9 @@ exports.getRoles = async (req, res, next) => {
 exports.getFingerprintAndManchineData = (req, res, next) => {
     // console.log(1)
     const type = req.params.type;
-    const userData = [];
+    const allUserData = [];
+    const activatedUserData = [];
+    const deactivatedUserData = [];
     console.log("***", type)
     switch (type) {
         case 'all':
@@ -511,16 +513,13 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                     fingerprint.map(item => {
                         userIds.push(item.userId);
                     })
-                    console.log(userIds);
-
                     const promise = userIds.map(id => {
-                        return userHandler(id, userData)
+                        return userHandler(id, activatedUserData)
                     })
                     Promise.all(promise)
                         .then(result => {
-                            console.log(userData);
                             res.status(httpStatus.OK).json({
-                                userData,
+                                activatedUserData,
                                 // disableFlat:true
                             })
                         })
@@ -543,13 +542,12 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                     })
                     // console.log(userIds);
                     const promise = userIds.map(id => {
-                        return userHandler(id, userData)
+                        return userHandler(id, deactivatedUserData)
                     })
                     Promise.all(promise)
                         .then(result => {
-                            console.log("&&&&=>", userData);
                             res.status(httpStatus.OK).json({
-                                userData,
+                                deactivatedUserData,
                                 // disableFlat:true
                             })
                         }).catch(error => {
@@ -571,14 +569,14 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                         userIds.push(item.userId);
                     })
                     const promise = userIds.map(id => {
-                        return userHandler(id, userData)
+                        return userHandler(id, allUserData)
                     })
 
                     Promise.all(promise)
                         .then(result => {
                             // console.log("&&&&=>", result);
                             res.status(httpStatus.OK).json({
-                                userData,
+                                allUserData,
                                 // disableFlat:true
                             })
                         }).catch(error => {
@@ -600,7 +598,7 @@ exports.enableFingerPrintData = async (req, res, next) => {
         const userId = parseInt(req.params.userId);
         const update = { isActive: true };
         // var sockets = [];
-        const updatedStatus = await FingerprintData.update(update, { where: { userId: userId },transaction });
+        const updatedStatus = await FingerprintData.update(update, { where: { userId: userId }, transaction });
         const fingerPrintData = await FingerprintData.findOne({ where: { isActive: true, userId: userId }, include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName'] }] });
         const firstName = decrypt(fingerPrintData.user.firstName);
         const lastName = decrypt(fingerPrintData.user.lastName);
@@ -649,7 +647,7 @@ exports.enableFingerPrintData = async (req, res, next) => {
         //     })
         // }, 5000);
     } catch (error) {
-        if(transaction) await transaction.rollback();
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -971,7 +969,6 @@ exports.giveAccessByOwner = async (req, res, next) => {
         const memberIds = [];
         const flatIds = [];
         const tenantIds = [];
-        console.log("^&%user", userId)
         const type = req.params.type;
         // let roleId;
         // const role = await User.find({ where: { isActive: true, userId: userId }, include: [Role] });

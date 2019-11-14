@@ -11,7 +11,6 @@ const Role = db.role;
 const Op = db.Sequelize.Op;
 
 module.exports = async function userData(id,userData) {
-    console.log(id)
     await User.findOne({
         where: {
             userId: id,

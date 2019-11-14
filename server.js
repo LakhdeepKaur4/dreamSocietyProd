@@ -77,6 +77,9 @@ try {
 	// complaint();
 } catch (err) {
 	console.log("error", err)
+} finally {
+	db.sequelize.connectionManager.handleDisconnects = false;
+	db.sequelize.connectionManager.pool.clear();
 }
 
 function initial() {
