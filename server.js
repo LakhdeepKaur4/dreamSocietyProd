@@ -64,10 +64,10 @@ app.listen(PORT, function () {
 })
 
 try {
-	dbConnectionObject = db.sequelize.sync({
+	db.sequelize.sync({
 		force: false,
 	}).then((res) => {
-		if (dbConnectionObject != null) {
+		if (res != null) {
 			console.log('Drop and Resync with { force: false }');
 		} else {
 			console.log('Unable to connect database');
@@ -76,9 +76,17 @@ try {
 	//   initial();
 	// complaint();
 } catch (err) {
+	
 	console.log("error", err)
+<<<<<<< HEAD
 } finally {
 	db.sequelize.connectionManager.handleDisconnects = false;
+=======
+}finally{
+	
+    
+	db.sequelize.connectionManager.pool.handleDisable = false;
+>>>>>>> 0da1c120aa0e37a428494d4ba8760db10bf0ba9f
 	db.sequelize.connectionManager.pool.clear();
 }
 
