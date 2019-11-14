@@ -516,14 +516,14 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                         return userHandler(id, userData)
                     })
                     Promise.all(promise)
-                        .then(result => {       
+                        .then(result => {
                             res.status(httpStatus.OK).json({
                                 userData,
                                 // disableFlat:true
                             })
-                            
-                        }).catch(err=>{
-                            console.log("errrrr",err);
+
+                        }).catch(err => {
+                            console.log("errrrr", err);
                         })
                 })
             break;
@@ -553,7 +553,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                                 userData,
                                 // disableFlat:true
                             })
-                           })
+                        })
                         .catch(error => {
                             console.log(";;;;;;", error);
                         })
@@ -596,62 +596,64 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
 exports.enableFingerPrintData = async (req, res, next) => {
     let transaction;
     try {
-        transaction = await db.sequelize.transaction()
+        transaction = await db.sequelize.transaction();
         let serialNumber;
         let socketResponse;
         const userId = parseInt(req.params.userId);
+        console.log(userId)
         const update = { isActive: true };
         // var sockets = [];
-        const updatedStatus = await FingerprintData.update(update, { where: { userId: userId },transaction });
-        const fingerPrintData = await FingerprintData.findOne({ where: { isActive: true, userId: userId }, include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName'] }] });
-        const firstName = decrypt(fingerPrintData.user.firstName);
-        const lastName = decrypt(fingerPrintData.user.lastName);
-        const fullName = firstName + ' ' + lastName;
-        //start connecting websocket server
-        wss.on('connection', (socket, req) => {
-            socket.on('open', () => {
-                console.log('websocket is connected ...')
-                // sending a send event to websocket server
-                socket.send('connected')
+        const updatedStatus = await FingerprintData.update(update, { where: { userId: userId } });
+        console.log(updatedStatus);
+        if (updatedStatus) {
+            const fingerPrintData = await FingerprintData.findOne({ where: { isActive: true, userId: userId }, include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName'] }] });
+            const firstName = decrypt(fingerPrintData.user.firstName);
+            const lastName = decrypt(fingerPrintData.user.lastName);
+            const fullName = firstName + ' ' + lastName;
+            //start connecting websocket server
+            wss.on('connection', (socket, req) => {
+                socket.on('open', () => {
+                    console.log('websocket is connected ...')
+                    // sending a send event to websocket server
+                    socket.send('connected')
+                })
+                socket.on('message', (message) => {
+                    socketResponse = JSON.parse(message);
+                    // when machine get connected so we need to send this response
+                    let response = { "ret": "reg", "result": true }
+                    socket.send(JSON.stringify(response));
+                    let getDeviceInfo = { "cmd": "getdevinfo" }
+                    socket.send(JSON.stringify(getDeviceInfo));
+                    if (socketResponse.ret == 'getdevinfo') {
+                        serialNumber = socketResponse.sn;
+                    }
+                    //response to be send to machine for adding data to machine
+                    let addUser =
+                    {
+                        "sn": serialNumber,
+                        "cmd": "setuserinfo",
+                        "enrollid": userId,
+                        "name": fullName,
+                        "backupnum": 0,
+                        "admin": 0,
+                        "record": fingerPrintData.fingerprintData
+                    }
+                    //send this response to machine
+                    socket.send(JSON.stringify(addUser));
+                });
+                socket.on('error', (error) => {
+                    // console.log("fingerprint api socket error", error);
+                })
+                //Closing socket
+                socket.on('close', () => { console.log('close') });
             })
-            socket.on('message', (message) => {
-                socketResponse = JSON.parse(message);
-                // when machine get connected so we need to send this response
-                let response = { "ret": "reg", "result": true }
-                socket.send(JSON.stringify(response));
-                let getDeviceInfo = { "cmd": "getdevinfo" }
-                socket.send(JSON.stringify(getDeviceInfo));
-                if (socketResponse.ret == 'getdevinfo') {
-                    serialNumber = socketResponse.sn;
-                }
-                //response to be send to machine for adding data to machine
-                let addUser =
-                {
-                    "sn": serialNumber,
-                    "cmd": "setuserinfo",
-                    "enrollid": userId,
-                    "name": fullName,
-                    "backupnum": 0,
-                    "admin": 0,
-                    "record": fingerPrintData.fingerprintData
-                }
-                //send this response to machine
-                socket.send(JSON.stringify(addUser));
-            });
-            socket.on('error', (error) => {
-                console.log("fingerprint api socket error", error);
+        }
+        setTimeout(() => {
+            res.status(httpStatus.OK).json({
+                message: "Fingerprint enabled successfully"
             })
-            //Closing socket
-            socket.on('close', () => { console.log('close') });
-        })
-        await transaction.commit();
-        // setTimeout(() => {
-        //     res.status(httpStatus.OK).json({
-        //         message: "Fingerprint enabled successfully"
-        //     })
-        // }, 5000);
+        }, 5000);
     } catch (error) {
-        if(transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -661,40 +663,41 @@ exports.enableFingerPrintData = async (req, res, next) => {
 exports.disableFingerPrintData = async (req, res, next) => {
     let transaction;
     try {
-        transaction = await sequelize.transaction();
+        transaction = await db.sequelize.transaction();
         const userId = parseInt(req.params.userId);
+        console.log("&&&&",userId)
         const update = { isActive: false };
-        const updatedStatus = await FingerprintData.update(update, { where: { userId: userId }, transaction });
-        wss.on('connection', (socket, req) => {
-            socket.on('open', () => {
-                console.log('websocket is connected ...')
-                // sending a send event to websocket server
-                socket.send('connected')
+        const updatedStatus = await FingerprintData.update(update, { where: { userId: userId } });
+        if (updatedStatus) {
+            wss.on('connection', (socket, req) => {
+                socket.on('open', () => {
+                    console.log('websocket is connected ...')
+                    // sending a send event to websocket server
+                    socket.send('connected')
+                })
+                socket.on('message', (message) => {
+                    // when machine get connected so we need to send this response
+                    let response = { "ret": "reg", "result": true }
+                    socket.send(JSON.stringify(response));
+                    //command to be send to disable user
+                    let disableUser = { "cmd": "enableuser", "enrollid": userId, "enflag": 0 }
+                    console.log(socket.send(JSON.stringify(disableUser)));
+                    // }
+                });
+                socket.on('error', (error) => {
+                    // console.log("fingerprint api socket error", error);
+                })
+                //closing socket
+                socket.on('close', () => { console.log('close') })
             })
-            socket.on('message', (message) => {
-                // when machine get connected so we need to send this response
-                let response = { "ret": "reg", "result": true }
-                socket.send(JSON.stringify(response));
-                //command to be send to disable user
-                let disableUser = { "cmd": "enableuser", "enrollid": userId, "enflag": 0 }
-                socket.send(JSON.stringify(disableUser));
-                // }
-            });
-            socket.on('error', (error) => {
-                console.log("fingerprint api socket error", error);
-            })
-            //closing socket
-            socket.on('close', () => { console.log('close') })
-        })
+        }
         setTimeout(() => {
             res.status(httpStatus.OK).json({
                 message: "Fingerprint disabled successfully"
             })
-        }, 3000);
-        await transaction.commit();
+        }, 5000);
     } catch (error) {
-        if (transaction) await transaction.rollback();
-        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error.message);
     }
 }
 
@@ -779,7 +782,7 @@ exports.getCurrentFingerprintData = async (req, res, next) => {
 
 // exports.fingerprintDataScheduler = async (req, res, next) => {
 
-//Scheduler for fetching fingerprint data from information and store into database
+//Scheduler for fetching fingerprint data from machine and store into database
 let date = new Date(Date.now());
 let startTime = date.setHours(1);
 let endTime = date.setHours(13);
