@@ -49,7 +49,7 @@
     "random-username-generator": "^1.0.4",
     "razorpay": "^2.0.5",
     "save": "^2.3.3",
-    "sequelize": "^4.39.0",
+    "sequelize": "^5.15.1",
     "sequelize-encrypted": "^1.0.0",
     "short-id": "0.1.0-1",
     "textlocal": "^0.1.1",
