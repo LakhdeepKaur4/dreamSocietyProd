@@ -64,6 +64,10 @@ module.exports = function (app) {
 	const videoController = require('../controller/video');
 	const contactUsController = require('../controller/contactUs');
 	const vendorAllotmentController = require('../controller/vendorAllotmentController')
+	const cardController = require('../controller/card');
+	const societyEventCelebrationController = require('../controller/societyEventCelebrationController');
+	const fetchPaymentIdForOrder = require('../controller/razorpay');
+	
 	app.get('/', userController.start);
 
 	app.get('/test', [authJwt.isSuperAdminRole], userController.test);
@@ -588,6 +592,8 @@ module.exports = function (app) {
 
 	app.get('/api/getEventBookings', [authJwt.verifyToken, authJwt.isAdminRole], eventBooking.get);
 
+	app.get('/api/event/booking', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], eventBooking.get);
+	
 	app.put('/api/updateEventBookings/:id', [authJwt.verifyToken, authJwt.isAdminRole], eventBooking.update);
 
 	app.put('/api/deleteEventBooking/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], eventBooking.deleteSelected);
@@ -829,5 +835,16 @@ module.exports = function (app) {
 	app.get('/api/vendors/slot', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], vendorAllotmentController.get)
 
 	app.put('/api/book/slot/:id', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], vendorAllotmentController.bookVendorSlot)
-	// app.get('/api/vendors/book',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.getVendor)
+	
+	app.post('/api/validate/card',[authJwt.verifyToken, authJwt.isAdminRole],cardController.checkValidCardNumber);
+
+	app.post('/api/save/card/data',[authJwt.verifyToken, authJwt.isAdminRole],cardController.saveCardData)
+
+	app.post('/api/card/verifySignature',[authJwt.verifyToken, authJwt.isAdminRole],cardController.saveTransaction)
+	
+	app.get('/api/card',[authJwt.verifyToken, authJwt.isAdminRole],cardController.listCard)
+
+	app.post('/api/order/create',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],societyEventCelebrationController.create)
+// app.get('/api/vendors/book',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.getVendor)
+	app.get("/api/order/fetch/payment",[authJwt.verifyToken, authJwt.isOwnerOrTenantRole], fetchPaymentIdForOrder.fetchPaymentIdForOrder)
 }

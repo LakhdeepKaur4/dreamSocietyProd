@@ -277,6 +277,7 @@ exports.createEncrypt = async (req, res, next) => {
         let body = req.body;
         let randomNumber;
         randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
+        console.log("rNumber=>>>>",randomNumber)
         const employeeExists = await Employee.findOne({ where: { isActive: true, employeeId: randomNumber } });
         const userExists = await User.findOne({ where: { isActive: true, userId: randomNumber } });
         if (employeeExists !== null || userExists !== null) {

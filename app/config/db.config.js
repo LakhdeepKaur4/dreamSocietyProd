@@ -94,6 +94,8 @@ db.userFacility = require('../model/userFacility.model')(sequelize, Sequelize);
 db.video = require('../model/video.model')(sequelize, Sequelize);
 db.userVideo = require('../model/userVideo.model')(sequelize, Sequelize);
 db.vendorAllotment = require('../model/vendorAllotment.model')(sequelize, Sequelize);
+db.cardDetails = require('../model/card.model')(sequelize,Sequelize);
+db.order = require('../model/societyEventCelebration')(sequelize,Sequelize);
 
 db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
 db.otp.belongsTo(db.tenant, { foreignKey: 'tenantId' });
@@ -157,7 +159,7 @@ db.inventory.belongsTo(db.assets, { foreignKey: 'assetId' });
 db.inventory.belongsTo(db.assetsType, { foreignKey: 'assetTypeId' });
 db.inventory.belongsTo(db.user, { foreignKey: 'userId' });
 db.employee.belongsTo(db.user, { foreignKey: 'userId' });
-db.employee.belongsTo(db.user, { foreignKey: 'userId' });
+
 
 db.designation.belongsTo(db.user, { foreignKey: 'userId' });
 db.societyBoardMember.belongsTo(db.user, { foreignKey: 'userId' });
@@ -266,5 +268,6 @@ db.video.belongsToMany(db.user, { as: 'User', through: 'user_video_master', fore
 db.vendorAllotment.belongsTo(db.individualVendor, { foreignKey: 'individualVendorId', as: 'Vendor'  });
 db.vendorAllotment.belongsTo(db.user, { foreignKey: 'userId'});
 db.vendorAllotment.belongsTo(db.user, { foreignKey: 'bookedBy' ,as: 'User',defaultValue:null });
-
+db.cardDetails.belongsTo(db.user, { foreignKey: 'userId'});
+db.order.belongsTo(db.user, {foreignKey:'userId'});
 module.exports = db;
