@@ -96,6 +96,8 @@ db.userVideo = require('../model/userVideo.model')(sequelize, Sequelize);
 db.vendorAllotment = require('../model/vendorAllotment.model')(sequelize, Sequelize);
 db.cardDetails = require('../model/card.model')(sequelize,Sequelize);
 db.order = require('../model/societyEventCelebration')(sequelize,Sequelize);
+db.transactions = require('../model/transactions')(sequelize,Sequelize),
+
 
 db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
 db.otp.belongsTo(db.tenant, { foreignKey: 'tenantId' });
@@ -236,6 +238,7 @@ db.complaint.belongsTo(db.user, { foreignKey: 'userId' });
 db.machine.belongsTo(db.flatDetail, { foreignKey: 'flatDetailId' });
 db.machine.belongsTo(db.machineDetail, { foreignKey: 'machineDetailId' });
 db.electricityConsumer.belongsTo(db.flatDetail, { foreignKey: 'flatDetailId' });
+db.transactions.belongsTo(db.user,{foreignKey:'userId'})
 // db.electricityConsumer.belongsTo(db.maintenanceType, { foreignKey: 'rate', targetKey: 'maintenanceTypeId' });
 // db.maintenanceType.hasOne(db.electricityConsumer, { foreignKey: 'rate', sourceKey: 'maintenanceTypeId' });
 db.commonArea.belongsTo(db.user, { foreignKey: 'userId' });

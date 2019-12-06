@@ -20,14 +20,14 @@ exports.create = async (req, res) => {
     //object to be send to razorpay
     console.log("amount",req.body.totalCharges)
     var orderData = {
-        amount: req.body.totalCharges,  // amount in the smallest currency unit
+        amount: req.body.totalCharges*100,  // amount in the smallest currency unit
         currency: "INR",
         receipt: `order_rcptid_${receiptRandomNumber}`,
         payment_capture: '1'
     };
     //calling razorpay order api
     const response = await razorpay.orders.create(orderData);
-    console.log("rrrrrrrrrrrrrrrrrrrr",response)
+    console.log("rrrrrrrrrrrrrrrrrrrr",response) 
     req.body.razorpay_id = response.id;
     req.body.receipt = response.receipt;
     req.body.entity = response.entity;

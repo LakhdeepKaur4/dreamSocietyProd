@@ -836,15 +836,19 @@ module.exports = function (app) {
 
 	app.put('/api/book/slot/:id', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], vendorAllotmentController.bookVendorSlot)
 	
-	app.post('/api/validate/card',[authJwt.verifyToken, authJwt.isAdminRole],cardController.checkValidCardNumber);
+	app.post('/api/validate/card',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.checkValidCardNumber);
 
-	app.post('/api/save/card/data',[authJwt.verifyToken, authJwt.isAdminRole],cardController.saveCardData)
+	app.post('/api/save/card/data',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.saveCardData)
 
-	app.post('/api/card/verifySignature',[authJwt.verifyToken, authJwt.isAdminRole],cardController.saveTransaction)
+	app.post('/api/card/verifySignature',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.saveTransaction)
 	
-	app.get('/api/card',[authJwt.verifyToken, authJwt.isAdminRole],cardController.listCard)
+	app.get('/api/card',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.listCard)
 
 	app.post('/api/order/create',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],societyEventCelebrationController.create)
 // app.get('/api/vendors/book',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.getVendor)
 	app.get("/api/order/fetch/payment",[authJwt.verifyToken, authJwt.isOwnerOrTenantRole], fetchPaymentIdForOrder.fetchPaymentIdForOrder)
+
+	app.get('/api/card/getUserTransactions',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.getTransactions);
+
+	app.post('/api/existing/card',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.getExpiryWithCardNumber)
 }

@@ -3,8 +3,16 @@ const httpStatus = require('http-status');
 const db = require("../config/db.config");
 const Card = db.cardDetails;
 const crypto = require('crypto');
-const config = require('../config/config')
+const config = require('../config/config');
+const Razorpay = require('razorpay')
+const Transactions = db.transactions;
+const User = db.user
 // API to check whether card is valid or not 
+var razorpay = new Razorpay({
+    key_id: 'rzp_test_igd3N3CAkAeRcV',
+    key_secret:'rXLwbN77HeeIVma6EQDScJ3P'
+    
+});
 exports.checkValidCardNumber = async (req, res, next) => {
     try {
         const body = req.body;
@@ -33,7 +41,20 @@ exports.checkValidCardNumber = async (req, res, next) => {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error)
     }
 }
-
+exports.getExpiryWithCardNumber= async (req,res,next)=>{
+    try{
+        const cardNumber = req.body.number;
+        console.log("<<<<<<<<<====",cardNumber)
+        const getExpiry = await Card.findAll({where:{number:cardNumber, isActive:true}});
+        if(getExpiry){
+            res.status(httpStatus.OK).json({message:'Details of CardNumber',getExpiry})
+        }else{
+            res.status(httpStatus.UNPROCESSABLE_ENTITY).json({message:'Please Select a valid Card Number'})
+        }
+    }catch(err){
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+    }
+}
 // API to save card data
 exports.saveCardData = async (req, res, next) => {
     try {
@@ -63,8 +84,9 @@ exports.saveCardData = async (req, res, next) => {
 // API to get card data
 exports.listCard = async(req, res) => {
     try{
-        const card  = await Card.findAll({where:{ userId: req.userId, isActive: true}, order: [['createdAt']]})
-        
+        console.log("listing cards")
+        const card  = await Card.findAll({where:{ userId: req.userId, isActive: true},order: [['createdAt']]})
+           
             if (card) {
                 res.status(httpStatus.OK).json({message:"All user cards",card})
             }
@@ -79,6 +101,7 @@ exports.listCard = async(req, res) => {
     
         
 };
+
 
 // API to update card data
 exports.updateCard = (req, res) => {
@@ -110,7 +133,7 @@ exports.deleteCard = (req, res) => {
             }
             res.status(httpStatus.OK).json({ message: "Card deleted successfully" });
         }
-    );
+    );  
 }
 
 
@@ -127,12 +150,31 @@ exports.saveTransaction = async (req, res) => {
        const gs=crypto.createHmac('sha256', config.RAZORPAY_API_SECRET).update(generated_signature).digest('hex');
         if (gs == data.razorpay_signature) {
             console.log("Payment done");
-            res.status(httpStatus.OK).json({ data, message: "Payment successfully done" })
+            const transactionDetails = await razorpay.payments.fetch(data.razorpay_payment_id)
+            console.log("transactionDetails",transactionDetails);
+            transactionDetails.userId = req.userId;
+            const transaction = await Transactions.create(transactionDetails);
+            if(transaction){
+                res.status(httpStatus.OK).json({ data, message: "Payment successfully done", transactionDetails})
+            }
         } else {
             console.log("Payment Failed");
             res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ data, message: "Payment Failed" })
         }
     };
+
+exports.getTransactions = async(req,res) => {
+        try{
+            const transactions = await Transactions.findAll({where:{userId:req.userId}});
+            if(transactions){
+                res.status(httpStatus.OK).json({message:'All transaction details', transactions})
+            }else{
+                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({message:'No details available for this user'})
+            }
+        }catch(err){
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
+        }
+    }
 
 
 
