@@ -5,6 +5,10 @@ module.exports = (sequelize, Sequelize) => {
             autoIncrement: true,
             primaryKey: true
         },
+        type: {
+            type: Sequelize.BOOLEAN,
+            defaultValue: true
+        },
         isActive: {
             type: Sequelize.BOOLEAN,
             defaultValue: true
@@ -18,8 +22,8 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.DATE
         }
     }, {
-            freezeTableName: true
-        });
+        freezeTableName: true
+    });
 
     return Machine;
 }

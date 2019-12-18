@@ -505,6 +505,7 @@ exports.getDecrypt = async (req, res, next) => {
             where: {
                 isActive: true
             },
+            attributes: { exclude: ['password'] },
             order: [['createdAt', 'DESC']],
             include: [
                 {

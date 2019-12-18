@@ -63,10 +63,22 @@ module.exports = function (app) {
 	const userFacilityController = require('../controller/userFacility');
 	const videoController = require('../controller/video');
 	const contactUsController = require('../controller/contactUs');
-	const vendorAllotmentController = require('../controller/vendorAllotmentController')
+	const vendorAllotmentController = require('../controller/vendorAllotmentController');
+	const meterDetailController = require('../controller/meterDetail');
+	const meterController = require('../controller/meter');
+	const emailHtml = require('../handlers/sendMail').emailHtml;
+	const individualVendorBookingController = require('../controller/individualVendorBooking');
+	const maintenanceChargesController = require('../controller/maintenanceCharges');
+	const facilitiesChargesController = require('../controller/facilitiesCharges');
+	const electricityChargesController = require('../controller/electricityCharges');
+	const loadTest = require('../controller/loadtest');
+
+	// const vendorAllotmentController = require('../controller/vendorAllotmentController');
 	app.get('/', userController.start);
 
 	app.get('/test', [authJwt.isSuperAdminRole], userController.test);
+
+	app.get('/email/html', emailHtml);
 
 	app.post('/api/auth/signup', [verifySignUp.checkRolesExisted], userController.signupEncrypted);
 
@@ -588,6 +600,8 @@ module.exports = function (app) {
 
 	app.get('/api/getEventBookings', [authJwt.verifyToken, authJwt.isAdminRole], eventBooking.get);
 
+	app.get('/api/event/booking', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], eventBooking.get);
+
 	app.put('/api/updateEventBookings/:id', [authJwt.verifyToken, authJwt.isAdminRole], eventBooking.update);
 
 	app.put('/api/deleteEventBooking/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], eventBooking.deleteSelected);
@@ -598,7 +612,11 @@ module.exports = function (app) {
 
 	app.get('/api/individualVendor', [authJwt.verifyToken, authJwt.isAdminRole], individualVendorController.get);
 
+	app.get('/api/individualVendor/service/:id', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], individualVendorController.getAllVendorsByServiceId);
+
 	app.get('/api/individualVendor/:id', [authJwt.verifyToken, authJwt.isAdminRole], individualVendorController.getById);
+
+	app.get('/api/individualVendor/owner/:id', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], individualVendorController.getById);
 
 	app.put('/api/individualVendor/:id', [authJwt.verifyToken, authJwt.isAdminRole], individualVendorController.update);
 
@@ -828,6 +846,64 @@ module.exports = function (app) {
 
 	app.get('/api/vendors/slot', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], vendorAllotmentController.get)
 
-	app.put('/api/book/slot/:id', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], vendorAllotmentController.bookVendorSlot)
+	app.put('/api/book/slot/:id', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], vendorAllotmentController.bookVendorSlot);
+
+	app.post('/api/meterDetail', [authJwt.verifyToken, authJwt.isAdminRole], meterDetailController.create);
+
+	app.get('/api/meterDetail', [authJwt.verifyToken, authJwt.isAdminRole], meterDetailController.get);
+
+	app.put('/api/meterDetail/:id', [authJwt.verifyToken, authJwt.isAdminRole], meterDetailController.update);
+
+	app.put('/api/meterDetail/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], meterDetailController.deleteSelected);
+
+	app.put('/api/meterDetail/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], meterDetailController.delete);
+
+	app.post('/api/meter', [authJwt.verifyToken, authJwt.isAdminRole], meterController.create);
+
+	app.get('/api/meter', [authJwt.verifyToken, authJwt.isAdminRole], meterController.get);
+
+	app.put('/api/meter/:id', [authJwt.verifyToken, authJwt.isAdminRole], meterController.update);
+
+	app.put('/api/meter/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], meterController.deleteSelected);
+
+	app.put('/api/meter/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], meterController.delete);
+
+	app.get('/api/individualVendor/booking/request', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], individualVendorBookingController.get);
+
+	app.post('/api/individualVendor/booking', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], individualVendorBookingController.create);
+
+	app.put('/api/individual/vendor/booking/delete/deleteSelected', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], individualVendorBookingController.deleteSelected);
+
+	app.put('/api/individual/vendor/booking/delete/:id', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], individualVendorBookingController.delete);
+
+	app.put('/api/individualVendor/booking/:type/:id', [authJwt.verifyToken, authJwt.isVendorRole], individualVendorBookingController.provideService);
+
+	app.get('/api/individualVendor/booking/request/societyMember', [authJwt.verifyToken, authJwt.isVendorRole], individualVendorBookingController.getBookings);
+
+	app.get('/api/vendor/slots/:id', [authJwt.verifyToken], individualVendorBookingController.slotsNotBooked);
+
+	app.put('/api/individualVendor/booking/:id', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], individualVendorBookingController.update);
+
+	app.get('/api/calculate/maintenanceCharges', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], maintenanceChargesController.calculateMaintenanceCharges);
+
+	// app.get('/api/calculate/maintenanceCharges/:towerId', maintenanceChargesController.getMaintenanceCharges);
+
+	app.get('/api/calculate/facilitiesCharges', [authJwt.verifyToken, authJwt.isAdminRole], facilitiesChargesController.calculateFacilitiesCharges);
+
+	app.get('/api/all/facilitiesCharges', [authJwt.verifyToken, authJwt.isAdminRole], facilitiesChargesController.getAllFacilityCharges);
+
+	app.get('/api/facilitiesCharges', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], facilitiesChargesController.get);
+
+	app.get('/api/calculate/electricityCharges/', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], electricityChargesController.calculateElectricityMaintenanceCharges);
+
+	app.put('/api/electricityCharges/:id', [authJwt.verifyToken, authJwt.isAdminRole], electricityChargesController.update);
+
+	app.get('/api/electricityCharges/:towerId', electricityChargesController.get);
+
+	app.get('/load/test', loadTest.test);
+
+	// app.get('/load/test/api', loadTest.testApi);
+
+	app.get('/api/test/country', countryController.get);
 	// app.get('/api/vendors/book',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.getVendor)
 }

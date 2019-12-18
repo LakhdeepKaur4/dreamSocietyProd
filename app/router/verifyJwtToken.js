@@ -49,7 +49,7 @@ isAdmin = (req, res, next) => {
 }
 
 isAdminRole = async (req, res, next) => {
-	
+
 	let token = req.headers['x-access-token'];
 	const user = await User.findOne({ where: { isActive: true, userId: req.userId } });
 	if (user) {
@@ -108,9 +108,10 @@ isOwnerOrTenantRole = async (req, res, next) => {
 
 isOwnerOrTenant = (req, res, next) => {
 	let token = req.headers['x-access-token'];
-    console.log(req.userId)
+	console.log(req.userId)
 	User.findById(req.userId)
 		.then(user => {
+			console.log("user", user)
 			user.getRoles().then(roles => {
 				for (let i = 0; i < roles.length; i++) {
 					if (roles[i].name.toUpperCase() === "SOCIETY_MEMBER_OWNER") {
@@ -131,7 +132,6 @@ isOwnerOrTenant = (req, res, next) => {
 
 isVendorRole = async (req, res, next) => {
 	let token = req.headers['x-access-token'];
-
 	const user = await User.findOne({ where: { isActive: true, userId: req.userId } });
 	if (user) {
 		const role = await UserRole.findOne({ where: { isActive: true, userId: req.userId, roleId: 5 } });
@@ -139,7 +139,7 @@ isVendorRole = async (req, res, next) => {
 			next();
 			return
 		}
-		res.status(httpStatus.FORBIDDEN).send("Require Super Admin Role!");
+		res.status(httpStatus.FORBIDDEN).send("Require Vendor Role!");
 		return;
 	}
 }

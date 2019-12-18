@@ -50,7 +50,6 @@ let testSms = (contact) => {
 
     });
     return OTP;
-
 };
 
 
@@ -173,7 +172,7 @@ exports.checkToken = async (req, res, next) => {
                     otpvalue: otp,
                     ownerId: owner.ownerId
                 })
-            }    
+            }
 
 
             if (req.query.memberId) {
@@ -256,4 +255,14 @@ exports.checkToken = async (req, res, next) => {
 
     }
     )
+}
+
+exports.sendSmsToVendor = (contact) => {
+    console.log("sending sms")
+    const apikey = '07hlECj1sy4-ynODCNlExLsx91Pv29Zdrh0bxc1pLc';
+    const number = contact;
+    const message = "You have a request for a service.Please login and check";
+    http.get(`http://api.textlocal.in/send/?apiKey=${apikey}&numbers=${number}&message=${message}`, function (err, data) {
+        console.log('messageSend');
+    });
 }

@@ -3,9 +3,8 @@
 var express = require('express');
 var app = express();
 var cors = require('cors');
-var dbConnectionObject = {
+const handlebars= require('handlebars')
 
-};
 app.use(cors());
 var bodyParser = require('body-parser');
 const path = require('path');
@@ -44,9 +43,10 @@ require('./app/router/router.js')(app);
 // const complaint = require('./app/controller/complaintStatusCreate');
 
 const db = require('./app/config/db.config.js');
-
 const Role = db.role;
-var PORT = process.env.PORT || 8083;
+var PORT = process.env.PORT || 8085;
+;
+app.set('view engine', 'hbs');
 
 // force: true will drop the table if it already exists
 
@@ -76,17 +76,9 @@ try {
 	//   initial();
 	// complaint();
 } catch (err) {
-	
 	console.log("error", err)
-<<<<<<< HEAD
 } finally {
-	db.sequelize.connectionManager.handleDisconnects = false;
-=======
-}finally{
-	
-    
 	db.sequelize.connectionManager.pool.handleDisable = false;
->>>>>>> 0da1c120aa0e37a428494d4ba8760db10bf0ba9f
 	db.sequelize.connectionManager.pool.clear();
 }
 

@@ -10,7 +10,6 @@ const FlatDetail = db.flatDetail;
 const Tower = db.tower;
 const Floor = db.floor;
 const MachineDetail = db.machineDetail;
-const CommonAreaDetail = db.commonAreaDetail;
 
 let filterItem = (machineDetailIdsArr, arr) => {
     // console.log(machineDetailIdsArr);
@@ -22,59 +21,60 @@ let filterItem = (machineDetailIdsArr, arr) => {
     return resArr;
 }
 
-exports.create = async(req, res, next) => {
+exports.create = async (req, res, next) => {
     let transaction;
-    try{
+    try {
         transaction = await db.sequelize.transaction()
         const body = req.body;
-    body.userId = req.userId;
-    console.log('Body ===>', body);
+        body.userId = req.userId;
+        console.log('Body ===>', body);
 
-    Machine.findOne({
-        where: {
-            machineDetailId: body.machineDetailId,
-            flatDetailId: body.flatDetailId,
-            isActive: true
-        }
-    })
-        .then(machineExisting => {
-            if (machineExisting !== null) {
-                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'Machine already in use for another flat'
-                })
-            } else {
-                Machine.create(body,transaction)
-                    .then(async machine => {
-                        await transaction.commit();
-                        if (machine !== null) {
-                            res.status(httpStatus.CREATED).json({
-                                message: 'Machine registered successfully'
-                            })
-                        } else {
-                            res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                                message: 'Machine registeration not successful'
-                            })
-                        }
-                    })
-                    .catch(async err => {
-                       if(transaction) await transaction.rollback();
-                        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-                    })
+        Machine.findOne({
+            where: {
+                machineDetailId: body.machineDetailId,
+                flatDetailId: body.flatDetailId,
+                type: body.type,
+                isActive: true
             }
         })
-        .catch(err => {
-            console.log('Error', err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
-    }catch(err){
-        if(transaction) await transaction.rollback();
+            .then(machineExisting => {
+                if (machineExisting !== null) {
+                    res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                        message: 'Machine already in use for another flat'
+                    })
+                } else {
+                    Machine.create(body, transaction)
+                        .then(async machine => {
+                            await transaction.commit();
+                            if (machine !== null) {
+                                res.status(httpStatus.CREATED).json({
+                                    message: 'Machine registered successfully'
+                                })
+                            } else {
+                                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                                    message: 'Machine registeration not successful'
+                                })
+                            }
+                        })
+                        .catch(async err => {
+                            if (transaction) await transaction.rollback();
+                            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+                        })
+                }
+            })
+            .catch(err => {
+                console.log('Error', err);
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    } catch (err) {
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
     }
-    
+
 }
 
-exports.get = async(req, res, next) => {
-    try{
+exports.get = async (req, res, next) => {
+    try {
         Machine.findAll({
             where: {
                 isActive: true
@@ -106,151 +106,152 @@ exports.get = async(req, res, next) => {
                 console.log('Error', err);
                 res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
             })
-    }catch(err){
+    } catch (err) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
     }
 
-    
+
 }
 
 exports.update = async (req, res) => {
     let transaction;
-    try{
+    try {
         transaction = await db.sequelize.transaction();
         const body = req.body;
-    body.machineId = req.params.id;
-    console.log('Body ===>', body);
+        body.machineId = req.params.id;
+        console.log('888888Body ===>', body);
 
-    Machine.findOne({
-        where: {
-            machineDetailId: body.machineDetailId,
-            flatDetailId: body.flatDetailId,
-            isActive: true,
-            machineId: {
-                [Op.ne]: body.machineId
+        Machine.findOne({
+            where: {
+                machineDetailId: body.machineDetailId,
+                flatDetailId: body.flatDetailId,
+                isActive: true,
+                type: body.type,
+                machineId: {
+                    [Op.ne]: body.machineId
+                }
             }
-        }
-    })
-        .then(machineExisting => {
-            if (machineExisting !== null) {
-                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'Machine already in use for another flat'
-                })
-            } else {
-                Machine.findOne({
-                    where: {
-                        machineId: body.machineId,
-                        isActive: true
-                    }
-                })
-                    .then(async machine => {
-                        if (machine !== null) {
-                            if (body.machineId !== undefined) {
-                                delete body.machineId;
-                            }
-                            if (body.flatDetailId !== undefined && (body.flatDetailId === '' || body.flatDetailId === null)) {
-                                delete body.flatDetailId;
-                            }
-                            machine.updateAttributes(body,transaction);
-                            await transaction.commit();
-                            res.status(httpStatus.CREATED).json({
-                                message: 'Machine updated successfully'
-                            })
-                        } else {
-                            res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                                message: 'Machine updation not successful'
-                            })
+        })
+            .then(machineExisting => {
+                if (machineExisting !== null) {
+                    res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                        message: 'Machine already in use for another flat'
+                    })
+                } else {
+                    Machine.findOne({
+                        where: {
+                            machineId: body.machineId,
+                            isActive: true
                         }
                     })
-                    .catch(async err => {
-                        if(transaction) await transaction.rollback();
-                        res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-                    })
-            }
-        })
-        .catch(err => {
-            console.log('Error', err);
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
-    }catch(err){
-        if(transaction) await transaction.rollback();
+                        .then(async machine => {
+                            if (machine !== null) {
+                                if (body.machineId !== undefined) {
+                                    delete body.machineId;
+                                }
+                                if (body.flatDetailId !== undefined && (body.flatDetailId === '' || body.flatDetailId === null)) {
+                                    delete body.flatDetailId;
+                                }
+                                machine.updateAttributes(body, transaction);
+                                await transaction.commit();
+                                res.status(httpStatus.CREATED).json({
+                                    message: 'Machine updated successfully'
+                                })
+                            } else {
+                                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                                    message: 'Machine updation not successful'
+                                })
+                            }
+                        })
+                        .catch(async err => {
+                            if (transaction) await transaction.rollback();
+                            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+                        })
+                }
+            })
+            .catch(err => {
+                console.log('Error', err);
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    } catch (err) {
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
     }
-    
+
 }
 
 exports.delete = async (req, res, next) => {
     let transaction;
-    try{
+    try {
         transaction = await db.sequelize.transaction();
         const machineId = req.params.id;
-    console.log('ID ===>', machineId);
+        console.log('ID ===>', machineId);
 
-    Machine.findOne({
-        where: {
-            machineId: machineId,
-            isActive: true
-        }
-    })
-        .then(async machine => {
-            if (machine !== null) {
-                machine.updateAttributes({ isActive: false },transaction);
-                await transaction.commit();
-                res.status(httpStatus.OK).json({
-                    message: 'Deleted successfully'
-                })
-            } else {
-                res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
-                    message: 'Not deleted'
-                })
+        Machine.findOne({
+            where: {
+                machineId: machineId,
+                isActive: true
             }
         })
-        .catch(async err => {
-            if(transaction) await transaction.rollback();
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
-    }catch(err){
-        if(transaction) await transaction.rollback();
+            .then(async machine => {
+                if (machine !== null) {
+                    machine.updateAttributes({ isActive: false }, transaction);
+                    await transaction.commit();
+                    res.status(httpStatus.OK).json({
+                        message: 'Deleted successfully'
+                    })
+                } else {
+                    res.status(httpStatus.UNPROCESSABLE_ENTITY).json({
+                        message: 'Not deleted'
+                    })
+                }
+            })
+            .catch(async err => {
+                if (transaction) await transaction.rollback();
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    } catch (err) {
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
     }
 }
 
 exports.deleteSelected = async (req, res, next) => {
     let transaction;
-    try{
+    try {
         transaction = await db.sequelize.transaction()
         const machineIds = req.body.ids;
-    console.log('IDs ===>', machineIds);
+        console.log('IDs ===>', machineIds);
 
-    Machine.findAll({
-        where: {
-            machineId: {
-                [Op.in]: machineIds
-            },
-            isActive: true
-        }
-    })
-        .then(async machines => {
-            if (machines.length !== 0) {
-                machines.map(item => {
-                    item.updateAttributes({ isActive: false }, transaction)
-                })
-                await transaction.commit();
-                res.status(httpStatus.OK).json({
-                    message: 'Deleted successfully'
-                })
-            } else {
-                res.status(httpStatus.NO_CONTENT).json({
-                    message: 'No data found'
-                })
+        Machine.findAll({
+            where: {
+                machineId: {
+                    [Op.in]: machineIds
+                },
+                isActive: true
             }
         })
-        .catch(async err => {
-            if(transaction) await transaction.rollback();
-            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
-        })
-    }catch(err){
-        if(transaction) await transaction.rollback();
+            .then(async machines => {
+                if (machines.length !== 0) {
+                    machines.map(item => {
+                        item.updateAttributes({ isActive: false }, transaction)
+                    })
+                    await transaction.commit();
+                    res.status(httpStatus.OK).json({
+                        message: 'Deleted successfully'
+                    })
+                } else {
+                    res.status(httpStatus.NO_CONTENT).json({
+                        message: 'No data found'
+                    })
+                }
+            })
+            .catch(async err => {
+                if (transaction) await transaction.rollback();
+                res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+            })
+    } catch (err) {
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
     }
 }

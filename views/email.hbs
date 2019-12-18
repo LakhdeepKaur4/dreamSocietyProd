@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .bordered {
+    width: 200px;
+    height: auto;
+    padding: 20px;
+    margin-left:auto;
+    margin-right:auto;
+    border: 10px outset aliceblue;
+}
+
+.header {
+    border: 4px dotted black;
+    font-size: 20px;
+    overflow: hidden;
+    text-align: center;
+}
+
+header span {
+    background: #222;
+    color: #fff;
+    display: inline-block;
+    /* float:left;  remove */
+    margin: 10px 10px 0 0;
+    padding: 5px 10px;
+}
+
+.header-child {
+    text-align: center
+}
+
+h1 {
+    border: 1px solid black;
+    text-align: center;
+}
+
+h4 {
+    text-align: center
+}
+
+.main-content p {
+    text-transform: uppercase;
+    text-align: center;
+}
+    </style>
+    <title>Document</title>
+</head>
+<body>
+    <div class="bordered">
+        <div class="main">
+            <div class="header">
+                <span >W E </span>
+                <br/>
+                <span>C O R D I A L L Y </span>
+                <br/>
+                <span> I N V I T E </span>
+                <br/>
+                <span>Y O U </span>
+            </div>
+            <div class="header-child">
+                <h2><i>for</i></h2>
+            </div>
+            <h1>D I N N E R</h1>
+        </div>
+        <h4>
+            C E L E B R A T I N G {{occasion}}
+        </h4>
+        <div class="main-content">
+            <p>HOSTED BY DREAM SOCIETY</p>
+
+            <p>{{day}}</p>
+
+            <p> UP & DOWN BISTRO
+
+                1234 WAYWARD LANE SAN DIEGO
+            </p>
+            <p></p>
+        </div>
+    </div>
+</body>
+
+</html>

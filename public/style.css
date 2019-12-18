@@ -1,0 +1,42 @@
+.bordered {
+    width: 200px;
+    height: auto;
+    padding: 20px;
+    margin-left:auto;
+    margin-right:auto;
+    border: 10px outset aliceblue;
+}
+
+.header {
+    border: 4px dotted black;
+    font-size: 20px;
+    overflow: hidden;
+    text-align: center;
+}
+
+header span {
+    background: #222;
+    color: #fff;
+    display: inline-block;
+    /* float:left;  remove */
+    margin: 10px 10px 0 0;
+    padding: 5px 10px;
+}
+
+.header-child {
+    text-align: center
+}
+
+h1 {
+    border: 1px solid black;
+    text-align: center;
+}
+
+h4 {
+    text-align: center
+}
+
+.main-content p {
+    text-transform: uppercase;
+    text-align: center;
+}

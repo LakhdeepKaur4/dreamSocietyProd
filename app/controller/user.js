@@ -342,7 +342,7 @@ exports.signin = async (req, res) => {
 		}]
 	}).then(user => {
 		if (!user) {
-			console.log("------user-------");
+			// console.log("------user-------");
 			return res.status(httpStatus.OK).send({
 				status: 401,
 				auth: false,
@@ -352,7 +352,7 @@ exports.signin = async (req, res) => {
 		}
 
 		var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
-		console.log("isvalid===>", passwordIsValid)
+		// console.log("isvalid===>", passwordIsValid)
 		if (!passwordIsValid) {
 			return res.status(httpStatus.OK).send({
 				status: 401,
@@ -1368,7 +1368,7 @@ exports.updateEncrypted = async (req, res, next) => {
 }
 
 exports.signinDecrypted = async (req, res, next) => {
-	console.log("Sign-In 12121", req.body);
+	// console.log("Sign-In 12121", req.body);
 	let flats;
 	let society = await Society.findOne({
 		where: {
@@ -1412,7 +1412,7 @@ exports.signinDecrypted = async (req, res, next) => {
 			message: "Password cannot be empty"
 		})
 	}
-	console.log("userName", encrypt(req.body.userName))
+	// console.log("userName", encrypt(req.body.userName))
 	User.findOne({
 		nested: true,
 		where: {
@@ -1432,7 +1432,7 @@ exports.signinDecrypted = async (req, res, next) => {
 	}).then(user => {
 		// console.log("user--->", user)
 		if (user === null) {
-			console.log("------user-------");
+			// console.log("------user-------");
 			return res.status(httpStatus.OK).send({
 				status: 401,
 				auth: false,
@@ -1462,7 +1462,7 @@ exports.signinDecrypted = async (req, res, next) => {
 		var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
 		// const password = User.findOne({where:{password:decrypt(req.body.password),isActive:true}});
 
-		console.log("isvalid===>", passwordIsValid)
+		// console.log("isvalid===>", passwordIsValid)
 		if (passwordIsValid.toString() === 'false') {
 			return res.status(httpStatus.OK).send({
 				status: 401,

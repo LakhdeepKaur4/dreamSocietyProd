@@ -10,10 +10,10 @@ const key = config.secret;
 
 const Event = db.event;
 const User = db.user;
+const EventSpace = db.eventSpace;
 const Role = db.role;
 const Op = db.Sequelize.Op;
 const SocietyEventBook = db.eventBooking;
-
 
 
 function decrypt1(key, data) {
@@ -60,7 +60,6 @@ function saveToDisc(name, fileExt, base64String, callback) {
 }
 
 
-
 exports.create = async (req, res, next) => {
   try {
     console.log("user is =====>", req.userId);
@@ -87,6 +86,8 @@ exports.create = async (req, res, next) => {
       "childAbove",
       "charges",
       "description",
+      "guestAllowed",
+      "guestLimit"
 
     ];
     let fileArr = ["invitationCardPicture"];
@@ -101,6 +102,7 @@ exports.create = async (req, res, next) => {
       }
     });
     createAttr["eventOrganiser"] = req.body.organisedBy;
+    createAttr["eventSpaceId"] = req.body.eventSpaceId;
     let eventBook = await SocietyEventBook.create(createAttr);
     eventBookId = eventBook.societyEventBookId;
     if (req.body.invitationCardPicture) {
@@ -140,8 +142,8 @@ exports.get = async (req, res, next) => {
       where: { isActive: true },
       order: [["createdAt", "DESC"]],
       include: [{
-        model: Event
-      }, { model: User }]
+        model: Event,
+      }, { model: User }, { model: EventSpace }]
     });
     if (eventBookings) {
       eventBookings.map(eventBooking => {
@@ -162,7 +164,7 @@ exports.get = async (req, res, next) => {
 exports.update = async (req, res, next) => {
   try {
     console.log("req----------->", req.body);
-    const eventExists = await SocietyEventBook.findOne({ where: { isActive: true, eventId: req.body.eventId, startDate: req.body.startDate,societyEventBookId:{[Op.ne]:req.params.id } }});
+    const eventExists = await SocietyEventBook.findOne({ where: { isActive: true, eventId: req.body.eventId, startDate: req.body.startDate, societyEventBookId: { [Op.ne]: req.params.id } } });
     if (eventExists) {
       return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: 'Event has been already registered.Please try again with different time or date' })
     }
@@ -184,7 +186,8 @@ exports.update = async (req, res, next) => {
       "childAbove",
       "charges",
       "description",
-
+      "guestAllowed",
+      "guestLimit"
     ];
     fieldsArr.forEach(attr => {
       if (
@@ -197,6 +200,7 @@ exports.update = async (req, res, next) => {
     });
     if (req.body.organisedBy) {
       updateAttr["eventOrganiser"] = req.body.organisedBy;
+      updateAttr["eventSpaceId"] = req.body.eventSpaceId;
     }
     let updatedEvent = await SocietyEventBook.update(updateAttr, { where: { societyEventBookId: req.params.id } })
     console.log("atin");

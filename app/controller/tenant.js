@@ -700,6 +700,7 @@ exports.getDecrypted = (req, res, next) => {
                             isActive: true,
                             tenantId: item
                         },
+                        attributes: { exclude: ['password'] },
                         order: [['createdAt', 'DESC']],
                         include: [
                             { model: Society },

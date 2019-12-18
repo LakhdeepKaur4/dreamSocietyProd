@@ -317,14 +317,14 @@ exports.create1 = async (req, res, next) => {
       rfidId: ownerBody.rfidId,
       // flatDetailId: ownerBody.flatDetailId,
       floorId: ownerBody.floorId
-    },transaction);
+    }, transaction);
 
     const ownerId = owner.ownerId;
     if (ownerBody.flatDetailIds !== null && ownerBody.flatDetailIds !== undefined && ownerBody.flatDetailIds !== '') {
       OwnerFlatDetail.create({
         flatDetailId: ownerBody.flatDetailIds,
         ownerId: ownerId
-      },transaction)
+      }, transaction)
     }
     if (req.body.profilePicture) {
       ownerBody.profilePicture = ownerBody.profilePicture.split(",")[1]
@@ -347,7 +347,7 @@ exports.create1 = async (req, res, next) => {
             where: {
               ownerId: ownerId
             }
-          },transaction);
+          }, transaction);
         }
       );
     }
@@ -382,11 +382,11 @@ exports.create1 = async (req, res, next) => {
       console.log("hello", memberNewArray);
       const ownerMember = await OwnerMembersDetail.bulkCreate(
         memberNewArray, {
-          returning: true
-        }, {
-          fields: ["memberId", "memberFirstName", "memberLastName", "memberUserName", "memberEmail", "memberContact", "password", "memberDob", "gender", "relationId", "memberRfId", "flatDetailId"]
-          // updateOnDuplicate: ["name"]
-        },transaction
+        returning: true
+      }, {
+        fields: ["memberId", "memberFirstName", "memberLastName", "memberUserName", "memberEmail", "memberContact", "password", "memberDob", "gender", "relationId", "memberRfId", "flatDetailId"]
+        // updateOnDuplicate: ["name"]
+      }, transaction
       );
 
       ownerMember.map(x => ids.push(x.memberId));
@@ -402,7 +402,7 @@ exports.create1 = async (req, res, next) => {
           memberId: {
             [Op.in]: ids
           }
-        },transaction
+        }, transaction
       });
 
       ownerMember.map(async member => {
@@ -430,14 +430,14 @@ exports.create1 = async (req, res, next) => {
         });
 
         let fingerPrintOwnerMember = await FingerPrint.create({
-          userId:user.userId
-        },transaction)
+          userId: user.userId
+        }, transaction)
 
         // if (member.merberRfId !== null && member.memberRfId !== undefined && member.memberRfId !== '') {
         let userRfId = await UserRfId.create({
           userId: user.userId,
           rfidId: member.memberRfId
-        },transaction)
+        }, transaction)
         // }
         // else {
         //   member.memberRfId = null;
@@ -482,22 +482,22 @@ exports.create1 = async (req, res, next) => {
       userId: ownerBody.ownerId,
       firstName: encrypt1(key, firstName),
       lastName: encrypt1(key, lastName),
-      userName: encrypt1(key, email), 
+      userName: encrypt1(key, email),
       password: bcrypt.hashSync(owner.password, 8),
       contact: owner.contact,
       towerId: owner.towerId,
       email: encrypt1(key, email),
       isActive: false
-    },transaction);
+    }, transaction);
 
     let fingerPrintOwner = await FingerPrint.create({
-      userId:user.userId
-    },transaction)
+      userId: user.userId
+    }, transaction)
 
     let userRfId = await UserRfId.create({
       userId: user.userId,
       rfidId: owner.rfidId
-    },transaction)
+    }, transaction)
     // set roles
     console.log(owner.password);
     console.log(user.password);
@@ -513,7 +513,7 @@ exports.create1 = async (req, res, next) => {
       userId: user.userId,
       roleId: roles.id,
       isActive: false
-    },transaction);
+    }, transaction);
     await transaction.commit();
     const message = mailToUser(req.body.email, ownerId);
     return res.status(httpStatus.CREATED).json({
@@ -521,7 +521,7 @@ exports.create1 = async (req, res, next) => {
     });
 
   } catch (error) {
-    if(transaction) await transaction.rollback();
+    if (transaction) await transaction.rollback();
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
 };
@@ -630,7 +630,7 @@ exports.get2 = async (req, res, next) => {
       order: [
         ["createdAt", "DESC"]
       ],
-
+      attributes: { exclude: ['password'] },
       include: [{
         model: OwnerMembersDetail
       },
@@ -1017,7 +1017,7 @@ exports.update2 = async (req, res, next) => {
           });
       }
     }
-  
+
     if (req.body.contact !== undefined && req.body.contact !== null) {
       let existingOwner1 = await Owner.find({
         where: {
@@ -1053,181 +1053,181 @@ exports.update2 = async (req, res, next) => {
       "contact",
       "adhaarCardNo"
     ];
-  
+
     let userAttrs = [
       "firstName",
       "lastName",
       "email",
       "contact"
     ];
-  
+
     let updUserAttr = {};
     let ids = ["flatDetailId", "societyId", "towerId", "floorId", "rfidId"];
     let others = ["dob", "noOfMembers"];
-    
-      const id = req.params.id;
-      if (!id) {
-        return res
-          .status(httpStatus.UNPROCESSABLE_ENTITY)
-          .json({
-            message: "Id is missing"
-          });
-      }
-      const update = req.body;
-      // const empty = isEmpty(update)
-      // console.log(empty)
-  
-      if (!update) {
-        return res
-          .status(httpStatus.UNPROCESSABLE_ENTITY)
-          .json({
-            message: "Please try again "
-          });
-      }
-      const updatedOwner = await Owner.find({
-        where: {
-          ownerId: id,
-          isActive: true
-        }
-      });
-      const user = await User.findOne({
-        where: {
-          userId: updatedOwner.ownerId,
-          isActive: true
-        }
-      });
-      if (req.body.rfidId) {
-        let userRf = await UserRfId.findOne({
-          where: {
-            isActive: true,
-            userId: id
-          }
+
+    const id = req.params.id;
+    if (!id) {
+      return res
+        .status(httpStatus.UNPROCESSABLE_ENTITY)
+        .json({
+          message: "Id is missing"
         });
-        userRf.updateAttributes({ rfidId: req.body.rfidId },transaction);
-      }
-      attrArr.forEach(attr => {
-        if (
-          attr in req.body &&
-          req.body[attr] !== undefined &&
-          req.body[attr] !== null &&
-          req.body[attr] !== ""
-        ) {
-          updAttr[attr] = encrypt(key, req.body[attr]);
-        }
-      });
-      userAttrs.forEach(attr => {
-        if (
-          attr in req.body &&
-          req.body[attr] !== undefined &&
-          req.body[attr] !== null &&
-          req.body[attr] !== ""
-        ) {
-          updUserAttr[attr] = encrypt(key, req.body[attr]);
-        }
-      })
-      others.forEach(attr => {
-        if (
-          attr in req.body &&
-          req.body[attr] !== undefined &&
-          req.body[attr] !== null &&
-          req.body[attr] !== ""
-        ) {
-          updAttr[attr] = req.body[attr];
-        }
-      });
-      ids.forEach(attr => {
-        if (
-          attr in req.body &&
-          req.body[attr] !== undefined &&
-          req.body[attr] !== null &&
-          req.body[attr] !== ""
-        ) {
-          updAttr[attr] = req.body[attr];
-        }
-      });
-      if (
-        req.body.profilePicture !== undefined &&
-        req.body.profilePicture !== null &&
-        req.body.fileName !== undefined &&
-        req.body.fileName !== null &&
-        req.body.profilePicture !== ""
-      ) {
-        req.body.profilePicture = req.body.profilePicture.split(",")[1]
-        let fileName = req.body.fileName.split(".")[0];
-        let fileExt = req.body.fileName.split(".")[1];
-        // deletePhoto(updatedOwner);
-        saveToDisc(
-          fileName,
-          fileExt,
-          req.body.profilePicture,
-          async (err, resp) => {
-            if (err) {
-              console.log(err);
-            }
-            console.log(resp);
-            // }
-            const updatedImage = {
-              picture: encrypt(key, resp)
-            };
-            await Owner.update(updatedImage, {
-              where: {
-                ownerId: id
-              }
-            },transaction);
-          }
-        );
-      }
-      console.log("updated attributes,", updAttr);
-      let updatedOwner1 = await updatedOwner.updateAttributes(updAttr,transaction);
-      let updatedUser = await user.updateAttributes(updUserAttr,transaction);
-      if(req.body.email!==null && req.body.email!==undefined && req.body.email!==""){
-        updatedOwner1 = await updatedOwner.updateAttributes({userName:encrypt(key,req.body.email)},transaction);
-        updatedUser = await user.updateAttributes({userName:encrypt(key,req.body.email)},transaction);
-      }
-  
-      if (updatedOwner1) {
-        // updatedOwner1.userName = decrypt(key, updatedOwner1.userName);
-        updatedOwner1.firstName = decrypt(key, updatedOwner1.firstName);
-        updatedOwner1.lastName = decrypt(key, updatedOwner1.lastName);
-        if (updatedOwner1.picture) {
-          updatedOwner1.picture = decrypt(key, updatedOwner1.picture);
-        }
-        updatedOwner1.email = decrypt(key, updatedOwner1.email);
-        updatedOwner1.permanentAddress = decrypt(
-          key,
-          updatedOwner1.permanentAddress
-        );
-        updatedOwner1.correspondenceAddress = decrypt(
-          key,
-          updatedOwner1.correspondenceAddress
-        );
-        updatedOwner1.contact = decrypt(key, updatedOwner1.contact);
-        updatedOwner1.gender = decrypt(key, updatedOwner1.gender);
-  
-        if (req.body.memberId !== undefined && req.body.memberId !== null) {
-          await OwnerMembersDetail.find({
-            where: {
-              ownerId: id,
-              memberId: req.body.memberId
-            }
-          });
-          OwnerMembersDetail.updateAttributes({},transaction);
-          // if(req.body.serviceId){
-          //     vendorService.updateAttributes({
-          //         serviceId:req.body.serviceId
-          //     });
-          // }
-        }
-        await transaction.commit();
-        return res.status(httpStatus.OK).json({
-          message: "Owner Updated Page",
-          owner: updatedOwner1
-        });
-      }
-    } catch (error) {
-      if(transaction) await transaction.rollback();
-      res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
+    const update = req.body;
+    // const empty = isEmpty(update)
+    // console.log(empty)
+
+    if (!update) {
+      return res
+        .status(httpStatus.UNPROCESSABLE_ENTITY)
+        .json({
+          message: "Please try again "
+        });
+    }
+    const updatedOwner = await Owner.find({
+      where: {
+        ownerId: id,
+        isActive: true
+      }
+    });
+    const user = await User.findOne({
+      where: {
+        userId: updatedOwner.ownerId,
+        isActive: true
+      }
+    });
+    if (req.body.rfidId) {
+      let userRf = await UserRfId.findOne({
+        where: {
+          isActive: true,
+          userId: id
+        }
+      });
+      userRf.updateAttributes({ rfidId: req.body.rfidId }, transaction);
+    }
+    attrArr.forEach(attr => {
+      if (
+        attr in req.body &&
+        req.body[attr] !== undefined &&
+        req.body[attr] !== null &&
+        req.body[attr] !== ""
+      ) {
+        updAttr[attr] = encrypt(key, req.body[attr]);
+      }
+    });
+    userAttrs.forEach(attr => {
+      if (
+        attr in req.body &&
+        req.body[attr] !== undefined &&
+        req.body[attr] !== null &&
+        req.body[attr] !== ""
+      ) {
+        updUserAttr[attr] = encrypt(key, req.body[attr]);
+      }
+    })
+    others.forEach(attr => {
+      if (
+        attr in req.body &&
+        req.body[attr] !== undefined &&
+        req.body[attr] !== null &&
+        req.body[attr] !== ""
+      ) {
+        updAttr[attr] = req.body[attr];
+      }
+    });
+    ids.forEach(attr => {
+      if (
+        attr in req.body &&
+        req.body[attr] !== undefined &&
+        req.body[attr] !== null &&
+        req.body[attr] !== ""
+      ) {
+        updAttr[attr] = req.body[attr];
+      }
+    });
+    if (
+      req.body.profilePicture !== undefined &&
+      req.body.profilePicture !== null &&
+      req.body.fileName !== undefined &&
+      req.body.fileName !== null &&
+      req.body.profilePicture !== ""
+    ) {
+      req.body.profilePicture = req.body.profilePicture.split(",")[1]
+      let fileName = req.body.fileName.split(".")[0];
+      let fileExt = req.body.fileName.split(".")[1];
+      // deletePhoto(updatedOwner);
+      saveToDisc(
+        fileName,
+        fileExt,
+        req.body.profilePicture,
+        async (err, resp) => {
+          if (err) {
+            console.log(err);
+          }
+          console.log(resp);
+          // }
+          const updatedImage = {
+            picture: encrypt(key, resp)
+          };
+          await Owner.update(updatedImage, {
+            where: {
+              ownerId: id
+            }
+          }, transaction);
+        }
+      );
+    }
+    console.log("updated attributes,", updAttr);
+    let updatedOwner1 = await updatedOwner.updateAttributes(updAttr, transaction);
+    let updatedUser = await user.updateAttributes(updUserAttr, transaction);
+    if (req.body.email !== null && req.body.email !== undefined && req.body.email !== "") {
+      updatedOwner1 = await updatedOwner.updateAttributes({ userName: encrypt(key, req.body.email) }, transaction);
+      updatedUser = await user.updateAttributes({ userName: encrypt(key, req.body.email) }, transaction);
+    }
+
+    if (updatedOwner1) {
+      // updatedOwner1.userName = decrypt(key, updatedOwner1.userName);
+      updatedOwner1.firstName = decrypt(key, updatedOwner1.firstName);
+      updatedOwner1.lastName = decrypt(key, updatedOwner1.lastName);
+      if (updatedOwner1.picture) {
+        updatedOwner1.picture = decrypt(key, updatedOwner1.picture);
+      }
+      updatedOwner1.email = decrypt(key, updatedOwner1.email);
+      updatedOwner1.permanentAddress = decrypt(
+        key,
+        updatedOwner1.permanentAddress
+      );
+      updatedOwner1.correspondenceAddress = decrypt(
+        key,
+        updatedOwner1.correspondenceAddress
+      );
+      updatedOwner1.contact = decrypt(key, updatedOwner1.contact);
+      updatedOwner1.gender = decrypt(key, updatedOwner1.gender);
+
+      if (req.body.memberId !== undefined && req.body.memberId !== null) {
+        await OwnerMembersDetail.find({
+          where: {
+            ownerId: id,
+            memberId: req.body.memberId
+          }
+        });
+        OwnerMembersDetail.updateAttributes({}, transaction);
+        // if(req.body.serviceId){
+        //     vendorService.updateAttributes({
+        //         serviceId:req.body.serviceId
+        //     });
+        // }
+      }
+      await transaction.commit();
+      return res.status(httpStatus.OK).json({
+        message: "Owner Updated Page",
+        owner: updatedOwner1
+      });
+    }
+  } catch (error) {
+    if (transaction) await transaction.rollback();
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+  }
 };
 
 
@@ -1255,7 +1255,7 @@ exports.delete = async (req, res, next) => {
       }
     });
     if (updatedOwner) {
-      updatedOwner.updateAttributes(update,transaction);
+      updatedOwner.updateAttributes(update, transaction);
 
     }
     // const updatedUser = await User.findOne({
@@ -1291,20 +1291,20 @@ exports.delete = async (req, res, next) => {
     });
     console.log("user_rf_id ====>", urfId)
     if (urfId) {
-      urfId.updateAttributes(update,transaction);
+      urfId.updateAttributes(update, transaction);
     }
 
     console.log("show yourself", updatedUser);
     if (updatedUser) {
       updatedUser.updateAttributes({
         isActive: false
-      },transaction);
+      }, transaction);
       let updatedUserRoles = await UserRoles.find({
         where: {
           userId: updatedUser.userId
         }
       }).then(userRole => {
-        userRole.updateAttributes(update,transaction);
+        userRole.updateAttributes(update, transaction);
       })
     }
 
@@ -1335,35 +1335,35 @@ exports.delete = async (req, res, next) => {
               let memberRfId = await UserRfId.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
               let memberRole = await UserRoles.findOne({ where: { isActive: true, userId: tenantMember.memberId } });
               if (userMember) {
-                userMember.updateAttributes({ isActive: false },transaction);
+                userMember.updateAttributes({ isActive: false }, transaction);
               }
               if (memberRfId) {
-                memberRfId.updateAttributes({ isActive: false },transaction);
+                memberRfId.updateAttributes({ isActive: false }, transaction);
               }
               if (memberRole) {
-                memberRole.updateAttributes({ isActive: false },transaction);
+                memberRole.updateAttributes({ isActive: false }, transaction);
               }
-              tenantMember.updateAttributes({ isActive: false },transaction);
+              tenantMember.updateAttributes({ isActive: false }, transaction);
             })
             if (tenantToDeactivate) {
-              tenantToDeactivate.updateAttributes({ isActive: false },transaction);
+              tenantToDeactivate.updateAttributes({ isActive: false }, transaction);
             }
             if (user1) {
-              user1.updateAttributes({ isActive: false },transaction);
+              user1.updateAttributes({ isActive: false }, transaction);
             }
             if (rfId) {
-              rfId.updateAttributes({ isActive: false },transaction);
+              rfId.updateAttributes({ isActive: false }, transaction);
             }
             if (role) {
-              role.updateAttributes({ isActive: false },transaction);
+              role.updateAttributes({ isActive: false }, transaction);
             }
             if (tenant) {
-              tenant.updateAttributes({ isActive: false },transaction);
+              tenant.updateAttributes({ isActive: false }, transaction);
             }
           }
           )
         }
-        return entry.updateAttributes(update,transaction);
+        return entry.updateAttributes(update, transaction);
       })
     });
 
@@ -1398,9 +1398,9 @@ exports.delete = async (req, res, next) => {
           userId: member.memberId
         }
       });
-      memberUser.updateAttributes(update,transaction);
-      role.updateAttributes(update,transaction);
-      member.updateAttributes(update,transaction);
+      memberUser.updateAttributes(update, transaction);
+      role.updateAttributes(update, transaction);
+      member.updateAttributes(update, transaction);
     })
 
 
@@ -1411,7 +1411,7 @@ exports.delete = async (req, res, next) => {
       });
     }
   } catch (error) {
-    if(transaction) await transaction.rollback();
+    if (transaction) await transaction.rollback();
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
 }
@@ -2134,8 +2134,6 @@ exports.getflats = async (req, res, next) => {
           model: Floor
         }]
       }]
-
-
     });
     if (flat) {
       console.log("asdf");
@@ -2168,14 +2166,12 @@ exports.getflats = async (req, res, next) => {
       res.status(httpStatus.OK).json({
         message: "owner's flats",
         flats: flat
-
       })
     }
   } catch (error) {
     console.log(error);
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
   }
-
 }
 
 

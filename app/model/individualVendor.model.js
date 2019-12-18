@@ -66,9 +66,7 @@ module.exports = (sequelize, Sequelize) => {
         },
         startTime1: {
             type: Sequelize.STRING,
-
         },
-
         endTime1: {
             type: Sequelize.STRING,
 

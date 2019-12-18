@@ -558,6 +558,7 @@ exports.get1 = async (req, res, next) => {
         const vendors = await Vendor.findAll({
             where: { isActive: true },
             order: [['createdAt', 'DESC']],
+            attributes: { exclude: ['password'] },
             include: [
                 { model: VendorService, where: { isActive: true }, include: [{ model: Rate }, { model: Service }] }, { model: RfId }]
         });
@@ -565,11 +566,11 @@ exports.get1 = async (req, res, next) => {
             vendors.map(vendor => {
                 vendor.userName = decrypt(key, vendor.userName);
                 vendor.firstName = decrypt(key, vendor.firstName);
-                vendor.lastName = decrypt(key, vendor.lastName)
-                vendor.picture = decrypt(key, vendor.picture)
+                vendor.lastName = decrypt(key, vendor.lastName);
+                vendor.picture = decrypt(key, vendor.picture);
                 vendor.email = decrypt(key, vendor.email);
-                vendor.documentOne = decrypt(key, vendor.documentOne)
-                vendor.documentTwo = decrypt(key, vendor.documentTwo)
+                vendor.documentOne = decrypt(key, vendor.documentOne);
+                vendor.documentTwo = decrypt(key, vendor.documentTwo);
                 // vendor.documentOne = (vendor.documentOne).replace('\\','/');
                 // vendor.documentTwo = (vendor.documentTwo).replace('\\','/');
                 // vendor.documentOne = (vendor.documentOne).replace('\\','/');

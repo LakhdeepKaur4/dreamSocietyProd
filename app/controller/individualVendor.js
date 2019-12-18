@@ -159,7 +159,7 @@ exports.create = async (req, res, next) => {
         randomNumber = randomInt(config.randomNumberMin, config.randomNumberMax);
     }
 
-    console.log('Body ===>', vendor);
+    console.log('Body ===>', vendor.startTime);
 
     const uniqueId = generateRandomId();
 
@@ -268,39 +268,39 @@ exports.create = async (req, res, next) => {
                         if (vendor.startTime1 == '' && vendor.endTime1 == '' && vendor.startTime2 == '' && vendor.endTime2 == '') {
                             VendorAllotment.create({
                                 individualVendorId: randomNumber,
-                                startTime: startTime,
-                                endTime: endTime
+                                startTime: vendor.startTime,
+                                endTime: vendor.endTime
                             })
                         }
 
                         else if (vendor.startTime2 == '' && vendor.endTime2 == '') {
                             VendorAllotment.create({
                                 individualVendorId: randomNumber,
-                                startTime: startTime,
-                                endTime: endTime
+                                startTime: vendor.startTime,
+                                endTime: vendor.endTime
                             })
                             VendorAllotment.create({
                                 individualVendorId: randomNumber,
-                                startTime: startTime1,
-                                endTime: endTime1
+                                startTime: vendor.startTime1,
+                                endTime: vendor.endTime1
                             })
                         }
 
                         else {
                             VendorAllotment.create({
                                 individualVendorId: randomNumber,
-                                startTime: startTime,
-                                endTime: endTime
+                                startTime: vendor.startTime,
+                                endTime: vendor.endTime
                             })
                             VendorAllotment.create({
                                 individualVendorId: randomNumber,
-                                startTime: startTime1,
-                                endTime: endTime1
+                                startTime: vendor.startTime1,
+                                endTime: vendor.endTime1
                             })
                             VendorAllotment.create({
                                 individualVendorId: randomNumber,
-                                startTime: startTime2,
-                                endTime: endTime2
+                                startTime: vendor.startTime2,
+                                endTime: vendor.endTime2
                             })
                         }
 
@@ -392,6 +392,7 @@ exports.get = (req, res, next) => {
         {
             where: { isActive: true },
             order: [['createdAt', 'DESC']],
+            attributes: { exclude: ['password'] },
             include: [
                 {
                     model: City,
@@ -753,7 +754,7 @@ exports.update = async (req, res, next) => {
                 serviceId: serviceId,
                 rateId: rateId
             }
-
+            rate
             IndividualVendor.find({
                 where: {
                     individualVendorId: id
@@ -795,7 +796,7 @@ exports.update = async (req, res, next) => {
 exports.delete = async (req, res, next) => {
     try {
         const id = req.params.id;
-        if (!id) {
+        if (!id) {rate
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "Id is missing" });
         }
         const update = req.body;
@@ -843,3 +844,96 @@ exports.deleteSelected = async (req, res, next) => {
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
+
+exports.getAllVendorsByServiceId = (req, res, next) => {
+    const serviceId = req.params.id;
+    const vendorArr = [];
+    IndividualVendor.findAll(
+        {
+            where: { isActive: true, serviceId: serviceId },
+            order: [['createdAt', 'DESC']],
+            include: [
+                {
+                    model: City,
+                    attributes: ['cityId', 'cityName']
+                },
+                {
+                    model: Country,
+                    attributes: ['countryId', 'countryName']
+                },
+                {
+                    model: State,
+                    attributes: ['stateId', 'stateName']
+                },
+                {
+                    model: Location,
+                    attributes: ['locationId', 'locationName']
+                },
+                {
+                    model: Service,
+                    attributes: ['serviceId', 'serviceName']
+                },
+                {
+                    model: RateType,
+                    attributes: ['rateId', 'rateType']
+                }
+            ]
+        })
+        .then(vendor => {
+            const promise = vendor.map(async item => {
+                const rfid = await UserRFID.findOne({
+                    where: {
+                        userId: item.individualVendorId,
+                        isActive: true
+                    },
+                    include: [
+                        { model: RFID, where: { isActive: true }, attributes: ['rfidId', 'rfid'] }
+                    ]
+                });
+                item.firstName = decrypt(item.firstName);
+                item.lastName = decrypt(item.lastName);
+                item.userName = decrypt(item.userName);
+                item.contact = decrypt(item.contact);
+                item.email = decrypt(item.email);
+                item.permanentAddress = decrypt(item.permanentAddress);
+                item.currentAddress = decrypt(item.currentAddress);
+                item.rate = decrypt(item.rate);
+                if (item.profilePicture !== null) {
+                    item.profilePicture = decrypt(item.profilePicture);
+                }
+                item.documentOne = decrypt(item.documentOne);
+                item.documentOne = item.documentOne.replace('../../', '');
+                item.documentTwo = decrypt(item.documentTwo);
+                item.documentTwo = item.documentTwo.replace('../../', '');
+
+                item = item.toJSON();
+
+                if (rfid !== null) {
+                    item.rfid_master = {
+                        rfidId: rfid.rfid_master.rfidId,
+                        rfid: rfid.rfid_master.rfid
+                    }
+                }
+                else {
+                    item.rfid_master = rfid;
+                }
+
+                vendorArr.push(item);
+            })
+            Promise.all(promise)
+                .then(result => {
+                    vendorArr.sort(function (a, b) {
+                        return Number(a.individualVendorId) - Number(b.individualVendorId)
+                    });
+                    res.status(httpStatus.OK).json({
+                        vendors: vendorArr
+                    })
+                })
+                .catch(err => {
+                    console.log(err)
+                })
+        })
+        .catch(err => {
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
+    }

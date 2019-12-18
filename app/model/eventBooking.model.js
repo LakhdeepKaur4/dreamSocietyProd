@@ -15,52 +15,63 @@ module.exports = (sequelize, Sequelize) => {
         },
         startTime: {
             allowNull: false,
-            type:Sequelize.TIME
+            type: Sequelize.TIME
         },
         endTime: {
             allowNull: false,
-            type:Sequelize.TIME
+            type: Sequelize.TIME
         },
-        breakfast:{
+        breakfast: {
             type: Sequelize.BOOLEAN,
             defaultValue: false
         },
-        lunch:{
+        lunch: {
             type: Sequelize.BOOLEAN,
             defaultValue: false
         },
-        eveningSnacks:{
+        eveningSnacks: {
             type: Sequelize.BOOLEAN,
             defaultValue: false
         },
-        dinner:{
+        dinner: {
             type: Sequelize.BOOLEAN,
             defaultValue: false
         },
-        drinks:{
+        drinks: {
             type: Sequelize.BOOLEAN,
             defaultValue: false
         },
-        dj:{
+        dj: {
             type: Sequelize.BOOLEAN,
             defaultValue: false
         },
-        invitationCardPicture:{
+        invitationCardPicture: {
             type: Sequelize.STRING,
         },
-        perPersonCharge:{
+        perPersonCharge: {
             allowNull: false,
-            type:Sequelize.FLOAT
+            type: Sequelize.FLOAT
         },
-        childAbove:{
+        childAbove: {
             allowNull: false,
-            type:Sequelize.STRING
+            type: Sequelize.STRING
         },
-        charges:{
-            type:Sequelize.FLOAT
+        charges: {
+            type: Sequelize.FLOAT
         },
-        description:{
-            type:Sequelize.STRING
+        description: {
+            type: Sequelize.STRING
+        },
+        individualEventAllowed: {
+            type: Sequelize.BOOLEAN,
+            defaultValue: false
+        },
+        guestAllowed: {
+            type: Sequelize.BOOLEAN,
+            defaultValue: false
+        },
+        guestLimit:{
+            type: Sequelize.INTEGER,
         },
         isActive: {
             type: Sequelize.BOOLEAN,

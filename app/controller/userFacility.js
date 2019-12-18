@@ -43,7 +43,7 @@ exports.create = async (req, res, next) => {
             }
             facilitiesUpdated.push(item);
         })
-
+        console.log("______", facilitiesUpdated)
         UserFacility.bulkCreate(facilitiesUpdated, { returning: true }, { transaction })
             .then(userFacilitiesCreated => {
                 res.status(httpStatus.CREATED).json({
