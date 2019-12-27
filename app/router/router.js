@@ -73,6 +73,7 @@ module.exports = function (app) {
 	const electricityChargesController = require('../controller/electricityCharges');
 	const loadTest = require('../controller/loadtest');
 	const cardController = require('../controller/card');
+	const societyEventCelebrationController = require('../controller/societyEventCelebrationController');
 	// const vendorAllotmentController = require('../controller/vendorAllotmentController');
 	app.get('/', userController.start);
 
