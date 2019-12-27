@@ -17,8 +17,12 @@ module.exports = (sequelize, Sequelize) => {
         noOfChildInGuest: {
             type: Sequelize.INTEGER,
         },
-        charges: {
+        totalCharges: {
             type: Sequelize.FLOAT,
+        },
+        interested:{
+            type:Sequelize.BOOLEAN,
+            required:true
         },
         isActive: {
             type: Sequelize.BOOLEAN,
