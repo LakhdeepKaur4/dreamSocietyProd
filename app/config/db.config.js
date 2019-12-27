@@ -100,7 +100,8 @@ db.maintenanceCharges = require('../model/maintainanceCharges')(sequelize, Seque
 db.facilitiesCharges = require('../model/facilitiesCharges.model')(sequelize, Sequelize);
 db.electricityCharges = require('../model/electricityCharges')(sequelize, Sequelize);
 db.cardDetails = require('../model/card.model')(sequelize,Sequelize);
- 
+db.order = require('../model/societyEventCelebration')(sequelize,Sequelize);
+
 db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
 db.otp.belongsTo(db.tenant, { foreignKey: 'tenantId' });
 db.otp.belongsTo(db.employee, { foreignKey: 'employeeId' });
