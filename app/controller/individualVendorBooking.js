@@ -201,7 +201,6 @@ exports.update = async (req, res, next) => {
 }
 
 exports.delete = async (req, res, next) => {
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.")
     let transaction;
     try {
         transaction = await db.sequelize.transaction();
@@ -286,7 +285,7 @@ exports.provideService = async (req, res, next) => {
             await transaction.commit();
             if (booking) {
                 return res.status(httpStatus.OK).json({
-                    message: "Individual booking confirmed successfully",
+                    message: "Individual booking not confirmed",
                     booking
                 });
             }

@@ -902,7 +902,9 @@ module.exports = function (app) {
 
 	app.get('/load/test', loadTest.test);
 
-	// app.get('/load/test/api', loadTest.testApi);
+	app.get('/load/test/api', loadTest.testApi);
+
+	// app.get('/load/test/api/check', loadTest.check);
 
 	app.get('/api/test/country', countryController.get);
 	// app.get('/api/vendors/book',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.getVendor)
