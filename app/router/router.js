@@ -72,7 +72,9 @@ module.exports = function (app) {
 	const facilitiesChargesController = require('../controller/facilitiesCharges');
 	const electricityChargesController = require('../controller/electricityCharges');
 	const loadTest = require('../controller/loadtest');
-
+	const cardController = require('../controller/card');
+	const fetchPaymentIdForOrder = require('../controller/razorpay')
+	const societyEventCelebrationController = require('../controller/societyEventCelebrationController');
 	// const vendorAllotmentController = require('../controller/vendorAllotmentController');
 	app.get('/', userController.start);
 
@@ -848,6 +850,22 @@ module.exports = function (app) {
 
 	app.put('/api/book/slot/:id', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], vendorAllotmentController.bookVendorSlot);
 
+	app.post('/api/validate/card',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.checkValidCardNumber);
+
+	app.post('/api/save/card/data',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.saveCardData)
+
+	app.post('/api/card/verifySignature',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.saveTransaction)
+	
+	app.get('/api/card',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.listCard)
+
+	app.post('/api/order/create',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],societyEventCelebrationController.create)
+ // app.get('/api/vendors/book',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.getVendor)
+	app.get("/api/order/fetch/payment",[authJwt.verifyToken, authJwt.isOwnerOrTenantRole], fetchPaymentIdForOrder.fetchPaymentIdForOrder)
+
+	app.get('/api/card/getUserTransactions',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.getTransactions);
+
+	app.post('/api/existing/card',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.getExpiryWithCardNumber)
+	
 	app.post('/api/meterDetail', [authJwt.verifyToken, authJwt.isAdminRole], meterDetailController.create);
 
 	app.get('/api/meterDetail', [authJwt.verifyToken, authJwt.isAdminRole], meterDetailController.get);
