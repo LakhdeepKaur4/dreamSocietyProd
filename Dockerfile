@@ -8,7 +8,7 @@ WORKDIR /dreamSociety-BE/app
 COPY package.json ./package.json
 
 # install and cache app dependencies
-RUN npm install --silent
+RUN npm install
 
 # Bundle app source
 COPY . .

@@ -2,7 +2,7 @@ const Razorpay = require('razorpay');
 const httpStatus = require('http-status');
 require("dotenv").config();
 var request = require('request');
-
+ 
 // var razorpay = new Razorpay({
 //     key_id: rzp_test_DUi6OPmtPxMldq,
 //     key_secret: process.env.RAZORPAY_API_SECRET,

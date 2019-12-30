@@ -6,4 +6,4 @@ module.exports.cardValidator = (cardData) => {
     // console.log("type",CreditCard.identify('4111'))
     const resp = creditcard.validate();
     return resp;
-}
+}  
