@@ -1,13 +1,35 @@
-version: '3'
-
+version: "3"
 services:
+  proxy:
+      build: proxy
+      ports:
+      - "80:80"
+  # nginx:
+  #   image: jwilder/nginx-proxy
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - /var/run/docker.sock:/tmp/docker.sock:ro
+
+  # reverseproxy: # see https://docs.traefik.io/#the-traefik-quickstart-using-docker
+  #   image: traefik
+  #   command: --docker
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+
   nodejs:
     build:
       context: .
       dockerfile: Dockerfile
     image: dreamsociety-nodejs
-    container_name: dreamsociety-nodejs
-    restart: unless-stopped 
+    labels:
+      - "traefik.http.routers.nodejs.rule=Host(`nodejs.docker.localhost`)"
+    # expose:
+    #   - 8080
+    # container_name: dreamsociety-nodejs
+    restart: unless-stopped
     ports:
       - "8081:8082"
     volumes:
@@ -16,6 +38,13 @@ services:
     networks:
       - app-network
     command: /dreamSociety-BE/app/node_modules/.bin/nodemon app.js
+
+    # depends_on:
+    #   - nginx
+    # environment:
+    # Image requirement, the virtual host name it will listen too
+    # The virtual host is a group of hosts, containers or anything that responds HTTP
+    # VIRTUAL_HOST: 'localhost'
 
 networks:
   app-network:

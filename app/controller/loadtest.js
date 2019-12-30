@@ -1,4 +1,4 @@
-const loadtest = require('loadtest');
+// const loadtest = require('loadtest');
 var fs = require('fs');
 const http = require('http');
 var request = require('request');
