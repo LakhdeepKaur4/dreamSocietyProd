@@ -8,7 +8,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mailjet = require('node-mailjet').connect(config.mail_public_key, config.mail_secret_key);
 const randomInt = require('random-int');
-
+const http = require('http');
 const Employee = db.employee;
 const EmployeeType = db.employeeType;
 const EmployeeWorkType = db.employeeWorkType;
@@ -58,6 +58,17 @@ let mailToUser = (email, employeeId) => {
         .catch((err) => {
             console.log(err.statusCode)
         })
+}
+
+exports.sendMail = () => {
+    const apikey = '07hlECj1sy4-ynODCNlExLsx91Pv29Zdrh0bxc1pLc';
+    const number = 8368620076;
+    // const OTP = Math.floor(100000 + Math.random() * 900000);
+    const message = 'Testing maid';
+
+    http.get(`http://api.textlocal.in/send/?apiKey=${apikey}&numbers=${number}&message=${message}`, function (err, data) {
+        console.log('messageSend', data);
+    });
 }
 
 exports.create = async (req, res, next) => {
@@ -352,7 +363,11 @@ exports.createEncrypt = async (req, res, next) => {
                         password: password,
                         contact: encrypt(body.contact),
                         lastName: encrypt(body.lastName),
-                        salary: encrypt(body.salary),
+                        basic: encrypt(body.basic),
+                        hra: body.hra ? encrypt(body.hra) : null,
+                        travelAllowance: body.travelAllowance ? encrypt(body.travelAllowance) : null,
+                        pf: body.pf ? encrypt(body.pf) : null,
+                        esi: body.esi ? encrypt(body.esi) : null,
                         permanentAddress: encrypt(body.permanentAddress),
                         currentAddress: encrypt(body.currentAddress),
                         startDate: encrypt(body.startDate),
@@ -367,18 +382,15 @@ exports.createEncrypt = async (req, res, next) => {
                         // stateId2: body.stateId2,
                         // cityId2: body.cityId2,
                         // locationId2: body.locationId2
-                    })
+                    }, transaction)
                     .then(emp => {
-                        console.log(emp);
                         employee = emp;
                         // console.log(emp.employeeId);
                         employeeId = emp.employeeId;
-                        // console.log(employeeId);
                     })
                     .catch(err => console.log('Creation Error ===>', err))
 
                 if (req.files) {
-
                     let profileImage;
                     // console.log(req.files.profilePicture[0].path);
                     profileImage = req.files.profilePicture[0].path;
@@ -422,14 +434,12 @@ exports.createEncrypt = async (req, res, next) => {
                     }
                 })
                     .then(async employee => {
-                        console.log(employee);
                         employee.userName = decrypt(employee.userName);
                         employee.firstName = decrypt(employee.firstName);
                         employee.middleName = decrypt(employee.middleName);
                         employee.lastName = decrypt(employee.lastName);
                         employee.email = decrypt(employee.email);
                         employee.contact = decrypt(employee.contact);
-                        employee.salary = decrypt(employee.salary);
                         employee.permanentAddress = decrypt(employee.permanentAddress);
                         employee.currentAddress = decrypt(employee.currentAddress);
                         employee.startDate = decrypt(employee.startDate);
@@ -448,13 +458,8 @@ exports.createEncrypt = async (req, res, next) => {
                             firstName = employee.firstName;
                             lastName = '...';
                         }
-
-
-                        // let employeeUserName = employee.userName;
-                        // let email =  employee.email;
-                        // set users
                         let user = await User.create({
-                            userId: employee.employeeId,
+                            userId: employeeId,
                             firstName: encrypt(firstName),
                             lastName: encrypt(lastName),
                             userName: encrypt(employee.email),
@@ -463,26 +468,23 @@ exports.createEncrypt = async (req, res, next) => {
                             email: encrypt(employee.email),
                             isActive: false
                         }, transaction);
-                        // set roles
-                        // console.log(employee.password);
-                        // console.log(employee.password);
+                        await FingerprintData.create({
+                            userId: user.userId
+                        }, transaction)
+                        const rfid = await UserRFID.create({
+                            userId: user.userId,
+                            rfidId: body.rfidId
+                        }, transaction)
                         let roles = await Role.findOne({
                             where: { id: 6 }
                         });
-                        console.log("employee role", roles)
                         // user.setRoles(roles);
-                        UserRoles.create({ userId: user.userId, roleId: roles.id, isActive: false }, transaction);
-                        UserRFID.create({ userId: user.userId, rfidId: body.rfidId }, transaction);
-                        FingerprintData.create({ userId: user.userId }, transaction);
-                        const message = mailToUser(req.body.email, employeeId);
+                        const role = await UserRoles.create({ userId: user.userId, roleId: roles.id });
                         await transaction.commit();
+                        const message = mailToUser(req.body.email, employeeId);
                         return res.status(httpStatus.CREATED).json({
                             message: "Employee successfully created. please activate your account. click on the link delievered to your given email"
                         });
-                    })
-                    .catch(async err => {
-                        if (transaction) await transaction.rollback();
-                        console.log(err)
                     })
             } else {
                 return res.status(httpStatus.UNPROCESSABLE_ENTITY).json(messageErr);
@@ -493,8 +495,9 @@ exports.createEncrypt = async (req, res, next) => {
             });
         }
     } catch (error) {
-        console.log(error);
-        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
+        console.log("-#-", error);
+        if (transaction) await transaction.rollback();
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Something went wrong' });
     }
 }
 
@@ -505,7 +508,7 @@ exports.getDecrypt = async (req, res, next) => {
             where: {
                 isActive: true
             },
-            attributes: { exclude: ['password'] },
+            // attributes: { exclude: ['password'] },
             order: [['createdAt', 'DESC']],
             include: [
                 {
@@ -535,7 +538,11 @@ exports.getDecrypt = async (req, res, next) => {
                     item.lastName = decrypt(item.lastName);
                     item.email = decrypt(item.email);
                     item.contact = decrypt(item.contact);
-                    item.salary = decrypt(item.salary);
+                    item.basic = item.basic ? decrypt(item.basic) : '';
+                    item.hra = item.hra ? decrypt(item.hra) : '';
+                    item.travelAllowance = item.travelAllowance ? decrypt(item.travelAllowance) : '';
+                    item.pf = item.pf ? decrypt(item.pf) : '';
+                    item.esi = item.esi ? decrypt(item.esi) : '';
                     item.permanentAddress = decrypt(item.permanentAddress);
                     item.currentAddress = decrypt(item.currentAddress);
                     item.startDate = decrypt(item.startDate);
@@ -582,13 +589,89 @@ exports.getDecrypt = async (req, res, next) => {
     }
 }
 
+exports.getById = (req, res, next) => {
+    const id = req.params.id;
+    console.log('Id ===>', id);
+    let employee;
+
+    Employee.findOne({
+        where: {
+            isActive: true,
+            employeeId: req.params.id
+        },
+        attributes: { exclude: ['password'] },
+        order: [['createdAt', 'DESC']],
+        include: [
+            {
+                model: EmployeeDetail,
+                include: [
+                    { model: EmployeeType },
+                    { model: EmployeeWorkType }
+                ]
+            }
+        ]
+    })
+        .then(async item => {
+            const rfid = await UserRFID.findOne({
+                where: {
+                    userId: item.employeeId,
+                    isActive: true
+                },
+                include: [
+                    { model: RFID, where: { isActive: true }, attributes: ['rfidId', 'rfid'] }
+                ]
+            });
+            item.userName = decrypt(item.userName);
+            item.firstName = decrypt(item.firstName);
+            item.middleName = decrypt(item.middleName);
+            item.lastName = decrypt(item.lastName);
+            item.email = decrypt(item.email);
+            item.contact = decrypt(item.contact);
+            item.basic = decrypt(item.basic);
+            item.hra = item.hra ? decrypt(item.hra) : '';
+            item.travelAllowance = item.travelAllowance ? decrypt(item.travelAllowance) : '';
+            item.pf = item.pf ? decrypt(item.pf) : '';
+            item.esi = item.esi ? decrypt(item.esi) : '';
+            item.permanentAddress = decrypt(item.permanentAddress);
+            item.currentAddress = decrypt(item.currentAddress);
+            item.startDate = decrypt(item.startDate);
+            // item.serviceType = decrypt(item.serviceType);
+            // // item.endDate = decrypt(item.endDate);
+            item.picture = decrypt(item.picture);
+            item.documentOne = decrypt(item.documentOne);
+            item.documentTwo = decrypt(item.documentTwo);
+
+            item = item.toJSON();
+
+            if (rfid !== null) {
+                item.rfid_master = {
+                    rfidId: rfid.rfid_master.rfidId,
+                    rfid: rfid.rfid_master.rfid
+                }
+            }
+            else {
+                item.rfid_master = rfid;
+            }
+
+
+            return item;
+        })
+        .then(employee => {
+            res.status(httpStatus.OK).json({
+                employee
+            })
+        })
+        .catch(err => {
+            console.log(err)
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
+        })
+}
 
 exports.updateEncrypt = async (req, res, next) => {
     let transaction;
     try {
         transaction = await db.sequelize.transaction();
         const id = req.params.id;
-        // console.log(id);
         let profileImage;
         let documentOne;
         let documentTwo;
@@ -713,6 +796,12 @@ exports.updateEncrypt = async (req, res, next) => {
                 currentAddressCheck = constraintCheck('currentAddress', update);
                 startDateCheck = constraintCheck('startDate', update);
                 employeeDetailIdCheck = constraintCheck('employeeDetailId', update);
+                basicCheck = constraintCheck('basic', update);
+                hraCheck = constraintCheck('hra', update);
+                travelAllowanceCheck = constraintCheck('travelAllowance', update);
+                pfCheck = constraintCheck('pf', update);
+                esiCheck = constraintCheck('esi', update);
+
                 // // endDateCheck = constraintCheck('endDate', update);
                 // countryId1Check = constraintCheck('countryId1', update);
                 // stateId1Check = constraintCheck('stateId1', update);
@@ -733,6 +822,11 @@ exports.updateEncrypt = async (req, res, next) => {
                 currentAddress = constraintReturn(currentAddressCheck, update, 'currentAddress', employee);
                 startDate = constraintReturn(startDateCheck, update, 'startDate', employee);
                 employeeDetailId = referenceConstraintReturn(employeeDetailIdCheck, update, 'employeeDetailId', employee);
+                basic = constraintReturn(basicCheck, update, 'basic', employee);
+                hra = constraintReturn(hraCheck, update, 'hra', employee);
+                travelAllowance = constraintReturn(travelAllowanceCheck, update, 'travelAllowance', employee);
+                pf = constraintReturn(pfCheck, update, 'pf', employee);
+                esi = constraintReturn(esiCheck, update, 'esi', employee);
                 // // // endDate = constraintReturn(endDateCheck, update, 'endDate', employee);
                 // countryId1 = referenceConstraintReturn(countryId1Check, update, 'countryId1', employee);
                 // stateId1 = referenceConstraintReturn(stateId1Check, update, 'stateId1', employee);
@@ -750,7 +844,11 @@ exports.updateEncrypt = async (req, res, next) => {
                     email: email,
                     userName: email,
                     contact: contact,
-                    salary: salary,
+                    basic: basic,
+                    hra: hra,
+                    travelAllowance: travelAllowance,
+                    pf: pf,
+                    esi: esi,
                     permanentAddress: permanentAddress,
                     currentAddress: currentAddress,
                     startDate: startDate,
@@ -797,7 +895,6 @@ exports.updateEncrypt = async (req, res, next) => {
                         employee.lastName = decrypt(employee.lastName);
                         employee.email = decrypt(employee.email);
                         employee.contact = decrypt(employee.contact);
-                        employee.salary = decrypt(employee.salary);
                         employee.permanentAddress = decrypt(employee.permanentAddress);
                         employee.currentAddress = decrypt(employee.currentAddress);
                         // employee.serviceType = decrypt(employee.serviceType);
@@ -806,6 +903,11 @@ exports.updateEncrypt = async (req, res, next) => {
                         employee.picture = decrypt(employee.picture);
                         employee.documentOne = decrypt(employee.documentOne);
                         employee.documentTwo = decrypt(employee.documentTwo);
+                        employee.basic = decrypt(employee.basic);
+                        employee.hra = employee.hra ? decrypt(employee.hra) : '';
+                        employee.travelAllowance = employee.travelAllowance ? decrypt(employee.travelAllowance) : '';
+                        employee.pf = employee.pf ? decrypt(employee.pf) : '';
+                        employee.esi = employee.esi ? decrypt(employee.esi) : '';
                         await transaction.commit();
                         return res.status(httpStatus.OK).json({
                             message: "Employee Updated Page",

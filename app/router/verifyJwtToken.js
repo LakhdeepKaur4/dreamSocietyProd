@@ -144,6 +144,20 @@ isVendorRole = async (req, res, next) => {
 	}
 }
 
+isEmployeeRole = async (req, res, next) => {
+	let token = req.headers['x-access-token'];
+	const user = await User.findOne({ where: { isActive: true, userId: req.userId } });
+	if (user) {
+		const role = await UserRole.findOne({ where: { isActive: true, userId: req.userId, roleId: 6 } });
+		if (role) {
+			next();
+			return
+		}
+		res.status(httpStatus.FORBIDDEN).send("Require Employee Role!");
+		return;
+	}
+}
+
 const authJwt = {};
 authJwt.verifyToken = verifyToken;
 authJwt.isAdmin = isAdmin;
@@ -152,5 +166,6 @@ authJwt.isSuperAdminRole = isSuperAdminRole;
 authJwt.isOwnerOrTenant = isOwnerOrTenant;
 authJwt.isOwnerOrTenantRole = isOwnerOrTenantRole;
 authJwt.isVendorRole = isVendorRole;
+authJwt.isEmployeeRole = isEmployeeRole;
 
 module.exports = authJwt;

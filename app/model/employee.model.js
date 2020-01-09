@@ -1,9 +1,9 @@
 module.exports = (sequelize, Sequelize) => {
-	const Employee = sequelize.define('employee_master', {
-		employeeId: {
-			type: Sequelize.INTEGER,
-			// autoIncrement: true,
-			primaryKey: true
+    const Employee = sequelize.define('employee_master', {
+        employeeId: {
+            type: Sequelize.INTEGER,
+            // autoIncrement: true,
+            primaryKey: true
         },
         uniqueId: {
             type: Sequelize.STRING
@@ -11,13 +11,13 @@ module.exports = (sequelize, Sequelize) => {
         userName: {
             type: Sequelize.STRING
         },
-		firstName: {
+        firstName: {
             type: Sequelize.STRING
         },
-		middleName: {
-			type: Sequelize.STRING,
-		},
-		lastName: {
+        middleName: {
+            type: Sequelize.STRING,
+        },
+        lastName: {
             type: Sequelize.STRING,
         },
         password: {
@@ -29,7 +29,19 @@ module.exports = (sequelize, Sequelize) => {
         contact: {
             type: Sequelize.STRING,
         },
-        salary:{
+        basic: {
+            type: Sequelize.STRING,
+        },
+        hra: {
+            type: Sequelize.STRING,
+        },
+        travelAllowance: {
+            type: Sequelize.STRING,
+        },
+        pf: {
+            type: Sequelize.STRING,
+        },
+        esi: {
             type: Sequelize.STRING,
         },
         permanentAddress: {
@@ -38,26 +50,26 @@ module.exports = (sequelize, Sequelize) => {
         currentAddress: {
             type: Sequelize.STRING,
         },
-        startDate:{
+        startDate: {
             type: Sequelize.STRING,
         },
-        picture:{
+        picture: {
             type: Sequelize.STRING,
         },
-        documentOne:{
+        documentOne: {
             type: Sequelize.STRING,
         },
-        documentTwo:{
-            type: Sequelize.STRING,   
+        documentTwo: {
+            type: Sequelize.STRING,
         },
         isActive: {
-			type: Sequelize.BOOLEAN,
-			defaultValue: false
-		},
-	}, {
-		freezeTableName: true
-	});
+            type: Sequelize.BOOLEAN,
+            defaultValue: false
+        },
+    }, {
+        freezeTableName: true
+    });
 
-	return Employee;
+    return Employee;
 }
 

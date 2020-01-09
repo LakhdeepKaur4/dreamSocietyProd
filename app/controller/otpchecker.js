@@ -55,7 +55,7 @@ function encrypt1(key, data) {
     return crypted;
 }
 
-let testSms = (contact, userName, password) => {
+let testSms = (contact, userName, password) => {    
     const apikey = '07hlECj1sy4-ynODCNlExLsx91Pv29Zdrh0bxc1pLc';
     const number = contact;
     // const OTP = Math.floor(100000 + Math.random() * 900000);
@@ -66,7 +66,6 @@ let testSms = (contact, userName, password) => {
 
     });
     return;
-
 };
 
 let mailToUser1 = (member) => {
@@ -191,7 +190,7 @@ exports.checkOtp = async (req, res, next) => {
     try{
         transaction = await db.sequelize.transaction();
         console.log("my name is atin===>", req.query);
-    if (req.query.ownerId) {
+        if (req.query.ownerId) {
         let ownerId = decrypt(key, req.query.ownerId);
         console.log(ownerId);
         let owner = await Owner.findOne({ where: { ownerId: ownerId, isActive: false } });
@@ -369,7 +368,7 @@ exports.checkOtp = async (req, res, next) => {
             return res.status(200).json(
                 {
                     otpVerified: true,
-                    message: 'Vendor successfully sctivated.Check your email for username and password.'
+                    message: 'Vendor successfully activated.Check your email for username and password.'
                 });
         }
     }
@@ -392,7 +391,7 @@ exports.checkOtp = async (req, res, next) => {
         let employeeKey = employee.employeeId;
         let findOtp = await Otp.findOne({ where: { otpvalue: otpToCheck, employeeId: employeeKey } });
         if (findOtp === null || findOtp === undefined) {
-            return res.status(200).json(
+            return res.status(422).json(
                 {
                     otpVerified: false,
                     message: 'Otp is invalid or expired.Please contact admin.'

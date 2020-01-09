@@ -43,7 +43,7 @@ exports.get = async (req, res, next) => {
     try {
         const designation = await Designation.findAll({ where: { isActive: true }, order: [['createdAt', 'DESC']] });
         if (designation) {
-            return res.status(httpStatus.CREATED).json({
+            return res.status(httpStatus.OK).json({
                 message: "Designation Content Page",
                 designation: designation
             });

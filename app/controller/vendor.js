@@ -430,7 +430,7 @@ exports.create1 = async (req, res, next) => {
             userId: req.userId,
             rfidId: body.rfidId
             // document: body.document
-        },transaction);
+        }, transaction);
         const vendorId = vendor.vendorId;
         if (body.rate1) {
             console.log("in here rate 1")
@@ -441,7 +441,7 @@ exports.create1 = async (req, res, next) => {
                 dailyServices: body.dailyServices1,
                 userId: req.userId,
                 serviceId: body.serviceId1
-            },transaction)
+            }, transaction)
         }
         if (body.rate2) {
             console.log("in here rate 2")
@@ -475,7 +475,7 @@ exports.create1 = async (req, res, next) => {
                 picture: encrypt(key, profileImage)
             };
             const imageUpdate = await Vendor.find({ where: { vendorId: vendorId } }).then(vendor => {
-                return vendor.updateAttributes(updateImage,transaction)
+                return vendor.updateAttributes(updateImage, transaction)
             })
             documentOne = req.files.documentOne[0].path;
             documentTwo = req.files.documentTwo[0].path;
@@ -485,7 +485,7 @@ exports.create1 = async (req, res, next) => {
             };
 
             const documentUpdate = await Vendor.find({ where: { vendorId: vendorId } }).then(vendor => {
-                return vendor.updateAttributes(updateDocument,transaction)
+                return vendor.updateAttributes(updateDocument, transaction)
             })
         }
         // const message1 = `Welcome to Dream society your username is ${userName} and password is ${password}.Do not share with anyone.`
@@ -508,7 +508,7 @@ exports.create1 = async (req, res, next) => {
             lastName = '...';
         }
 
-        
+
         let vendorUserName = decrypt(key, vendor.userName);
         let email = decrypt(key, vendor.email);
         // set users
@@ -521,14 +521,14 @@ exports.create1 = async (req, res, next) => {
             contact: vendor.contact,
             email: encrypt1(key, email),
             isActive: false
-        },transaction);
+        }, transaction);
         let fingerPrintVendor = await FingerPrint.create({
-            userId:user.userId
-          },transaction)
+            userId: user.userId
+        }, transaction)
         let userRfId = await UserRfId.create({
             userId: user.userId,
             rfidId: vendor.rfidId
-        },transaction)
+        }, transaction)
         // set roles
         console.log(vendor.password);
         console.log(user.password);
@@ -537,7 +537,7 @@ exports.create1 = async (req, res, next) => {
         });
 
         // user.setRoles(roles);
-        UserRoles.create({ userId: user.userId, roleId: roles.id },transaction);
+        UserRoles.create({ userId: user.userId, roleId: roles.id }, transaction);
         await transaction.commit();
         console.log("in api email", email);
         console.log("in api vendor id-->", vendorId)
@@ -546,7 +546,7 @@ exports.create1 = async (req, res, next) => {
             message: "Vendor successfully created. please activate your account. click on the link delievered to your given email"
         });
     } catch (error) {
-        if(transaction) await transaction.rollback();
+        if (transaction) await transaction.rollback();
         console.log("error==>", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
@@ -708,18 +708,18 @@ exports.update1 = async (req, res, next) => {
                 }
 
             })
-            return vendor.updateAttributes(updAttr,transaction);
+            return vendor.updateAttributes(updAttr, transaction);
         })
         const updatedUser = await User.find({
             where: {
-              userId: id,
-              isActive: true
+                userId: id,
+                isActive: true
             }
-          });
-          let updatedUser1 = await updatedUser.updateAttributes(updAttr,transaction);
-          if(req.body.email!==null && req.body.email!==undefined && req.body.email!==""){
-              updatedUser1 = await updatedUser.updateAttributes({userName:encrypt(key,req.body.email)},transaction);
-          }
+        });
+        let updatedUser1 = await updatedUser.updateAttributes(updAttr, transaction);
+        if (req.body.email !== null && req.body.email !== undefined && req.body.email !== "") {
+            updatedUser1 = await updatedUser.updateAttributes({ userName: encrypt(key, req.body.email) }, transaction);
+        }
         if (updatedVendor) {
             updatedVendor.userName = decrypt(key, updatedVendor.userName)
             updatedVendor.firstName = decrypt(key, updatedVendor.firstName)
@@ -745,11 +745,11 @@ exports.update1 = async (req, res, next) => {
                 vendorService.updateAttributes({
                     rateId: req.body.rateId1,
                     rate: req.body.rate1
-                },transaction);
+                }, transaction);
                 if (req.body.serviceId) {
                     vendorService.updateAttributes({
                         serviceId: req.body.serviceId
-                    },transaction);
+                    }, transaction);
                 }
             }
             return res.status(httpStatus.OK).json({
@@ -759,7 +759,7 @@ exports.update1 = async (req, res, next) => {
         }
         await transaction.commit();
     } catch (error) {
-        if(transaction) await transaction.rollback();
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -787,7 +787,7 @@ exports.deleteVendorService = async (req, res, next) => {
         // const updatedVendorService = await VendorService.find({ where: { vendorId: id } }).then(vendorService => {
         //     return vendorService.updateAttributes(update)
         // })
-        const updatedVendorService = await VendorService.update(update, { where: { vendorServiceId: id },transaction })
+        const updatedVendorService = await VendorService.update(update, { where: { vendorServiceId: id }, transaction })
         if (updatedVendorService) {
             await transaction.commit();
             return res.status(httpStatus.OK).json({
@@ -795,7 +795,7 @@ exports.deleteVendorService = async (req, res, next) => {
             });
         }
     } catch (error) {
-        if(transaction) await transaction.rollback();
+        if (transaction) await transaction.rollback();
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -811,7 +811,7 @@ exports.deleteSelectedVendorServices = async (req, res, next) => {
         if (!deleteSelected) {
             return res.status(httpStatus.UNPROCESSABLE_ENTITY).json({ message: "No id Found" });
         }
-        const updatedVendor = await VendorService.update(update, { where: { vendorServiceId: { [Op.in]: deleteSelected } },transaction })
+        const updatedVendor = await VendorService.update(update, { where: { vendorServiceId: { [Op.in]: deleteSelected } }, transaction })
         if (updatedVendor) {
             await transaction.commit();
             return res.status(httpStatus.OK).json({
@@ -819,7 +819,7 @@ exports.deleteSelectedVendorServices = async (req, res, next) => {
             });
         }
     } catch (error) {
-        if(transaction) await transaction.rollback();
+        if (transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }
@@ -869,7 +869,7 @@ exports.updateVendorService = async (req, res, next) => {
                     updAttr[attr] = req.body[attr];
                 }
             })
-            return vendorService.updateAttributes(updAttr,transaction);
+            return vendorService.updateAttributes(updAttr, transaction);
         });
         await transaction.commit();
         return res.status(httpStatus.OK).json({
@@ -877,7 +877,7 @@ exports.updateVendorService = async (req, res, next) => {
             vendor: updatedVendorService
         });
     } catch (error) {
-        if(transaction) await transaction.rollback();
+        if (transaction) await transaction.rollback();
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error);
     }
 }

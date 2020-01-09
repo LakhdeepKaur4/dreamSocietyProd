@@ -1,9 +1,9 @@
 version: "3"
 services:
-  proxy:
-      build: proxy
-      ports:
-      - "80:80"
+  # proxy:
+  #     build: proxy
+  #     ports:
+  #     - "80:80"
   # nginx:
   #   image: jwilder/nginx-proxy
   #   ports:
@@ -24,8 +24,6 @@ services:
       context: .
       dockerfile: Dockerfile
     image: dreamsociety-nodejs
-    labels:
-      - "traefik.http.routers.nodejs.rule=Host(`nodejs.docker.localhost`)"
     # expose:
     #   - 8080
     # container_name: dreamsociety-nodejs

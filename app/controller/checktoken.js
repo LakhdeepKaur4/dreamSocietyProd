@@ -192,6 +192,7 @@ exports.checkToken = async (req, res, next) => {
             if (req.query.employeeId) {
                 let employeeId = decrypt1(key, req.query.employeeId);
                 let employee = await Employee.findOne({ where: { employeeId: employeeId } });
+                console.log(">>>>",employee.contact)
                 let contact = decrypt1(key, employee.contact);
                 let otp = testSms(contact);
                 let dbotp = await Otp.create({

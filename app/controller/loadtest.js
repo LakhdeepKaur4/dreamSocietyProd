@@ -1,4 +1,4 @@
-// const loadtest = require('loadtest');
+const loadtest = require('loadtest');
 var fs = require('fs');
 const http = require('http');
 var request = require('request');
@@ -75,14 +75,14 @@ exports.test = (req, res, next) => {
     ]
     logins.map(login => {
         const options = {
-            url: 'http://localhost:8085/api/auth/signin',
-            method: 'POST',
+            url: 'http://localhost:9090/api/designation',
+            method: 'GET',
             concurrency: 500,
-            requestsPerSecond: 5,
+            // requestsPerSecond: 5,
             contentType: 'application/json',
-            body: login,
+            // body: login,
             keepalive: true,
-            // headers:{'x-access-token':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNTc2MjQxMTYzLCJleHAiOjE1NzYzMjc1NjN9.UP3c6By8vv4q_M5AKREKPVaOhjClYRhOS0CwxAHeJpI'},
+            headers: { 'x-access-token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNTc3OTU1MzIyLCJleHAiOjE1NzgwNDE3MjJ9.dXA2M6GiQNiZZ8hUX0DRDf-R4vwcB_MVlwGZ8j_pr4k' },
             maxRequests: 6000,
             statusCallback: statusCallback,
             // maxSeconds: 30,

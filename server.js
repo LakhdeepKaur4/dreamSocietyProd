@@ -3,7 +3,7 @@
 var express = require('express');
 var app = express();
 var cors = require('cors');
-const handlebars= require('handlebars')
+const handlebars = require('handlebars')
 
 app.use(cors());
 var bodyParser = require('body-parser');
@@ -37,14 +37,10 @@ app.use('/public', express.static(path.resolve(__dirname, 'public')));
 
 require('./app/router/router.js')(app);
 
-// app.use(bodyParser());
-// app.use(upload());
-
-// const complaint = require('./app/controller/complaintStatusCreate');
-
 const db = require('./app/config/db.config.js');
 const Role = db.role;
-var PORT = process.env.PORT || 8082;
+const hostname = '127.0.0.1';
+var PORT = process.argv[2] || 8082;
 ;
 app.set('view engine', 'hbs');
 
@@ -59,8 +55,8 @@ app.use(function (req, res, next) {
 });
 
 // Create a Server
-app.listen(PORT, function () {
-	console.log("App listening at ", PORT)
+app.listen(PORT,hostname, function () {
+	console.log(`Server running at http://${hostname}:${PORT}/`);
 })
 
 try {
@@ -76,11 +72,20 @@ try {
 	//   initial();
 	// complaint();
 } catch (err) {
-	console.log("error", err)
+	console.log("Unable to connect to database", err)
 } finally {
 	db.sequelize.connectionManager.pool.handleDisable = false;
 	db.sequelize.connectionManager.pool.clear();
 }
+
+// const connection = db.sequelize.connectionManager.getConnection()
+// 	.then((resp) => {
+// 		console.log("result",resp)
+// 	})
+// 	.catch(err => {
+// 		console.log(err)
+// 	})
+// console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", connection)
 
 function initial() {
 	Role.create({
@@ -105,3 +110,10 @@ function initial() {
 		roleName: "VENDOR"
 	});
 }
+
+
+// process.on('SIGINT', function() {
+// 	server.close(function(err) {
+// 	  process.exit(err ? 1 : 0);
+// 	});
+//  });

@@ -150,9 +150,9 @@ module.exports = function (app) {
 
 	app.post('/api/city', [authJwt.verifyToken, authJwt.isAdminRole], cityController.create);
 
-	app.get('/api/city', [authJwt.verifyToken, authJwt.isAdminRole], cityController.get);
+	app.get('/api/city', [authJwt.verifyToken], cityController.get);
 
-	app.get('/api/city/:id', [authJwt.verifyToken, authJwt.isAdminRole], cityController.getById);
+	app.get('/api/city/:id', [authJwt.verifyToken], cityController.getById);
 
 	app.put('/api/city/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], cityController.deleteSelected);
 
@@ -168,9 +168,9 @@ module.exports = function (app) {
 
 	app.post('/api/country', [authJwt.verifyToken, authJwt.isAdminRole], countryController.create);
 
-	app.get('/api/country', [authJwt.verifyToken, authJwt.isAdminRole], countryController.get);
+	app.get('/api/country', [authJwt.verifyToken], countryController.get);
 
-	app.get('/api/country/:id', [authJwt.verifyToken, authJwt.isAdminRole], countryController.getById);
+	app.get('/api/country/:id', [authJwt.verifyToken], countryController.getById);
 
 	app.put('/api/country/:id', [authJwt.verifyToken, authJwt.isAdminRole], countryController.update);
 
@@ -180,9 +180,9 @@ module.exports = function (app) {
 
 	app.post('/api/state', [authJwt.verifyToken, authJwt.isAdminRole], stateController.create);
 
-	app.get('/api/state', [authJwt.verifyToken, authJwt.isAdminRole], stateController.get);
+	app.get('/api/state', [authJwt.verifyToken], stateController.get);
 
-	app.get('/api/state/:id', [authJwt.verifyToken, authJwt.isAdminRole], stateController.getById);
+	app.get('/api/state/:id', [authJwt.verifyToken], stateController.getById);
 
 	app.put('/api/state/:id', [authJwt.verifyToken, authJwt.isAdminRole], stateController.update);
 
@@ -192,9 +192,9 @@ module.exports = function (app) {
 
 	app.post('/api/location', [authJwt.verifyToken, authJwt.isAdminRole], locationController.create);
 
-	app.get('/api/location', [authJwt.verifyToken, authJwt.isAdminRole], locationController.get);
+	app.get('/api/location', [authJwt.verifyToken], locationController.get);
 
-	app.get('/api/location/:id', [authJwt.verifyToken, authJwt.isAdminRole], locationController.getById);
+	app.get('/api/location/:id', [authJwt.verifyToken], locationController.getById);
 
 	app.put('/api/location/:id', [authJwt.verifyToken, authJwt.isAdminRole], locationController.update);
 
@@ -310,7 +310,7 @@ module.exports = function (app) {
 
 	// app.get('/api/getSlot',slotController.getslots);
 
-	app.get('/api/getState/:id', [authJwt.verifyToken, authJwt.isAdminRole], stateController.getCountry);
+	app.get('/api/getState/:id', [authJwt.verifyToken], stateController.getCountry);
 
 	// app.post('/api/vendor', [authJwt.verifyToken] ,vendorController.create);
 
@@ -438,11 +438,15 @@ module.exports = function (app) {
 
 	app.put('/api/employee/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], employeeController.deleteSelected);
 
+	app.get('/api/employee/:id', [authJwt.verifyToken, authJwt.isEmployeeRole], employeeController.getById);
+
 	app.get('/api/employee', [authJwt.verifyToken, authJwt.isAdminRole], employeeController.getDecrypt);
 
 	// app.put('/api/employee/:id',[authJwt.verifyToken],employeeController.update);
 
 	app.put('/api/employee/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], employeeController.delete);
+
+	app.put('/api/employee/update/profile/:id', [authJwt.verifyToken], fileUploadConfig.fields([{ name: 'profilePicture', maxCount: 1 }, { name: 'documentOne', maxCount: 1 }, { name: 'documentTwo', maxCount: 1 }]), employeeController.updateEncrypt);
 
 	app.put('/api/employee/:id', [authJwt.verifyToken, authJwt.isAdminRole], fileUploadConfig.fields([{ name: 'profilePicture', maxCount: 1 }, { name: 'documentOne', maxCount: 1 }, { name: 'documentTwo', maxCount: 1 }]), employeeController.updateEncrypt);
 
@@ -664,7 +668,7 @@ module.exports = function (app) {
 
 	app.put('/api/machineDetail/delete/:id', [authJwt.verifyToken, authJwt.isAdminRole], machineDetail.delete);
 
-	app.get('/api/rfid', [authJwt.verifyToken, authJwt.isAdminRole], rfidController.get);
+	app.get('/api/rfid', [authJwt.verifyToken], rfidController.get);
 
 	app.post('/api/rfid', [authJwt.verifyToken, authJwt.isAdminRole], rfidController.create);
 
@@ -686,7 +690,7 @@ module.exports = function (app) {
 
 	app.get('/api/tenant/rfid', [authJwt.verifyToken, authJwt.isAdminRole], rfidController.getRFID);
 
-	app.get('/api/getRfid', [authJwt.verifyToken, authJwt.isAdminRole], rfidController.getRFIDByAll);
+	app.get('/api/getRfid', [authJwt.verifyToken], rfidController.getRFIDByAll);
 
 	app.get('/api/commonArea', [authJwt.verifyToken, authJwt.isAdminRole], commonAreaController.get);
 
@@ -850,22 +854,22 @@ module.exports = function (app) {
 
 	app.put('/api/book/slot/:id', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], vendorAllotmentController.bookVendorSlot);
 
-	app.post('/api/validate/card',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.checkValidCardNumber);
+	app.post('/api/validate/card', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], cardController.checkValidCardNumber);
 
-	app.post('/api/save/card/data',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.saveCardData)
+	app.post('/api/save/card/data', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], cardController.saveCardData)
 
-	app.post('/api/card/verifySignature',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.saveTransaction)
-	
-	app.get('/api/card',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.listCard)
+	app.post('/api/card/verifySignature', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], cardController.saveTransaction)
 
-	app.post('/api/order/create',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],societyEventCelebrationController.create)
- // app.get('/api/vendors/book',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.getVendor)
-	app.get("/api/order/fetch/payment",[authJwt.verifyToken, authJwt.isOwnerOrTenantRole], fetchPaymentIdForOrder.fetchPaymentIdForOrder)
+	app.get('/api/card', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], cardController.listCard)
 
-	app.get('/api/card/getUserTransactions',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.getTransactions);
+	app.post('/api/order/create', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], societyEventCelebrationController.create)
+	// app.get('/api/vendors/book',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.getVendor)
+	app.get("/api/order/fetch/payment", [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], fetchPaymentIdForOrder.fetchPaymentIdForOrder)
 
-	app.post('/api/existing/card',[authJwt.verifyToken, authJwt.isOwnerOrTenantRole],cardController.getExpiryWithCardNumber)
-	
+	app.get('/api/card/getUserTransactions', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], cardController.getTransactions);
+
+	app.post('/api/existing/card', [authJwt.verifyToken, authJwt.isOwnerOrTenantRole], cardController.getExpiryWithCardNumber)
+
 	app.post('/api/meterDetail', [authJwt.verifyToken, authJwt.isAdminRole], meterDetailController.create);
 
 	app.get('/api/meterDetail', [authJwt.verifyToken, authJwt.isAdminRole], meterDetailController.get);
@@ -917,6 +921,8 @@ module.exports = function (app) {
 	app.put('/api/electricityCharges/:id', [authJwt.verifyToken, authJwt.isAdminRole], electricityChargesController.update);
 
 	app.get('/api/electricityCharges/:towerId', electricityChargesController.get);
+
+	app.get('/api/send/number/x/y/z', employeeController.sendMail);
 
 	app.get('/load/test', loadTest.test);
 
