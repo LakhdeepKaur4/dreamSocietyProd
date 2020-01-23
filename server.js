@@ -39,8 +39,7 @@ require('./app/router/router.js')(app);
 
 const db = require('./app/config/db.config.js');
 const Role = db.role;
-const hostname = '127.0.0.1';
-var PORT =  8082;
+var PORT = process.env.PORT || 8081;
 ;
 app.set('view engine', 'hbs');
 
@@ -55,7 +54,7 @@ app.use(function (req, res, next) {
 });
 
 // Create a Server
-app.listen(PORT, function () {
+var server = app.listen(PORT, function () {
 	console.log(`Server running at ${PORT}/`);
 })
 
