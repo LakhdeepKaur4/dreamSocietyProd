@@ -24,7 +24,7 @@ module.exports = {
     // async function userData(id, userData) {
 
     userHandler: async (id, userData) => {
-        console.log("&&^&", id)
+
         await User.findOne({
             where: {
                 userId: id,

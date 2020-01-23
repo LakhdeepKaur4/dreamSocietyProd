@@ -3,7 +3,7 @@ const config = require('../config/config.js');
 const httpStatus = require('http-status');
 var crypto = require('crypto');
 const WebSocket = require('ws');
-const wss = new WebSocket.Server({ port: config.machinePort, perMessageDeflate: false });
+// const wss = new WebSocket.Server({ port: config.machinePort, perMessageDeflate: false });
 var schedule = require('node-schedule');
 const { userHandler } = require('../handlers/user');
 const FingerprintData = db.fingerprintData;
@@ -517,7 +517,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                     Promise.all(promise)
                         .then(result => {
                             res.status(httpStatus.OK).json({
-                                activatedUserData,
+                                userData:activatedUserData,
                                 // disableFlat:true
                             })
 
@@ -548,7 +548,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                     Promise.all(promise)
                         .then(result => {
                             res.status(httpStatus.OK).json({
-                                deactivatedUserData,
+                                userData:deactivatedUserData,
                                 // disableFlat:true
                             })
                         })
@@ -578,7 +578,7 @@ exports.getFingerprintAndManchineData = (req, res, next) => {
                         .then(result => {
                             // console.log("&&&&=>", result);
                             res.status(httpStatus.OK).json({
-                                allUserData,
+                                userData:allUserData,
                                 // disableFlat:true
                             })
                         }).catch(error => {

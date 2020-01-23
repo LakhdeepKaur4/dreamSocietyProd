@@ -99,9 +99,11 @@ db.individualVendorBooking = require('../model/individualVendorBooking.model')(s
 db.maintenanceCharges = require('../model/maintainanceCharges')(sequelize, Sequelize);
 db.facilitiesCharges = require('../model/facilitiesCharges.model')(sequelize, Sequelize);
 db.electricityCharges = require('../model/electricityCharges')(sequelize, Sequelize);
-db.cardDetails = require('../model/card.model')(sequelize,Sequelize);
-db.order = require('../model/societyEventCelebration')(sequelize,Sequelize);
-db.transactions = require('../model/transactions')(sequelize,Sequelize),
+db.cardDetails = require('../model/card.model')(sequelize, Sequelize);
+db.order = require('../model/societyEventCelebration')(sequelize, Sequelize);
+db.transactions = require('../model/transactions')(sequelize, Sequelize),
+db.account = require('../model/account.model')(sequelize, Sequelize);
+db.employeeSalaryAccount = require('../model/employeeSalaryAccount')(sequelize, Sequelize);
 
 db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
 db.otp.belongsTo(db.tenant, { foreignKey: 'tenantId' });
@@ -289,6 +291,11 @@ db.facilitiesCharges.belongsTo(db.user, { foreignKey: 'userId' });
 db.electricityCharges.belongsTo(db.meter, { foreignKey: 'meterId' });
 db.electricityCharges.belongsTo(db.maintenanceType, { foreignKey: 'maintenanceTypeId' });
 db.electricityCharges.belongsTo(db.flatDetail, { foreignKey: 'flatDetailId' });
+db.account.belongsTo(db.employee, { foreignKey: 'employeeId' });
+db.account.belongsTo(db.user, { foreignKey: 'userId' });
+db.employeeSalaryAccount.belongsTo(db.employee, { foreignKey: 'employeeId' });
+db.employeeSalaryAccount.belongsTo(db.user, { foreignKey: 'userId' });
+db.employeeSalaryAccount.belongsTo(db.account, { foreignKey: 'accountId' });
 
 module.exports = db;
 

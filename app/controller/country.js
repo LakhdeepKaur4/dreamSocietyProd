@@ -125,7 +125,7 @@ exports.update = async (req, res) => {
         }
     } catch (error) {
         if (transaction) await transaction.rollback();
-        return res.status(500).json("Fail! Error -> " + err);
+        return res.status(500).json("Fail! Error -> " + error);
     }
 }
 

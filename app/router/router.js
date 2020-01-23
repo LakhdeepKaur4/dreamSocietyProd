@@ -75,6 +75,8 @@ module.exports = function (app) {
 	const cardController = require('../controller/card');
 	const fetchPaymentIdForOrder = require('../controller/razorpay')
 	const societyEventCelebrationController = require('../controller/societyEventCelebrationController');
+	const salaryAccountController = require('../controller/salaryAccount');
+	const employeeSalaryGenerateController = require('../controller/employeeSalaryGenerator');
 	// const vendorAllotmentController = require('../controller/vendorAllotmentController');
 	app.get('/', userController.start);
 
@@ -406,15 +408,15 @@ module.exports = function (app) {
 
 	app.post('/api/employeeType', [authJwt.verifyToken, authJwt.isAdminRole], employeeTypeController.create);
 
-	app.get('/api/employeeType', [authJwt.verifyToken, authJwt.isAdminRole], employeeTypeController.get);
+	app.get('/api/employeeType', [authJwt.verifyToken], employeeTypeController.get);
 
 	app.post('/api/employeeWorkType', [authJwt.verifyToken, authJwt.isAdminRole], employeeWorkTypeController.create);
 
-	app.get('/api/employeeWorkType', [authJwt.verifyToken, authJwt.isAdminRole], employeeWorkTypeController.get);
+	app.get('/api/employeeWorkType', [authJwt.verifyToken], employeeWorkTypeController.get);
 
 	app.post('/api/employeeDetail', [authJwt.verifyToken, authJwt.isAdminRole], employeeDetailController.create);
 
-	app.get('/api/employeeDetail', [authJwt.verifyToken, authJwt.isAdminRole], employeeDetailController.get);
+	app.get('/api/employeeDetail', [authJwt.verifyToken], employeeDetailController.get);
 
 	app.put('/api/employeeDetail/:id', [authJwt.verifyToken, authJwt.isAdminRole], employeeDetailController.update);
 
@@ -438,7 +440,7 @@ module.exports = function (app) {
 
 	app.put('/api/employee/delete/deleteSelected', [authJwt.verifyToken, authJwt.isAdminRole], employeeController.deleteSelected);
 
-	app.get('/api/employee/:id', [authJwt.verifyToken, authJwt.isEmployeeRole], employeeController.getById);
+	app.get('/api/employee/:id', [authJwt.verifyToken], employeeController.getById);
 
 	app.get('/api/employee', [authJwt.verifyToken, authJwt.isAdminRole], employeeController.getDecrypt);
 
@@ -931,5 +933,28 @@ module.exports = function (app) {
 	// app.get('/load/test/api/check', loadTest.check);
 
 	app.get('/api/test/country', countryController.get);
+
+	app.post('/api/salary/account', [authJwt.verifyToken], salaryAccountController.create);
+
+	app.get('/api/salary/account', [authJwt.verifyToken], salaryAccountController.get);
+
+	app.get('/api/salary/account/:id', [authJwt.verifyToken], salaryAccountController.getById);
+
+	app.get('/api/salary/active/account/:id', [authJwt.verifyToken], salaryAccountController.getActiveById);
+
+	app.put('/api/salary/account/:id', [authJwt.verifyToken], salaryAccountController.update);
+
+	app.put('/api/salary/account/activate/:id/:empId', [authJwt.verifyToken], salaryAccountController.activateAccount);
+
+	app.put('/api/salary/account/delete/deleteSelected', [authJwt.verifyToken], salaryAccountController.deleteSelected);
+
+	app.put('/api/salary/account/delete/:id', [authJwt.verifyToken], salaryAccountController.delete);
+
+	app.post('/api/generate/employee/salary', employeeSalaryGenerateController.create);
+
+	app.get('/api/generated/employee/salary', employeeSalaryGenerateController.get);
+
+	app.put('/api/update/generated/salary/:id', employeeSalaryGenerateController.update);
+
 	// app.get('/api/vendors/book',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.getVendor)
 }

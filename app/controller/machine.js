@@ -119,7 +119,6 @@ exports.update = async (req, res) => {
         transaction = await db.sequelize.transaction();
         const body = req.body;
         body.machineId = req.params.id;
-        console.log('888888Body ===>', body);
 
         Machine.findOne({
             where: {
