@@ -14,6 +14,7 @@ const sequelize = new Sequelize(env.database, env.username, env.password, {
   }
 });
 
+
 const db = {};
 
 db.Sequelize = Sequelize;
@@ -99,18 +100,10 @@ db.individualVendorBooking = require('../model/individualVendorBooking.model')(s
 db.maintenanceCharges = require('../model/maintainanceCharges')(sequelize, Sequelize);
 db.facilitiesCharges = require('../model/facilitiesCharges.model')(sequelize, Sequelize);
 db.electricityCharges = require('../model/electricityCharges')(sequelize, Sequelize);
-<<<<<<< HEAD
 db.cardDetails = require('../model/card.model')(sequelize,Sequelize);
 db.order = require('../model/societyEventCelebration')(sequelize,Sequelize);
 db.transactions = require('../model/transactions')(sequelize,Sequelize);
 db.employeeSalary = require('../model/employeeSalary.model')(sequelize,Sequelize),
-=======
-db.cardDetails = require('../model/card.model')(sequelize, Sequelize);
-db.order = require('../model/societyEventCelebration')(sequelize, Sequelize);
-db.transactions = require('../model/transactions')(sequelize, Sequelize),
-db.account = require('../model/account.model')(sequelize, Sequelize);
-db.employeeSalaryAccount = require('../model/employeeSalaryAccount')(sequelize, Sequelize);
->>>>>>> 0572ce2f651664429bd57789d330cee66e4ff378
 
 db.otp.belongsTo(db.owner, { foreignKey: 'ownerId' });
 db.otp.belongsTo(db.tenant, { foreignKey: 'tenantId' });
