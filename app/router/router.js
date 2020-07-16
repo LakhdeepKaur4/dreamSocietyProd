@@ -75,6 +75,7 @@ module.exports = function (app) {
 	const cardController = require('../controller/card');
 	const fetchPaymentIdForOrder = require('../controller/razorpay')
 	const societyEventCelebrationController = require('../controller/societyEventCelebrationController');
+	const employeeSalaryController= require('../controller/employeeSalary');
 	// const vendorAllotmentController = require('../controller/vendorAllotmentController');
 	app.get('/', userController.start);
 
@@ -932,4 +933,7 @@ module.exports = function (app) {
 
 	app.get('/api/test/country', countryController.get);
 	// app.get('/api/vendors/book',[authJwt.verifyToken,authJwt.isOwnerOrTenantRole],vendorAllotmentController.getVendor)
+
+	app.post('/api/employeeSalary', [authJwt.verifyToken, authJwt.isAdminRole], employeeSalaryController.create);
+	app.get('/api/employeeSalary', [authJwt.verifyToken, authJwt.isAdminRole], employeeSalaryController.get);
 }
