@@ -75,12 +75,7 @@ module.exports = function (app) {
 	const cardController = require('../controller/card');
 	const fetchPaymentIdForOrder = require('../controller/razorpay')
 	const societyEventCelebrationController = require('../controller/societyEventCelebrationController');
-<<<<<<< HEAD
 	const employeeSalaryController= require('../controller/employeeSalary');
-=======
-	const salaryAccountController = require('../controller/salaryAccount');
-	const employeeSalaryGenerateController = require('../controller/employeeSalaryGenerator');
->>>>>>> 0572ce2f651664429bd57789d330cee66e4ff378
 	// const vendorAllotmentController = require('../controller/vendorAllotmentController');
 	app.get('/', userController.start);
 

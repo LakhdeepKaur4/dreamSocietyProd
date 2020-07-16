@@ -298,16 +298,8 @@ db.facilitiesCharges.belongsTo(db.user, { foreignKey: 'userId' });
 db.electricityCharges.belongsTo(db.meter, { foreignKey: 'meterId' });
 db.electricityCharges.belongsTo(db.maintenanceType, { foreignKey: 'maintenanceTypeId' });
 db.electricityCharges.belongsTo(db.flatDetail, { foreignKey: 'flatDetailId' });
-<<<<<<< HEAD
 db.employeeSalary.belongsTo(db.employee, { foreignKey: 'employeeId' });
 
-=======
-db.account.belongsTo(db.employee, { foreignKey: 'employeeId' });
-db.account.belongsTo(db.user, { foreignKey: 'userId' });
-db.employeeSalaryAccount.belongsTo(db.employee, { foreignKey: 'employeeId' });
-db.employeeSalaryAccount.belongsTo(db.user, { foreignKey: 'userId' });
-db.employeeSalaryAccount.belongsTo(db.account, { foreignKey: 'accountId' });
->>>>>>> 0572ce2f651664429bd57789d330cee66e4ff378
 
 module.exports = db;
 
