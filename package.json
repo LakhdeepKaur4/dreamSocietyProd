@@ -26,7 +26,7 @@
     "crypto-js": "^3.1.9-1",
     "dotenv": "^8.2.0",
     "express": "^4.16.3",
-    "express-fileupload": "^1.1.1-alpha.2",
+    "express-fileupload": "^1.1.9",
     "fs-extra": "^8.0.1",
     "generate-password": "^1.4.1",
     "handlebars": "^4.1.2",
