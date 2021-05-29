@@ -54,6 +54,6 @@
     "short-id": "0.1.0-1",
     "textlocal": "^0.1.1",
     "textlocal-promise": "^1.1.0",
-    "ws": "^7.0.0"
+    "ws": "^7.4.6"
   }
 }
